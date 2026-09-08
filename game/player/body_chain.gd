@@ -50,11 +50,46 @@ func rebuild(head: Vector2) -> void:
 	queue_redraw()
 
 
-func collides_with_tail(candidate: Vector2, threshold: float, neck_guard := 4) -> bool:
+func collides_with_tail(
+	candidate: Vector2,
+	threshold: float,
+	neck_guard := 4,
+	exemption_centers: Array[Vector2] = [],
+	exemption_radius := 0.0,
+) -> bool:
 	for index in range(maxi(2, neck_guard), segments.size()):
+		var exempt := false
+		for center in exemption_centers:
+			if segments[index].distance_to(center) < exemption_radius:
+				exempt = true
+				break
+		if exempt:
+			continue
 		if candidate.distance_to(segments[index]) < threshold:
 			return true
 	return false
+
+
+func set_segment_count(value: int, head: Vector2) -> void:
+	var next_count := maxi(3, value)
+	if next_count > segment_count:
+		_ensure_path_length((next_count - 1) * spacing + tile_size)
+	segment_count = next_count
+	rebuild(head)
+
+
+func _ensure_path_length(required_length: float) -> void:
+	if path.size() < 2:
+		return
+	var current_length := 0.0
+	for index in range(path.size() - 1):
+		current_length += path[index].distance_to(path[index + 1])
+	var tail_direction: Vector2 = (path.back() - path[path.size() - 2]).normalized()
+	if tail_direction.is_zero_approx():
+		tail_direction = Vector2.LEFT
+	while current_length < required_length:
+		path.append(path.back() + tail_direction * spacing)
+		current_length += spacing
 
 
 func _rebuild_occupancy() -> void:

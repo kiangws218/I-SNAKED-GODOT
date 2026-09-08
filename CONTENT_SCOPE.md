@@ -1,6 +1,6 @@
 # I SNAKED-GODOT 内容与素材追踪基线
 
-状态：N0 审阅版
+状态：N2 审阅版
 
 基线日期：2026-09-07
 
@@ -149,3 +149,14 @@
 ## 5. 素材完成判定
 
 “所有素材都用上”指所有**被选入生产清单**的资源在所属可玩场景实际出现、可听或可见，并通过引用检查；不指把候选库的每个素材包都复制进项目。未被采用的候选不会导入，避免体积、风格和维护负担。
+
+### N2 实际选定
+
+| 稳定 ID | 新项目文件 | 使用位置 | 状态 |
+| --- | --- | --- | --- |
+| `item.ring_node` | `assets/nodes/ring.png` | 环形节点实例 | done |
+| `sfx.spit` | `assets/audio/spit.wav` | 玩家吐出 | done |
+| `sfx.pickup` | `assets/audio/pickup.wav` | 豆/物品回收 | done |
+| `sfx.node` | `assets/audio/node.wav` | 节点放置/回收 | done |
+| `item.bean` | 代码绘制的 8px 圆形 | 飞行/落地豆 | deferred：候选豆图是混合食物图集，N8 统一像素风时替换，当前不导入整张候选库。 |
+| `item.iron_sword` / `item.healing_potion` | 代码颜色区分 | N2 特殊投射物 | deferred：N8 统一物品像素表现。 |

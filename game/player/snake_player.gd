@@ -3,9 +3,18 @@ extends CharacterBody2D
 
 signal died(reason: String)
 signal danger_changed(active: bool, seconds_left: float)
+signal resources_changed
+signal actor_released(payload: Dictionary, at_position: Vector2)
+signal actor_interacted(payload: Dictionary)
 
 const TILE_SIZE := 24.0
 const MAX_DIRECTION_QUEUE := 3
+const MIN_LENGTH := 3
+const SHOT_INTERVAL := 0.5
+const CUT_COOLDOWN := 10.0
+const NODE_EXEMPTION_RADIUS := 1.15 * TILE_SIZE
+const PROJECTILE_SCENE := preload("res://game/projectiles/bean_projectile.tscn")
+const RING_NODE_SCENE := preload("res://game/nodes/ring_node.tscn")
 
 @export var base_speed := 4.0 * TILE_SIZE
 @export var boost_multiplier := 2.0
@@ -13,8 +22,12 @@ const MAX_DIRECTION_QUEUE := 3
 @export var self_collision_radius := 0.62 * TILE_SIZE
 @export var rescue_probe_radius := 0.5 * TILE_SIZE
 @export var neck_guard := 4
+@export var play_sfx := true
 
 @onready var body_chain: BodyChain = $BodyChain
+@onready var spit_audio: AudioStreamPlayer = $SpitAudio
+@onready var pickup_audio: AudioStreamPlayer = $PickupAudio
+@onready var node_audio: AudioStreamPlayer = $NodeAudio
 
 var direction := Vector2.RIGHT
 var direction_queue: Array[Vector2] = []
@@ -22,7 +35,14 @@ var danger_kind := ""
 var danger_seconds_left := 0.0
 var is_dead := false
 var current_speed := 0.0
+var inventory := StomachInventory.new()
+var node_unlocked := false
+var node_charges := 0
+var cut_cooldown_left := 0.0
+var shot_cooldown_left := 0.0
+var placed_nodes: Array[RingNode] = []
 var _last_sampled_input := Vector2.ZERO
+var _special_spit_latched := false
 
 
 func _ready() -> void:
@@ -30,14 +50,38 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	shot_cooldown_left = maxf(0.0, shot_cooldown_left - delta)
+	cut_cooldown_left = maxf(0.0, cut_cooldown_left - delta)
 	if is_dead:
 		if Input.is_action_just_pressed("interact"):
 			get_tree().reload_current_scene()
 		return
+	_handle_resource_input()
+	_update_nodes()
 	var held_direction := _sample_direction_input()
 	apply_next_direction()
+	if Input.is_action_pressed("spit") or inventory.is_overweight():
+		current_speed = 0.0
+		return
 	var boosting := not held_direction.is_zero_approx() and held_direction.is_equal_approx(direction)
 	simulate_motion(delta, boosting)
+
+
+func _input(event: InputEvent) -> void:
+	if is_dead or (event is InputEventKey and event.echo):
+		return
+	if event.is_action_pressed("inventory_previous"):
+		inventory.cycle(-1)
+		resources_changed.emit()
+	elif event.is_action_pressed("inventory_next"):
+		inventory.cycle(1)
+		resources_changed.emit()
+	elif event.is_action_pressed("cut_tail"):
+		cut_tail()
+	elif event.is_action_pressed("place_node"):
+		place_node()
+	elif event.is_action_pressed("interact"):
+		_interact_with_nearest_actor()
 
 
 func reset_at(spawn_position: Vector2, spawn_direction := Vector2.RIGHT) -> void:
@@ -48,10 +92,111 @@ func reset_at(spawn_position: Vector2, spawn_direction := Vector2.RIGHT) -> void
 	danger_seconds_left = 0.0
 	is_dead = false
 	current_speed = base_speed
+	shot_cooldown_left = 0.0
+	cut_cooldown_left = 0.0
+	_special_spit_latched = false
 	_last_sampled_input = Vector2.ZERO
 	if is_node_ready():
 		body_chain.reset(global_position, direction)
 	queue_redraw()
+	resources_changed.emit()
+
+
+func set_length(value: int) -> void:
+	body_chain.set_segment_count(maxi(MIN_LENGTH + inventory.occupied_length(), value), global_position)
+	resources_changed.emit()
+
+
+func add_special_item(item_id: StringName, metadata := {}) -> bool:
+	if not inventory.add_item(item_id, metadata):
+		return false
+	body_chain.set_segment_count(body_chain.segment_count + int(StomachInventory.DEFINITIONS[item_id].length), global_position)
+	resources_changed.emit()
+	return true
+
+
+func grant_node_charges(amount: int, unlock := true) -> int:
+	if unlock:
+		node_unlocked = true
+	node_charges = clampi(node_charges + amount, 0, 3)
+	resources_changed.emit()
+	return node_charges
+
+
+func try_spit() -> bool:
+	if shot_cooldown_left > 0.0 or is_dead:
+		return false
+	var payload: Dictionary
+	if inventory.selected_id() == StomachInventory.BEAN_ID:
+		if inventory.bean_ammo(body_chain.segment_count, MIN_LENGTH) <= 0:
+			return false
+		payload = {"id": &"bean", "damage": 4, "length": 1, "weight": 0}
+	else:
+		payload = inventory.consume_selected()
+		if payload.is_empty():
+			return false
+	var used_length := int(payload.get("length", 1))
+	body_chain.set_segment_count(body_chain.segment_count - used_length, global_position)
+	var projectile: BeanProjectile = PROJECTILE_SCENE.instantiate()
+	get_parent().add_child(projectile)
+	projectile.released_actor.connect(_on_actor_released)
+	projectile.actor_interacted.connect(_on_actor_interacted)
+	projectile.launch(payload, global_position + direction * TILE_SIZE * 0.9, direction, self)
+	if play_sfx:
+		spit_audio.play()
+	shot_cooldown_left = SHOT_INTERVAL
+	resources_changed.emit()
+	return true
+
+
+func cut_tail() -> int:
+	if cut_cooldown_left > 0.0 or is_dead:
+		return 0
+	var keep := MIN_LENGTH + inventory.occupied_length()
+	var removed := body_chain.segment_count - keep
+	if removed <= 0:
+		return 0
+	var old_segments := body_chain.segments.duplicate()
+	body_chain.set_segment_count(keep, global_position)
+	var recovered := floori(removed * 0.6)
+	for index in range(recovered):
+		var projectile: BeanProjectile = PROJECTILE_SCENE.instantiate()
+		get_parent().add_child(projectile)
+		var tail_index := mini(old_segments.size() - 1, keep + index)
+		projectile.launch({"id": &"bean", "damage": 4, "length": 1, "weight": 0}, old_segments[tail_index], direction.rotated(PI), self)
+		projectile.age = 0.25
+		projectile.land()
+	cut_cooldown_left = CUT_COOLDOWN
+	resources_changed.emit()
+	return recovered
+
+
+func place_node() -> bool:
+	if not node_unlocked or node_charges <= 0 or is_dead:
+		return false
+	var cell := Vector2i(floori(global_position.x / TILE_SIZE), floori(global_position.y / TILE_SIZE))
+	for ring in placed_nodes:
+		if is_instance_valid(ring) and ring.cell == cell and not ring.finished:
+			return false
+	var ring: RingNode = RING_NODE_SCENE.instantiate()
+	get_parent().add_child(ring)
+	ring.setup(cell)
+	ring.reclaimed.connect(_on_node_reclaimed)
+	ring.destroyed.connect(_on_node_destroyed)
+	placed_nodes.append(ring)
+	node_charges -= 1
+	if play_sfx:
+		node_audio.play()
+	resources_changed.emit()
+	return true
+
+
+func active_node_centers() -> Array[Vector2]:
+	var centers: Array[Vector2] = []
+	for ring in placed_nodes:
+		if is_instance_valid(ring) and not ring.finished:
+			centers.append(ring.global_position)
+	return centers
 
 
 func queue_direction(candidate: Vector2) -> bool:
@@ -114,7 +259,79 @@ func _sample_direction_input() -> Vector2:
 func _motion_is_safe(motion: Vector2, tail_radius: float) -> bool:
 	if test_move(global_transform, motion):
 		return false
-	return not body_chain.collides_with_tail(global_position + motion, tail_radius, neck_guard)
+	return not body_chain.collides_with_tail(
+		global_position + motion,
+		tail_radius,
+		neck_guard,
+		active_node_centers(),
+		NODE_EXEMPTION_RADIUS,
+	)
+
+
+func _handle_resource_input() -> void:
+	if Input.is_action_pressed("spit"):
+		if inventory.selected_id() == StomachInventory.BEAN_ID:
+			try_spit()
+		elif not _special_spit_latched:
+			_special_spit_latched = try_spit()
+	else:
+		_special_spit_latched = false
+
+
+func _update_nodes() -> void:
+	for ring in placed_nodes.duplicate():
+		if is_instance_valid(ring):
+			ring.update_body_occupancy(body_chain.occupied_cells)
+
+
+func try_collect_payload(payload: Dictionary) -> bool:
+	var item_id: StringName = payload.get("id", &"bean")
+	if item_id == &"bean":
+		body_chain.set_segment_count(body_chain.segment_count + 1, global_position)
+	else:
+		var metadata: Dictionary = payload.get("metadata", {})
+		if not inventory.add_item(item_id, metadata):
+			return false
+		body_chain.set_segment_count(body_chain.segment_count + int(payload.get("length", 1)), global_position)
+	resources_changed.emit()
+	if play_sfx:
+		pickup_audio.play()
+	return true
+
+
+func _on_actor_released(payload: Dictionary, at_position: Vector2) -> void:
+	actor_released.emit(payload, at_position)
+
+
+func _on_actor_interacted(payload: Dictionary) -> void:
+	actor_interacted.emit(payload)
+
+
+func _interact_with_nearest_actor() -> bool:
+	var nearest: BeanProjectile
+	var nearest_distance := INF
+	for child in get_parent().get_children():
+		if child is BeanProjectile and child.actor_released and not child.actor_interaction_emitted:
+			var distance := global_position.distance_to(child.global_position)
+			if distance < BeanProjectile.PICKUP_RADIUS and distance < nearest_distance:
+				nearest = child
+				nearest_distance = distance
+	return nearest.interact() if nearest else false
+
+
+func _on_node_reclaimed(ring: RingNode) -> void:
+	placed_nodes.erase(ring)
+	node_charges = mini(3, node_charges + 1)
+	ring.queue_free()
+	if play_sfx:
+		node_audio.play()
+	resources_changed.emit()
+
+
+func _on_node_destroyed(ring: RingNode) -> void:
+	placed_nodes.erase(ring)
+	ring.queue_free()
+	resources_changed.emit()
 
 
 func _enter_danger(kind: String) -> void:

@@ -1,6 +1,6 @@
 # I SNAKED-GODOT 最小架构
 
-状态：N1 审阅版
+状态：N2 审阅版
 
 引擎：Godot 4.7.2
 
@@ -68,7 +68,7 @@ SessionState
 
 ## 6. 阶段
 
-### N0：独立项目与事实基线（当前）
+### N0：独立项目与事实基线（已完成）
 
 - 独立工程、占位主场景、headless 测试入口。
 - 新 `GDD.md`、`CONTENT_SCOPE.md`、架构边界、团队交接规则。
@@ -91,6 +91,8 @@ SessionState
 - 固定节点、穿越豁免、回收、围圈检测。
 
 出口：核心资源循环在 TestArena 完整闭环。
+
+实现边界：`SnakePlayer` 直接拥有一个 `StomachInventory` 纯数据对象并生成世界实例；统一 `BeanProjectile` 承载豆、铁剑、药水和角色载荷；`RingNode` 只保存格子、HP 与生命周期；`EnclosureDetector` 是无状态四邻接洪泛。没有新增全局管理器、事件总线、通用战斗接口或逐节身体物理节点。
 
 ### N3：敌人、NPC 与监狱
 

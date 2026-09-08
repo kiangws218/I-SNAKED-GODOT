@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/nodes/ring_node.gd" id="1_ring"]
+[ext_resource type="Texture2D" path="res://assets/nodes/ring.png" id="2_ring_texture"]
+
+[node name="RingNode" type="Node2D"]
+z_index = -2
+script = ExtResource("1_ring")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_ring_texture")

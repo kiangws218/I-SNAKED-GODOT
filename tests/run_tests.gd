@@ -10,9 +10,13 @@ func _initialize() -> void:
 func _run() -> void:
 	_test_project_contract()
 	_test_body_chain()
+	_test_inventory_contract()
+	_test_enclosure_detector()
 	await _test_real_input_and_rescue()
+	await _test_n2_input_dispatch()
+	await _test_n2_real_resource_input()
 	if failures.is_empty():
-		print("N1 TESTS PASSED")
+		print("N2 TESTS PASSED (INCLUDING N1 REGRESSION)")
 		quit(0)
 	else:
 		for failure in failures:
@@ -35,13 +39,27 @@ func _test_project_contract() -> void:
 	check(_has_key("move_down", KEY_S) and _has_key("move_down", KEY_DOWN), "下移默认绑定")
 	check(_has_key("move_left", KEY_A) and _has_key("move_left", KEY_LEFT), "左移默认绑定")
 	check(_has_key("move_right", KEY_D) and _has_key("move_right", KEY_RIGHT), "右移默认绑定")
+	check(_has_key("spit", KEY_J) and _has_key("spit", KEY_SPACE), "吐出默认绑定 J / 空格")
+	check(_has_key("inventory_previous", KEY_Q) and _has_key("inventory_next", KEY_E), "胃袋 Q / E 默认绑定")
+	check(_has_key("cut_tail", KEY_K) and _has_key("place_node", KEY_F), "断尾 K / 节点 F 默认绑定")
 	for layer_index in range(1, 11):
 		check(
 			not String(ProjectSettings.get_setting("layer_names/2d_physics/layer_%d" % layer_index, "")).is_empty(),
 			"物理层命名：%d" % layer_index,
 		)
-	for scene_path in ["res://game/main.tscn", "res://game/test_arena.tscn", "res://game/player/snake_player.tscn"]:
+	for scene_path in [
+		"res://game/main.tscn", "res://game/test_arena.tscn", "res://game/player/snake_player.tscn",
+		"res://game/projectiles/bean_projectile.tscn", "res://game/nodes/ring_node.tscn",
+	]:
 		check(ResourceLoader.exists(scene_path), "场景存在：%s" % scene_path)
+	for audio_path in ["res://assets/audio/spit.wav", "res://assets/audio/pickup.wav", "res://assets/audio/node.wav"]:
+		check(ResourceLoader.exists(audio_path), "N2 音效存在：%s" % audio_path)
+	var production_audio: Array[String] = []
+	for file_name in DirAccess.get_files_at("res://assets/audio"):
+		if not file_name.ends_with(".import"):
+			production_audio.append(file_name)
+	production_audio.sort()
+	check(production_audio == ["node.wav", "pickup.wav", "spit.wav"], "N2 只导入已选音效")
 
 
 func _test_body_chain() -> void:
@@ -50,6 +68,13 @@ func _test_body_chain() -> void:
 	chain.reset(Vector2(240, 240), Vector2.RIGHT)
 	check(chain.segments.size() == 4, "初始四节身体")
 	check(chain.segments[1].is_equal_approx(Vector2(216, 240)), "身体间距 1 格")
+	chain.set_segment_count(12, Vector2(240, 240))
+	var grown_spacing_valid := true
+	for index in range(chain.segments.size() - 1):
+		if not is_equal_approx(chain.segments[index].distance_to(chain.segments[index + 1]), 24.0):
+			grown_spacing_valid = false
+			break
+	check(grown_spacing_valid, "原地增长后尾部轨迹不会塌缩")
 	chain.segment_count = 256
 	chain.reset(Vector2(240, 240), Vector2.RIGHT)
 	var started := Time.get_ticks_usec()
@@ -82,12 +107,64 @@ func _test_body_chain() -> void:
 	chain.queue_free()
 
 
+func _test_inventory_contract() -> void:
+	var inventory := StomachInventory.new()
+	check(inventory.slot_count() == 1 and inventory.selected_id() == &"bean", "豆子永久槽")
+	check(inventory.current_weight() == 0 and inventory.occupied_length() == 0, "豆槽零重量零长度")
+	check(inventory.add_item(&"iron_sword") and inventory.add_item(&"iron_sword"), "铁剑可堆叠加入")
+	check(inventory.count_item(&"iron_sword") == 2 and inventory.slot_count() == 2, "同类铁剑共用槽")
+	check(inventory.current_weight() == 4 and inventory.occupied_length() == 2, "铁剑重量与占长")
+	check(inventory.add_item(&"healing_potion"), "药水加入")
+	check(inventory.current_weight() == 5 and inventory.occupied_length() == 3, "特殊物品累计值")
+	check(not inventory.add_item(&"ajie", {"hp": 7, "story_id": "ajie"}), "超过承重 6 时拒绝吞入")
+	check(inventory.bean_ammo(12) == 6, "豆弹药保护最短长度与特殊占长")
+	check(inventory.cycle(1) == &"iron_sword", "E 选择下一个胃袋槽")
+	var sword := inventory.consume_selected()
+	check(sword.id == &"iron_sword" and sword.damage == 8, "铁剑先扣库存并保留伤害")
+	check(inventory.count_item(&"iron_sword") == 1, "铁剑每次只消耗一件")
+	inventory.cycle(-1)
+	check(inventory.selected_id() == &"bean", "Q 循环回豆槽")
+	var actor_inventory := StomachInventory.new()
+	check(actor_inventory.add_item(&"lisi", {"hp": 9, "story_id": "lisi"}), "角色载荷可加入")
+	actor_inventory.cycle(1)
+	var actor_payload := actor_inventory.consume_selected()
+	check(actor_payload.metadata.hp == 9 and actor_payload.metadata.story_id == "lisi", "角色投射保留生命与身份")
+	var exact_capacity := StomachInventory.new()
+	check(exact_capacity.add_item(&"iron_sword") and exact_capacity.add_item(&"iron_sword") and exact_capacity.add_item(&"iron_sword"), "重量恰好 6 仍允许")
+	check(exact_capacity.current_weight() == 6 and not exact_capacity.add_item(&"healing_potion"), "承重上限严格为 6")
+	var bones := StomachInventory.new()
+	check(bones.add_item(&"character_bones", {"story_id": "ajie"}), "角色骨头保留原身份元数据")
+	bones.cycle(1)
+	check(bones.consume_selected().metadata.story_id == "ajie", "骨头吐出后身份不丢失")
+	check(int(StomachInventory.DEFINITIONS[&"keti_corpse"].length) == 2 and not StomachInventory.DEFINITIONS[&"keti_corpse"].has("actor"), "可蒂尸体占两节且不是昏迷角色")
+
+
+func _test_enclosure_detector() -> void:
+	var bounds := Rect2i(0, 0, 7, 7)
+	var ring: Dictionary[Vector2i, StringName] = {}
+	for x in range(2, 5):
+		ring[Vector2i(x, 2)] = &"body"
+		ring[Vector2i(x, 4)] = &"body"
+	for y in range(2, 5):
+		ring[Vector2i(2, y)] = &"body"
+		ring[Vector2i(4, y)] = &"body"
+	var regions := EnclosureDetector.find_regions(bounds, ring)
+	check(regions.size() == 1 and regions[0].cells.has(Vector2i(3, 3)), "四邻接洪泛识别身体封闭区")
+	check(regions[0].touches_body and not regions[0].touches_node, "普通身体围圈分类")
+	ring.erase(Vector2i(3, 2))
+	check(EnclosureDetector.find_regions(bounds, ring).is_empty(), "一格断口立即解除围圈")
+	ring[Vector2i(3, 2)] = &"node"
+	regions = EnclosureDetector.find_regions(bounds, ring)
+	check(regions.size() == 1 and regions[0].touches_node and regions[0].touches_body, "节点封口围圈分类")
+
+
 func _test_real_input_and_rescue() -> void:
 	var arena: Node = load("res://game/test_arena.tscn").instantiate()
 	root.add_child(arena)
 	await physics_frame
 	var player: SnakePlayer = arena.get_node("SnakePlayer")
 	player.set_physics_process(false)
+	player.play_sfx = false
 	player.reset_at(Vector2(300, 240), Vector2.RIGHT)
 	check(not player.queue_direction(Vector2.LEFT), "反向输入不占方向队列")
 	check(player.queue_direction(Vector2.DOWN), "安全方向进入队列")
@@ -195,6 +272,185 @@ func _test_real_input_and_rescue() -> void:
 	await process_frame
 
 
+func _test_n2_real_resource_input() -> void:
+	var arena: Node = load("res://game/test_arena.tscn").instantiate()
+	root.add_child(arena)
+	await physics_frame
+	var player: SnakePlayer = arena.get_node("SnakePlayer")
+	player.set_physics_process(false)
+	player.play_sfx = false
+	player.reset_at(Vector2(300, 240), Vector2.RIGHT)
+	player.inventory = StomachInventory.new()
+	player.set_length(8)
+	var start_position := player.global_position
+	Input.action_press("spit")
+	player._physics_process(1.0 / 60.0)
+	check(player.body_chain.segment_count == 7, "真实 J 输入消耗一节普通豆身长")
+	check(player.global_position.is_equal_approx(start_position), "吐豆时蛇头停止移动")
+	var projectile_count := 0
+	for child in arena.get_children():
+		if child is BeanProjectile:
+			projectile_count += 1
+	check(projectile_count == 1, "真实 J 输入只生成一个载荷")
+	player._physics_process(1.0 / 60.0)
+	check(player.body_chain.segment_count == 7, "射速冷却阻止同帧连发")
+	Input.action_release("spit")
+	player._physics_process(1.0 / 60.0)
+
+	player.add_special_item(&"iron_sword")
+	player.add_special_item(&"iron_sword")
+	var inventory_length := player.body_chain.segment_count
+	player._input(_key_event(KEY_E, true))
+	check(player.inventory.selected_id() == &"iron_sword", "真实 E 输入循环选择铁剑")
+	player.shot_cooldown_left = 0.0
+	Input.action_press("spit")
+	player._physics_process(1.0 / 60.0)
+	check(player.inventory.count_item(&"iron_sword") == 1, "特殊投射物生成前先扣库存")
+	check(player.body_chain.segment_count == inventory_length - 1, "吐出铁剑释放其占用长度")
+	player._physics_process(0.5)
+	check(player.inventory.count_item(&"iron_sword") == 1, "长按不会连续吐出特殊物品")
+	Input.action_release("spit")
+	player._physics_process(1.0 / 60.0)
+
+	player.inventory = StomachInventory.new()
+	player.set_length(8)
+	player.cut_cooldown_left = 0.0
+	var charges_before_cut := player.node_charges
+	var landed_before := 0
+	for child in arena.get_children():
+		if child is BeanProjectile and child.is_landed and child.payload.id == &"bean":
+			landed_before += 1
+	player._input(_key_event(KEY_K, true))
+	check(player.body_chain.segment_count == 3, "真实 K 输入断尾保留三节")
+	check(player.cut_cooldown_left > 9.9, "断尾启动 10 秒冷却")
+	check(player.node_charges == charges_before_cut, "断尾不重置节点充能")
+	var landed_beans := 0
+	for child in arena.get_children():
+		if child is BeanProjectile and child.is_landed and child.payload.id == &"bean":
+			landed_beans += 1
+	check(landed_beans == landed_before + 3, "断下五节精确回收 floor(5×60%) 三豆")
+
+	player.grant_node_charges(1)
+	var charge_before_place := player.node_charges
+	player._input(_key_event(KEY_F, true))
+	check(player.placed_nodes.size() == 1 and player.node_charges == charge_before_place - 1, "真实 F 输入当前格放置节点并扣充能")
+	var placed: RingNode = player.placed_nodes[0]
+	check(placed.hp == 2, "节点基础 HP 为 2")
+	placed.update_body_occupancy({placed.cell: true})
+	placed.update_body_occupancy({})
+	await process_frame
+	check(player.placed_nodes.is_empty() and player.node_charges == charge_before_place, "身体完全离格后节点回收且只返还一次")
+	check(player.place_node(), "回收充能可以再次放置节点")
+	var doomed: RingNode = player.placed_nodes[0]
+	var charge_after_second_place := player.node_charges
+	doomed.damage(2)
+	await process_frame
+	check(player.placed_nodes.is_empty() and player.node_charges == charge_after_second_place, "节点 HP 归零后摧毁且不返还充能")
+
+	var projectile: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
+	arena.add_child(projectile)
+	projectile.launch({"id": &"bean", "damage": 4, "length": 1, "weight": 0}, Vector2(200, 200), Vector2.RIGHT, player)
+	projectile._on_collision(Vector2.LEFT)
+	check(projectile.has_bounced and is_equal_approx(projectile.speed, BeanProjectile.INITIAL_SPEED * 0.78), "豆首次碰撞保留 0.78 速度并进入反弹态")
+	projectile._on_collision(Vector2.RIGHT)
+	check(not projectile.is_landed and is_equal_approx(projectile.speed, BeanProjectile.INITIAL_SPEED * 0.78 * 0.78), "后续碰撞继续反弹而非提前落地")
+	projectile.speed = BeanProjectile.LAND_SPEED - 0.01
+	projectile._physics_process(0.01)
+	check(projectile.is_landed, "豆低于 0.35 格每秒落地")
+	var wall_projectile: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
+	arena.add_child(wall_projectile)
+	wall_projectile.set_physics_process(false)
+	wall_projectile.launch({"id": &"bean", "damage": 4, "length": 1, "weight": 0}, Vector2(720, 240), Vector2.RIGHT, player)
+	for index in range(12):
+		wall_projectile._physics_process(1.0 / 60.0)
+		if wall_projectile.has_bounced:
+			break
+	check(wall_projectile.has_bounced and wall_projectile.flight_direction.x < 0.0, "真实 World 碰撞使豆反射")
+	var potion: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
+	arena.add_child(potion)
+	potion.launch({"id": &"healing_potion", "length": 1, "weight": 1}, Vector2(200, 200), Vector2.RIGHT, player)
+	potion._on_collision(Vector2.LEFT)
+	check(potion.is_queued_for_deletion(), "药水首次碰撞立即破碎")
+	var actor: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
+	arena.add_child(actor)
+	actor.launch({"id": &"lisi", "length": 1, "weight": 3, "actor": true, "metadata": {"hp": 9, "story_id": "lisi"}}, Vector2(200, 200), Vector2.RIGHT, player)
+	actor.land()
+	check(actor.is_landed and actor.payload.metadata.hp == 9 and actor.payload.metadata.unconscious, "角色落地保留身份生命并转为昏迷可互动")
+	actor.global_position = player.global_position
+	player._input(_key_event(KEY_ENTER, true))
+	check(actor.actor_interaction_emitted and not actor.interact(), "一次互动只交给最近角色且不能重复提交")
+	player.inventory = StomachInventory.new()
+	player.inventory.add_item(&"iron_sword")
+	player.inventory.add_item(&"iron_sword")
+	player.inventory.add_item(&"iron_sword")
+	var blocked_pickup: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
+	arena.add_child(blocked_pickup)
+	blocked_pickup.set_physics_process(false)
+	blocked_pickup.launch({"id": &"iron_sword", "length": 1, "weight": 2}, player.global_position, Vector2.RIGHT, player)
+	blocked_pickup.age = 1.0
+	blocked_pickup.land()
+	blocked_pickup._physics_process(0.01)
+	check(not blocked_pickup.is_queued_for_deletion(), "满负重拾取失败时特殊物品留在地面")
+
+	player.inventory.entries.append({"id": &"test_weight", "count": 1, "length": 0, "weight": 7})
+	var overweight_start := player.global_position
+	player._physics_process(1.0 / 60.0)
+	check(player.global_position.is_equal_approx(overweight_start), "超重停止移动但资源输入入口仍运行")
+
+	var chain := BodyChain.new()
+	root.add_child(chain)
+	chain.segments.assign([Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2(24, 0)])
+	check(chain.collides_with_tail(Vector2(24, 0), 1.0, 4), "无节点时身体会自撞")
+	check(not chain.collides_with_tail(Vector2(24, 0), 1.0, 4, [Vector2(12, 12)], 1.15 * 24.0), "节点半径内身体段获得穿越豁免")
+	chain.queue_free()
+	player.spit_audio.stop()
+	player.pickup_audio.stop()
+	player.node_audio.stop()
+	arena.queue_free()
+	await process_frame
+	await process_frame
+
+
+func _test_n2_input_dispatch() -> void:
+	var arena: Node = load("res://game/test_arena.tscn").instantiate()
+	root.add_child(arena)
+	await physics_frame
+	var player: SnakePlayer = arena.get_node("SnakePlayer")
+	player.play_sfx = false
+	player.inventory = StomachInventory.new()
+	player.reset_at(Vector2(300, 240), Vector2.RIGHT)
+	player.set_length(8)
+	_send_key(KEY_J, true)
+	await process_frame
+	await physics_frame
+	_send_key(KEY_J, false)
+	await process_frame
+	check(player.body_chain.segment_count == 7, "SceneTree 分发真实 J 吐出输入")
+	player.add_special_item(&"iron_sword")
+	_send_key(KEY_E, true)
+	await process_frame
+	_send_key(KEY_E, false)
+	check(player.inventory.selected_id() == &"iron_sword", "SceneTree 分发真实 E 胃袋输入")
+	player.inventory = StomachInventory.new()
+	player.set_length(8)
+	player.cut_cooldown_left = 0.0
+	_send_key(KEY_K, true)
+	await process_frame
+	_send_key(KEY_K, false)
+	check(player.body_chain.segment_count == 3, "SceneTree 分发真实 K 断尾输入")
+	player.node_charges = 1
+	player.node_unlocked = true
+	_send_key(KEY_F, true)
+	await process_frame
+	_send_key(KEY_F, false)
+	check(player.placed_nodes.size() == 1 and player.node_charges == 0, "SceneTree 分发真实 F 节点输入")
+	player.spit_audio.stop()
+	player.node_audio.stop()
+	arena.queue_free()
+	await process_frame
+	await process_frame
+
+
 func _has_key(action: StringName, physical_keycode: Key) -> bool:
 	for event in InputMap.action_get_events(action):
 		if event is InputEventKey and event.physical_keycode == physical_keycode:
@@ -203,11 +459,16 @@ func _has_key(action: StringName, physical_keycode: Key) -> bool:
 
 
 func _send_key(physical_keycode: Key, pressed: bool) -> void:
+	var event := _key_event(physical_keycode, pressed)
+	Input.parse_input_event(event)
+
+
+func _key_event(physical_keycode: Key, pressed: bool) -> InputEventKey:
 	var event := InputEventKey.new()
 	event.keycode = physical_keycode
 	event.physical_keycode = physical_keycode
 	event.pressed = pressed
-	Input.parse_input_event(event)
+	return event
 
 
 func check(condition: bool, label: String) -> void:
