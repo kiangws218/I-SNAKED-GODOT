@@ -6,13 +6,16 @@ signal released_actor(payload: Dictionary, at_position: Vector2)
 signal actor_interacted(payload: Dictionary)
 
 const TILE_SIZE := 24.0
-const INITIAL_SPEED := 10.0 * TILE_SIZE
-const INITIAL_DRAG := 1.5 * TILE_SIZE
-const BOUNCED_DRAG := 7.0 * TILE_SIZE
+const INITIAL_SPEED := 13.0 * TILE_SIZE
+const INITIAL_DRAG := 0.8 * TILE_SIZE
+const BOUNCED_DRAG := 4.5 * TILE_SIZE
 const LAND_SPEED := 0.35 * TILE_SIZE
-const BOUNCE_RETAIN_MIN := 0.70
-const BOUNCE_RETAIN_MAX := 0.86
-const BOUNCE_ANGLE_RANGE := 0.22
+const BOUNCE_RETAIN_MIN := 0.58
+const BOUNCE_RETAIN_MAX := 0.94
+const BOUNCE_ANGLE_FAR := 0.30
+const BOUNCE_ANGLE_CLOSE := 1.20
+const BOUNCE_MIN_CLOSE_ANGLE := 0.55
+const CLOSE_BOUNCE_DISTANCE := 6.0 * TILE_SIZE
 const LIFETIME := 6.0
 const PICKUP_RADIUS := 0.6 * TILE_SIZE
 
@@ -25,6 +28,7 @@ var is_landed := false
 var source: SnakePlayer
 var actor_released := false
 var actor_interaction_emitted := false
+var flight_distance := 0.0
 
 
 func launch(data: Dictionary, origin: Vector2, direction: Vector2, owner_player: SnakePlayer) -> void:
@@ -38,6 +42,7 @@ func launch(data: Dictionary, origin: Vector2, direction: Vector2, owner_player:
 	age = 0.0
 	has_bounced = false
 	is_landed = false
+	flight_distance = 0.0
 	queue_redraw()
 
 
@@ -46,7 +51,9 @@ func _physics_process(delta: float) -> void:
 	if age >= LIFETIME and not is_landed:
 		land()
 	if not is_landed:
+		var previous_position := global_position
 		var collision := move_and_collide(flight_direction * speed * delta)
+		flight_distance += previous_position.distance_to(global_position)
 		if collision:
 			_on_collision(collision.get_normal())
 		elif age >= 0.22 and is_instance_valid(source):
@@ -73,7 +80,16 @@ func _on_collision(normal: Vector2) -> void:
 	if payload.id == &"healing_potion":
 		queue_free()
 		return
-	flight_direction = flight_direction.bounce(normal).rotated(randf_range(-BOUNCE_ANGLE_RANGE, BOUNCE_ANGLE_RANGE)).normalized()
+	var angle_range := BOUNCE_ANGLE_FAR
+	var minimum_angle := 0.0
+	if not has_bounced:
+		var closeness := 1.0 - clampf(flight_distance / CLOSE_BOUNCE_DISTANCE, 0.0, 1.0)
+		angle_range = lerpf(BOUNCE_ANGLE_FAR, BOUNCE_ANGLE_CLOSE, closeness)
+		minimum_angle = BOUNCE_MIN_CLOSE_ANGLE * closeness
+	var angle := randf_range(minimum_angle, angle_range)
+	if randf() < 0.5:
+		angle = -angle
+	flight_direction = flight_direction.bounce(normal).rotated(angle).normalized()
 	speed *= randf_range(BOUNCE_RETAIN_MIN, BOUNCE_RETAIN_MAX)
 	has_bounced = true
 

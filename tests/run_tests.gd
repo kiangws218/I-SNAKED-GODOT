@@ -298,14 +298,16 @@ func _test_n2_real_resource_input() -> void:
 	check(player.body_chain.segment_count == 7, "射速冷却阻止同帧连发")
 	for index in range(13):
 		player._physics_process(1.0 / 60.0)
-	check(player.body_chain.segment_count == 7 and player.current_speed > first_spit_speed, "吐豆 CD 内按住 J 仍平滑恢复移动")
+	check(player.body_chain.segment_count == 7 and player.current_speed < first_spit_speed * 0.1, "长按 J 连射时平滑减速至完全静止")
 	var repeat_wait := 14.0 / 60.0
 	while player.body_chain.segment_count == 7 and repeat_wait < 0.45:
 		player._physics_process(1.0 / 60.0)
 		repeat_wait += 1.0 / 60.0
 	check(player.body_chain.segment_count == 6 and repeat_wait <= 0.44, "连续吐豆间隔缩短到约 0.42 秒")
 	Input.action_release("spit")
-	player._physics_process(1.0 / 60.0)
+	for index in range(12):
+		player._physics_process(1.0 / 60.0)
+	check(player.current_speed > player.base_speed * 0.95, "松开 J 后平滑恢复正常速度")
 
 	player.add_special_item(&"iron_sword")
 	player.add_special_item(&"iron_sword")
@@ -361,10 +363,14 @@ func _test_n2_real_resource_input() -> void:
 	var projectile: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
 	arena.add_child(projectile)
 	projectile.launch({"id": &"bean", "damage": 4, "length": 1, "weight": 0}, Vector2(200, 200), Vector2.RIGHT, player)
+	check(is_equal_approx(projectile.speed, 13.0 * BeanProjectile.TILE_SIZE), "豆子初速提高到 13 格每秒")
+	check(is_equal_approx(BeanProjectile.INITIAL_DRAG / BeanProjectile.TILE_SIZE, 0.8), "豆子飞行阻力降低到 0.8")
+	check(is_equal_approx(BeanProjectile.BOUNCED_DRAG / BeanProjectile.TILE_SIZE, 4.5), "豆子反弹后阻力降低到 4.5")
 	projectile._on_collision(Vector2.LEFT)
 	var first_retain := projectile.speed / BeanProjectile.INITIAL_SPEED
 	check(projectile.has_bounced and first_retain >= BeanProjectile.BOUNCE_RETAIN_MIN and first_retain <= BeanProjectile.BOUNCE_RETAIN_MAX, "豆首次碰撞使用随机保速区间")
-	check(absf(projectile.flight_direction.angle_to(Vector2.LEFT)) <= BeanProjectile.BOUNCE_ANGLE_RANGE + 0.001, "豆反弹方向在可控随机角内")
+	var close_angle := absf(projectile.flight_direction.angle_to(Vector2.LEFT))
+	check(close_angle >= BeanProjectile.BOUNCE_MIN_CLOSE_ANGLE and close_angle <= BeanProjectile.BOUNCE_ANGLE_CLOSE + 0.001, "极近首次碰撞强制扩大偏转")
 	var first_bounce_speed := projectile.speed
 	projectile._on_collision(Vector2.RIGHT)
 	var second_retain := projectile.speed / first_bounce_speed
@@ -373,9 +379,17 @@ func _test_n2_real_resource_input() -> void:
 	for index in range(10):
 		projectile.flight_direction = Vector2.RIGHT
 		projectile.speed = BeanProjectile.INITIAL_SPEED
+		projectile.has_bounced = false
+		projectile.flight_distance = 0.0
 		projectile._on_collision(Vector2.LEFT)
 		bounce_samples["%.3f/%.3f" % [projectile.speed, projectile.flight_direction.y]] = true
 	check(bounce_samples.size() > 1, "连续豆子的随机力度与方向不会全部重合")
+	projectile.flight_direction = Vector2.RIGHT
+	projectile.speed = BeanProjectile.INITIAL_SPEED
+	projectile.has_bounced = false
+	projectile.flight_distance = BeanProjectile.CLOSE_BOUNCE_DISTANCE
+	projectile._on_collision(Vector2.LEFT)
+	check(absf(projectile.flight_direction.angle_to(Vector2.LEFT)) <= BeanProjectile.BOUNCE_ANGLE_FAR + 0.001, "远距离首次碰撞只使用基础随机偏转")
 	projectile.speed = BeanProjectile.LAND_SPEED - 0.01
 	projectile._physics_process(0.01)
 	check(projectile.is_landed, "豆低于 0.35 格每秒落地")
@@ -388,6 +402,8 @@ func _test_n2_real_resource_input() -> void:
 		if wall_projectile.has_bounced:
 			break
 	check(wall_projectile.has_bounced and wall_projectile.flight_direction.x < 0.0, "真实 World 碰撞使豆反射")
+	var wall_closeness := 1.0 - clampf(wall_projectile.flight_distance / BeanProjectile.CLOSE_BOUNCE_DISTANCE, 0.0, 1.0)
+	check(absf(wall_projectile.flight_direction.angle_to(Vector2.LEFT)) >= BeanProjectile.BOUNCE_MIN_CLOSE_ANGLE * wall_closeness, "真实近墙碰撞按飞行距离提高最小偏转")
 	var projectile_shape: CircleShape2D = wall_projectile.get_node("CollisionShape2D").shape
 	check(projectile_shape.radius >= 7.0, "豆子尺寸只比单节蛇身略小")
 	var potion: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()

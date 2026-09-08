@@ -60,9 +60,18 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("interact"):
 			get_tree().reload_current_scene()
 		return
+	var bean_selected_before_spit := inventory.selected_id() == StomachInventory.BEAN_ID
 	var did_spit := _handle_resource_input()
 	if did_spit:
-		spit_brake_left = SPIT_BRAKE_SECONDS
+		_spit_smoothing_active = true
+		if not bean_selected_before_spit:
+			spit_brake_left = SPIT_BRAKE_SECONDS
+	var bean_spray_held := (
+		Input.is_action_pressed("spit")
+		and inventory.selected_id() == StomachInventory.BEAN_ID
+		and inventory.bean_ammo(body_chain.segment_count, MIN_LENGTH) > 0
+	)
+	if bean_spray_held:
 		_spit_smoothing_active = true
 	_update_nodes()
 	var held_direction := _sample_direction_input()
@@ -73,7 +82,7 @@ func _physics_process(delta: float) -> void:
 	var boosting := not held_direction.is_zero_approx() and held_direction.is_equal_approx(direction)
 	if spit_brake_left > 0.0:
 		spit_brake_left = maxf(0.0, spit_brake_left - delta)
-	var target_speed := 0.0 if spit_brake_left > 0.0 else base_speed * (boost_multiplier if boosting else 1.0)
+	var target_speed := 0.0 if bean_spray_held or spit_brake_left > 0.0 else base_speed * (boost_multiplier if boosting else 1.0)
 	if _spit_smoothing_active:
 		current_speed = lerpf(current_speed, target_speed, 1.0 - exp(-SPIT_SPEED_RESPONSE * delta))
 		if spit_brake_left <= 0.0 and absf(current_speed - target_speed) < 0.5:
