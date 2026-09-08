@@ -1,0 +1,110 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://game/test_arena.gd" id="1_arena"]
+[ext_resource type="PackedScene" path="res://game/player/snake_player.tscn" id="2_player"]
+
+[sub_resource type="RectangleShape2D" id="ShapeHorizontal"]
+size = Vector2(768, 24)
+
+[sub_resource type="RectangleShape2D" id="ShapeVertical"]
+size = Vector2(24, 480)
+
+[sub_resource type="RectangleShape2D" id="ShapeObstacle"]
+size = Vector2(24, 240)
+
+[sub_resource type="StyleBoxFlat" id="PanelStyle"]
+bg_color = Color(0.055, 0.063, 0.1, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.25, 0.46, 0.28, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="TestArena" type="Node2D"]
+script = ExtResource("1_arena")
+
+[node name="Walls" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Top" type="CollisionShape2D" parent="Walls"]
+position = Vector2(384, 12)
+shape = SubResource("ShapeHorizontal")
+
+[node name="Bottom" type="CollisionShape2D" parent="Walls"]
+position = Vector2(384, 468)
+shape = SubResource("ShapeHorizontal")
+
+[node name="Left" type="CollisionShape2D" parent="Walls"]
+position = Vector2(12, 240)
+shape = SubResource("ShapeVertical")
+
+[node name="Right" type="CollisionShape2D" parent="Walls"]
+position = Vector2(756, 240)
+shape = SubResource("ShapeVertical")
+
+[node name="Obstacle" type="CollisionShape2D" parent="Walls"]
+position = Vector2(504, 240)
+shape = SubResource("ShapeObstacle")
+
+[node name="WallVisuals" type="Node2D" parent="."]
+
+[node name="Top" type="Polygon2D" parent="WallVisuals"]
+polygon = PackedVector2Array(0, 0, 768, 0, 768, 24, 0, 24)
+color = Color(0.18, 0.29, 0.22, 1)
+
+[node name="Bottom" type="Polygon2D" parent="WallVisuals"]
+polygon = PackedVector2Array(0, 456, 768, 456, 768, 480, 0, 480)
+color = Color(0.18, 0.29, 0.22, 1)
+
+[node name="Left" type="Polygon2D" parent="WallVisuals"]
+polygon = PackedVector2Array(0, 0, 24, 0, 24, 480, 0, 480)
+color = Color(0.18, 0.29, 0.22, 1)
+
+[node name="Right" type="Polygon2D" parent="WallVisuals"]
+polygon = PackedVector2Array(744, 0, 768, 0, 768, 480, 744, 480)
+color = Color(0.18, 0.29, 0.22, 1)
+
+[node name="Obstacle" type="Polygon2D" parent="WallVisuals"]
+polygon = PackedVector2Array(492, 120, 516, 120, 516, 360, 492, 360)
+color = Color(0.28, 0.42, 0.31, 1)
+
+[node name="SnakePlayer" parent="." instance=ExtResource("2_player")]
+position = Vector2(192, 240)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Info" type="PanelContainer" parent="UI"]
+offset_left = 36.0
+offset_top = 36.0
+offset_right = 354.0
+offset_bottom = 106.0
+theme_override_styles/panel = SubResource("PanelStyle")
+
+[node name="Text" type="VBoxContainer" parent="UI/Info"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="UI/Info/Text"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.56, 0.89, 0.42, 1)
+theme_override_font_sizes/font_size = 18
+text = "N1 · 连续移动测试场"
+
+[node name="Help" type="Label" parent="UI/Info/Text"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.78, 0.82, 1)
+text = "WASD / 方向键转向 · 按住当前方向加速"
+
+[node name="State" type="Label" parent="UI"]
+offset_left = 36.0
+offset_top = 420.0
+offset_right = 430.0
+offset_bottom = 450.0
+theme_override_colors/font_color = Color(0.92, 0.92, 0.82, 1)
+theme_override_font_sizes/font_size = 16
+text = "速度 4.0 格/秒 · 身长 4"
