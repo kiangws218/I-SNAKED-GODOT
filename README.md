@@ -12,16 +12,14 @@ N2：豆子、胃袋、断尾与环形节点已完成，等待制作人审阅。
 
 ## 打开与验证
 
-用 Godot 4.7.2 打开本目录的 `project.godot`。本机已定位到的控制台程序为：
-
-```text
-D:\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe
-```
+用 Godot 4.7.2 打开本目录的 `project.godot`。建议把 Godot 控制台程序加入本机 `PATH`，然后执行：
 
 ```powershell
 godot --headless --path . --editor --quit
 godot --headless --path . --script res://tests/run_tests.gd
 ```
+
+办公室电脑已定位到的程序为 `D:\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe`；其他电脑使用自己的安装路径。绝对路径不是项目依赖。
 
 若安装了 GDA，可以补充执行：
 
@@ -34,14 +32,16 @@ gda scene preflight game/main.tscn --project . --json
 
 GDA 是效率工具，不是项目依赖。Godot 4.7.2 已完成首次无界面导入，N0 项目契约测试通过；`gda` 当前未加入 PATH，后续可用时再补充其结构化检查。
 
-Godot 4.7.2 官方标准导出模板已安装在 `D:\GodotExportTemplates\4.7.2.stable`。默认模板目录 `%APPDATA%\Godot\export_templates\4.7.2.stable` 使用目录联接指向 D 盘，避免占用空间紧张的系统盘；Windows 与 Web 的 Debug/Release 模板均已验证存在。
+办公室电脑的 Godot 4.7.2 官方标准导出模板已安装在 `D:\GodotExportTemplates\4.7.2.stable`。导出模板是本机配置，到 N8 导出阶段才要求每台构建机器分别安装。
 
 ## 文档
 
 - `GDD.md`：本项目唯一设计基线，主要来自网页版剧情模式当前行为。
 - `CONTENT_SCOPE.md`：剧情、玩法、阶段、素材和验收的防遗漏追踪台账。
 - `ARCHITECTURE.md`：最小架构、状态边界和阶段出口。
-- `AGENTS.md`：开发规则与阶段审阅流程。
+- `AGENTS.md`：两套团队共同遵守的开发规则、动态协作方案与阶段审阅流程。
+- `HANDOFF.md`：办公室与家庭团队的接手/交出流程、当前停止线和本机配置边界。
+- `LEAD_ONBOARDING.md`：新团队负责人的 Godot 技术基线、阶段学习路线和成熟项目参考。
 - `N1_REVIEW.md`：N1 交付范围与验证记录。
 - `N2_REVIEW.md`：N2 资源循环、自动门禁、视觉验收与阶段边界。
 
