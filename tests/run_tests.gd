@@ -286,7 +286,9 @@ func _test_n2_real_resource_input() -> void:
 	Input.action_press("spit")
 	player._physics_process(1.0 / 60.0)
 	check(player.body_chain.segment_count == 7, "真实 J 输入消耗一节普通豆身长")
-	check(player.global_position.is_equal_approx(start_position), "吐豆时蛇头停止移动")
+	var first_spit_speed := player.current_speed
+	var first_spit_distance := player.global_position.distance_to(start_position)
+	check(first_spit_distance > 0.0 and first_spit_distance < player.base_speed / 60.0, "成功吐豆触发平滑制动而非急停")
 	var projectile_count := 0
 	for child in arena.get_children():
 		if child is BeanProjectile:
@@ -294,6 +296,14 @@ func _test_n2_real_resource_input() -> void:
 	check(projectile_count == 1, "真实 J 输入只生成一个载荷")
 	player._physics_process(1.0 / 60.0)
 	check(player.body_chain.segment_count == 7, "射速冷却阻止同帧连发")
+	for index in range(13):
+		player._physics_process(1.0 / 60.0)
+	check(player.body_chain.segment_count == 7 and player.current_speed > first_spit_speed, "吐豆 CD 内按住 J 仍平滑恢复移动")
+	var repeat_wait := 14.0 / 60.0
+	while player.body_chain.segment_count == 7 and repeat_wait < 0.45:
+		player._physics_process(1.0 / 60.0)
+		repeat_wait += 1.0 / 60.0
+	check(player.body_chain.segment_count == 6 and repeat_wait <= 0.44, "连续吐豆间隔缩短到约 0.42 秒")
 	Input.action_release("spit")
 	player._physics_process(1.0 / 60.0)
 
@@ -336,6 +346,7 @@ func _test_n2_real_resource_input() -> void:
 	check(player.placed_nodes.size() == 1 and player.node_charges == charge_before_place - 1, "真实 F 输入当前格放置节点并扣充能")
 	var placed: RingNode = player.placed_nodes[0]
 	check(placed.hp == 2, "节点基础 HP 为 2")
+	check(placed.get_node("Sprite2D").global_position.is_equal_approx(player.global_position), "节点视觉落在放置时的蛇身中心")
 	placed.update_body_occupancy({placed.cell: true})
 	placed.update_body_occupancy({})
 	await process_frame
@@ -351,9 +362,20 @@ func _test_n2_real_resource_input() -> void:
 	arena.add_child(projectile)
 	projectile.launch({"id": &"bean", "damage": 4, "length": 1, "weight": 0}, Vector2(200, 200), Vector2.RIGHT, player)
 	projectile._on_collision(Vector2.LEFT)
-	check(projectile.has_bounced and is_equal_approx(projectile.speed, BeanProjectile.INITIAL_SPEED * 0.78), "豆首次碰撞保留 0.78 速度并进入反弹态")
+	var first_retain := projectile.speed / BeanProjectile.INITIAL_SPEED
+	check(projectile.has_bounced and first_retain >= BeanProjectile.BOUNCE_RETAIN_MIN and first_retain <= BeanProjectile.BOUNCE_RETAIN_MAX, "豆首次碰撞使用随机保速区间")
+	check(absf(projectile.flight_direction.angle_to(Vector2.LEFT)) <= BeanProjectile.BOUNCE_ANGLE_RANGE + 0.001, "豆反弹方向在可控随机角内")
+	var first_bounce_speed := projectile.speed
 	projectile._on_collision(Vector2.RIGHT)
-	check(not projectile.is_landed and is_equal_approx(projectile.speed, BeanProjectile.INITIAL_SPEED * 0.78 * 0.78), "后续碰撞继续反弹而非提前落地")
+	var second_retain := projectile.speed / first_bounce_speed
+	check(not projectile.is_landed and second_retain >= BeanProjectile.BOUNCE_RETAIN_MIN and second_retain <= BeanProjectile.BOUNCE_RETAIN_MAX, "后续碰撞继续随机反弹而非提前落地")
+	var bounce_samples: Dictionary[String, bool] = {}
+	for index in range(10):
+		projectile.flight_direction = Vector2.RIGHT
+		projectile.speed = BeanProjectile.INITIAL_SPEED
+		projectile._on_collision(Vector2.LEFT)
+		bounce_samples["%.3f/%.3f" % [projectile.speed, projectile.flight_direction.y]] = true
+	check(bounce_samples.size() > 1, "连续豆子的随机力度与方向不会全部重合")
 	projectile.speed = BeanProjectile.LAND_SPEED - 0.01
 	projectile._physics_process(0.01)
 	check(projectile.is_landed, "豆低于 0.35 格每秒落地")
@@ -366,6 +388,8 @@ func _test_n2_real_resource_input() -> void:
 		if wall_projectile.has_bounced:
 			break
 	check(wall_projectile.has_bounced and wall_projectile.flight_direction.x < 0.0, "真实 World 碰撞使豆反射")
+	var projectile_shape: CircleShape2D = wall_projectile.get_node("CollisionShape2D").shape
+	check(projectile_shape.radius >= 7.0, "豆子尺寸只比单节蛇身略小")
 	var potion: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
 	arena.add_child(potion)
 	potion.launch({"id": &"healing_potion", "length": 1, "weight": 1}, Vector2(200, 200), Vector2.RIGHT, player)

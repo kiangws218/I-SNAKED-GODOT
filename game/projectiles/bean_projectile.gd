@@ -10,7 +10,9 @@ const INITIAL_SPEED := 10.0 * TILE_SIZE
 const INITIAL_DRAG := 1.5 * TILE_SIZE
 const BOUNCED_DRAG := 7.0 * TILE_SIZE
 const LAND_SPEED := 0.35 * TILE_SIZE
-const BOUNCE_RETAIN := 0.78
+const BOUNCE_RETAIN_MIN := 0.70
+const BOUNCE_RETAIN_MAX := 0.86
+const BOUNCE_ANGLE_RANGE := 0.22
 const LIFETIME := 6.0
 const PICKUP_RADIUS := 0.6 * TILE_SIZE
 
@@ -71,8 +73,8 @@ func _on_collision(normal: Vector2) -> void:
 	if payload.id == &"healing_potion":
 		queue_free()
 		return
-	flight_direction = flight_direction.bounce(normal).rotated(0.08).normalized()
-	speed *= BOUNCE_RETAIN
+	flight_direction = flight_direction.bounce(normal).rotated(randf_range(-BOUNCE_ANGLE_RANGE, BOUNCE_ANGLE_RANGE)).normalized()
+	speed *= randf_range(BOUNCE_RETAIN_MIN, BOUNCE_RETAIN_MAX)
 	has_bounced = true
 
 
@@ -98,7 +100,7 @@ func land() -> void:
 func _source_body_collision_normal() -> Vector2:
 	for index in range(2, source.body_chain.segments.size()):
 		var delta := global_position - source.body_chain.segments[index]
-		if delta.length() < 9.0:
+		if delta.length() < 16.0:
 			return delta.normalized() if not delta.is_zero_approx() else -flight_direction
 	return Vector2.ZERO
 
@@ -120,6 +122,6 @@ func _draw() -> void:
 		color = Color("f06c9b")
 	elif bool(payload.get("actor", false)):
 		color = Color("69d2e7")
-	draw_circle(Vector2.ZERO, 5.0 if is_landed else 4.0, color)
+	draw_circle(Vector2.ZERO, 8.0 if is_landed else 7.5, color)
 	if has_bounced and not is_landed:
-		draw_arc(Vector2.ZERO, 7.0, 0.0, TAU, 12, Color.WHITE, 1.0)
+		draw_arc(Vector2.ZERO, 9.5, 0.0, TAU, 12, Color.WHITE, 1.0)

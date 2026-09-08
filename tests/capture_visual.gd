@@ -12,6 +12,7 @@ func _capture() -> void:
 		await process_frame
 	var player: SnakePlayer = main.get_node("TestArena/SnakePlayer")
 	player.set_physics_process(false)
+	player.play_sfx = false
 	player.place_node()
 	player.try_spit()
 	for index in range(12):

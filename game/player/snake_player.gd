@@ -10,7 +10,9 @@ signal actor_interacted(payload: Dictionary)
 const TILE_SIZE := 24.0
 const MAX_DIRECTION_QUEUE := 3
 const MIN_LENGTH := 3
-const SHOT_INTERVAL := 0.5
+const SHOT_INTERVAL := 0.42
+const SPIT_BRAKE_SECONDS := 0.12
+const SPIT_SPEED_RESPONSE := 28.0
 const CUT_COOLDOWN := 10.0
 const NODE_EXEMPTION_RADIUS := 1.15 * TILE_SIZE
 const PROJECTILE_SCENE := preload("res://game/projectiles/bean_projectile.tscn")
@@ -40,9 +42,11 @@ var node_unlocked := false
 var node_charges := 0
 var cut_cooldown_left := 0.0
 var shot_cooldown_left := 0.0
+var spit_brake_left := 0.0
 var placed_nodes: Array[RingNode] = []
 var _last_sampled_input := Vector2.ZERO
 var _special_spit_latched := false
+var _spit_smoothing_active := false
 
 
 func _ready() -> void:
@@ -56,15 +60,28 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("interact"):
 			get_tree().reload_current_scene()
 		return
-	_handle_resource_input()
+	var did_spit := _handle_resource_input()
+	if did_spit:
+		spit_brake_left = SPIT_BRAKE_SECONDS
+		_spit_smoothing_active = true
 	_update_nodes()
 	var held_direction := _sample_direction_input()
 	apply_next_direction()
-	if Input.is_action_pressed("spit") or inventory.is_overweight():
+	if inventory.is_overweight():
 		current_speed = 0.0
 		return
 	var boosting := not held_direction.is_zero_approx() and held_direction.is_equal_approx(direction)
-	simulate_motion(delta, boosting)
+	if spit_brake_left > 0.0:
+		spit_brake_left = maxf(0.0, spit_brake_left - delta)
+	var target_speed := 0.0 if spit_brake_left > 0.0 else base_speed * (boost_multiplier if boosting else 1.0)
+	if _spit_smoothing_active:
+		current_speed = lerpf(current_speed, target_speed, 1.0 - exp(-SPIT_SPEED_RESPONSE * delta))
+		if spit_brake_left <= 0.0 and absf(current_speed - target_speed) < 0.5:
+			current_speed = target_speed
+			_spit_smoothing_active = false
+	else:
+		current_speed = target_speed
+	simulate_motion(delta, boosting, current_speed)
 
 
 func _input(event: InputEvent) -> void:
@@ -93,8 +110,10 @@ func reset_at(spawn_position: Vector2, spawn_direction := Vector2.RIGHT) -> void
 	is_dead = false
 	current_speed = base_speed
 	shot_cooldown_left = 0.0
+	spit_brake_left = 0.0
 	cut_cooldown_left = 0.0
 	_special_spit_latched = false
+	_spit_smoothing_active = false
 	_last_sampled_input = Vector2.ZERO
 	if is_node_ready():
 		body_chain.reset(global_position, direction)
@@ -180,7 +199,7 @@ func place_node() -> bool:
 			return false
 	var ring: RingNode = RING_NODE_SCENE.instantiate()
 	get_parent().add_child(ring)
-	ring.setup(cell)
+	ring.setup(cell, global_position)
 	ring.reclaimed.connect(_on_node_reclaimed)
 	ring.destroyed.connect(_on_node_destroyed)
 	placed_nodes.append(ring)
@@ -223,8 +242,8 @@ func apply_next_direction() -> bool:
 	return false
 
 
-func simulate_motion(delta: float, boosting: bool) -> void:
-	current_speed = base_speed * (boost_multiplier if boosting else 1.0)
+func simulate_motion(delta: float, boosting: bool, requested_speed := -1.0) -> void:
+	current_speed = requested_speed if requested_speed >= 0.0 else base_speed * (boost_multiplier if boosting else 1.0)
 	var motion := direction * current_speed * minf(delta, 0.05)
 	if not danger_kind.is_empty():
 		danger_seconds_left = maxf(danger_seconds_left - minf(delta, 0.05), 0.0)
@@ -268,14 +287,16 @@ func _motion_is_safe(motion: Vector2, tail_radius: float) -> bool:
 	)
 
 
-func _handle_resource_input() -> void:
+func _handle_resource_input() -> bool:
 	if Input.is_action_pressed("spit"):
 		if inventory.selected_id() == StomachInventory.BEAN_ID:
-			try_spit()
+			return try_spit()
 		elif not _special_spit_latched:
 			_special_spit_latched = try_spit()
+			return _special_spit_latched
 	else:
 		_special_spit_latched = false
+	return false
 
 
 func _update_nodes() -> void:

@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" path="res://assets/nodes/ring.png" id="2_ring_texture"]
 
 [node name="RingNode" type="Node2D"]
-z_index = -2
+z_index = 1
 script = ExtResource("1_ring")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]

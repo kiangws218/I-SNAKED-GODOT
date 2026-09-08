@@ -10,11 +10,14 @@ var cell := Vector2i.ZERO
 var hp := 2
 var armed := false
 var finished := false
+var visual_offset := Vector2.ZERO
 
 
-func setup(target_cell: Vector2i) -> void:
+func setup(target_cell: Vector2i, placement_position: Vector2) -> void:
 	cell = target_cell
 	global_position = (Vector2(cell) + Vector2(0.5, 0.5)) * TILE_SIZE
+	visual_offset = placement_position - global_position
+	$Sprite2D.position = visual_offset
 	queue_redraw()
 
 
@@ -40,4 +43,4 @@ func damage(amount: int) -> void:
 
 func _draw() -> void:
 	if hp == 1:
-		draw_arc(Vector2.ZERO, 10.0, 0.0, TAU, 16, Color("ef8354"), 2.0)
+		draw_arc(visual_offset, 10.0, 0.0, TAU, 16, Color("ef8354"), 2.0)
