@@ -24,6 +24,7 @@ var shot_timer := 0.0
 var warning_active := false
 var is_dead := false
 var _recoil_left := 0.0
+var _contact_hitstop_left := 0.0
 
 
 func _ready() -> void:
@@ -53,14 +54,18 @@ func setup(target: SnakePlayer) -> void:
 func _physics_process(delta: float) -> void:
 	if is_dead or not is_instance_valid(player):
 		return
+	var movement_delta := maxf(0.0, delta - _contact_hitstop_left)
+	_contact_hitstop_left = maxf(0.0, _contact_hitstop_left - delta)
+	if movement_delta <= 0.0:
+		return
 	if _recoil_left > 0.0:
-		_recoil_left = maxf(0.0, _recoil_left - delta)
-		move_and_collide(velocity * delta)
-		velocity = velocity.move_toward(Vector2.ZERO, 18.0 * TILE_SIZE * delta)
+		_recoil_left = maxf(0.0, _recoil_left - movement_delta)
+		move_and_collide(velocity * movement_delta)
+		velocity = velocity.move_toward(Vector2.ZERO, 18.0 * TILE_SIZE * movement_delta)
 	elif enemy_kind == &"slime":
-		_move_toward_player(delta)
+		_move_toward_player(movement_delta)
 	else:
-		_update_ranged(delta)
+		_update_ranged(movement_delta)
 	_damage_player_on_head_contact()
 
 
@@ -96,6 +101,7 @@ func _damage_player_on_head_contact() -> void:
 	if global_position.distance_to(player.global_position) >= radius + 0.38 * TILE_SIZE:
 		return
 	if player.take_damage(1, &"enemy_contact"):
+		_contact_hitstop_left = SnakePlayer.CONTACT_HITSTOP_SECONDS
 		var away := player.global_position.direction_to(global_position)
 		if away.is_zero_approx():
 			away = Vector2.RIGHT

@@ -513,6 +513,7 @@ func _test_n3_contract() -> void:
 	check(is_equal_approx(PrisonController.PLAIN_BURST, 10.0) and is_equal_approx(PrisonController.PLAIN_DPS, 10.0), "普通监狱 10 burst/10 DPS")
 	check(is_equal_approx(PrisonController.NODE_BURST, 15.0) and is_equal_approx(PrisonController.NODE_DPS, 30.0), "节点监狱 15 burst/30 DPS")
 	check(is_equal_approx(NpcActor.ENTER_RADIUS, 0.85 * NpcActor.TILE_SIZE) and is_equal_approx(NpcActor.RESET_RADIUS, 1.25 * NpcActor.TILE_SIZE), "NPC 接触迟滞半径")
+	check(is_equal_approx(SnakePlayer.CONTACT_HITSTOP_SECONDS, 0.025), "怪物接触卡肉 25ms")
 	var enemy_visual: EnemyActor = load("res://game/actors/enemy_actor.tscn").instantiate()
 	check(enemy_visual.get_node("Slime").scale.is_equal_approx(Vector2(1.25, 1.25)), "敌人美术放大到蛇身量级")
 	enemy_visual.free()
@@ -568,6 +569,7 @@ func _test_n3_real_paths() -> void:
 		if player.hearts < 3:
 			break
 	check(player.hearts == 2 and slime.velocity.x > 0.0, "史莱姆接触头部造成伤害并反弹")
+	check(player.contact_hitstop_left > 0.0 and slime._contact_hitstop_left > 0.0, "怪物接触同时短暂停顿蛇与敌人")
 	player.hearts = 3
 	player.invulnerability_left = 0.0
 	player.body_chain.segments.assign([

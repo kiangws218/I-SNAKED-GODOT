@@ -19,6 +19,7 @@ const CUT_COOLDOWN := 10.0
 const NODE_EXEMPTION_RADIUS := 1.15 * TILE_SIZE
 const HIT_FLASH_SECONDS := 0.12
 const DANGER_FLASH_PERIOD := 0.16
+const CONTACT_HITSTOP_SECONDS := 0.025
 const PROJECTILE_SCENE := preload("res://game/projectiles/bean_projectile.tscn")
 const RING_NODE_SCENE := preload("res://game/nodes/ring_node.tscn")
 
@@ -56,6 +57,7 @@ var max_hearts := 3
 var hearts := 3
 var invulnerability_left := 0.0
 var hit_flash_left := 0.0
+var contact_hitstop_left := 0.0
 var feedback_color := Color.TRANSPARENT
 
 
@@ -64,6 +66,8 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var movement_delta := maxf(0.0, delta - contact_hitstop_left)
+	contact_hitstop_left = maxf(0.0, contact_hitstop_left - delta)
 	invulnerability_left = maxf(0.0, invulnerability_left - delta)
 	hit_flash_left = maxf(0.0, hit_flash_left - delta)
 	_update_visual_feedback()
@@ -103,7 +107,7 @@ func _physics_process(delta: float) -> void:
 			_spit_smoothing_active = false
 	else:
 		current_speed = target_speed
-	simulate_motion(delta, boosting, current_speed)
+	simulate_motion(movement_delta, boosting, current_speed)
 
 
 func _input(event: InputEvent) -> void:
@@ -140,6 +144,7 @@ func reset_at(spawn_position: Vector2, spawn_direction := Vector2.RIGHT) -> void
 	hearts = max_hearts
 	invulnerability_left = 0.0
 	hit_flash_left = 0.0
+	contact_hitstop_left = 0.0
 	feedback_color = Color.TRANSPARENT
 	if is_node_ready():
 		body_chain.reset(global_position, direction)
@@ -354,6 +359,8 @@ func take_damage(amount: int, reason: StringName = &"damage") -> bool:
 	hearts = maxi(0, hearts - amount)
 	invulnerability_left = 1.0
 	hit_flash_left = HIT_FLASH_SECONDS
+	if reason == &"enemy_contact":
+		contact_hitstop_left = CONTACT_HITSTOP_SECONDS
 	_update_visual_feedback()
 	if play_sfx:
 		hurt_audio.play()
