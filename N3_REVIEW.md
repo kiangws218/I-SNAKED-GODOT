@@ -29,7 +29,7 @@ godot --headless --path . --editor --quit
 godot --headless --path . --script res://tests/run_tests.gd
 ```
 
-结果：`N3 TESTS PASSED (INCLUDING N1/N2 REGRESSION)`。覆盖项目契约、N1 长蛇压力、N2 真实输入与资源循环，以及 N3 追击/接触、蘑菇预警和首发、敌弹头身分流、豆/药水 Area2D、NPC 迟滞/方向恢复、普通与节点监狱的 burst/DPS/重入/啃咬。测试退出无对象或资源泄漏告警；本机仅保留无权限写 `user://` 日志和读取系统证书的环境提示。
+结果：`N3 TESTS PASSED (INCLUDING N1/N2 REGRESSION)`。覆盖项目契约、N1 长蛇压力、N2 真实输入与资源循环，以及 N3 追击/接触、蘑菇预警和首发、敌弹头身分流、豆/药水 Area2D、NPC 迟滞/方向恢复、普通与节点监狱的 burst/DPS/重入/啃咬，以及敌人释放后 HUD 的生命周期回归。测试退出无对象或资源泄漏告警；本机仅保留无权限写 `user://` 日志和读取系统证书的环境提示。
 
 图形渲染截图：`.godot/n3_test_arena.png`，确认敌人/NPC/HUD/预警环在 Compatibility 渲染器中可见。`.godot` 属于本机验收产物，不提交仓库。
 

@@ -121,8 +121,8 @@ func _update_hud() -> void:
 	prison_label.text = "活动监狱 %d · 节点监狱 %d" % [enclosure_count, node_prison_count]
 
 
-func _enemy_hp(enemy: EnemyActor) -> String:
-	if not is_instance_valid(enemy):
+func _enemy_hp(enemy: Variant) -> String:
+	if not is_instance_valid(enemy) or not enemy is EnemyActor:
 		return "已击败"
 	return "%d/%d" % [roundi(enemy.hp), roundi(enemy.max_hp)]
 

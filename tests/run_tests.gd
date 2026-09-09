@@ -693,6 +693,10 @@ func _test_n3_real_paths() -> void:
 	check(node_ring.hp == 1 and node_ring_2.hp == 2, "节点每秒最多咬一个")
 	node_prison.step(1.0, bounds, node_blocked, [enemy_for_prison], [node_ring, node_ring_2])
 	check(node_ring.finished and node_ring_2.hp == 2, "节点每秒最多咬一个")
+	enemy_for_prison.take_damage(2000.0, &"n3_test")
+	await process_frame
+	arena._update_hud()
+	check(arena.get_node("UI/Info/Text/Combat").text.contains("史莱姆 已击败"), "敌人释放后 HUD 安全显示已击败")
 
 	for child in arena.get_children():
 		if child is AudioStreamPlayer:
