@@ -54,5 +54,5 @@ func _player_body_normal() -> Vector2:
 
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 6.0, Color("b55088"))
-	draw_line(-flight_direction * 7.0, flight_direction * 7.0, Color("ffd3e8"), 2.0)
+	draw_circle(Vector2.ZERO, 7.5, Color("b55088"))
+	draw_line(-flight_direction * 8.5, flight_direction * 8.5, Color("ffd3e8"), 2.0)

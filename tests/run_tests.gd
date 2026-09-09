@@ -513,6 +513,12 @@ func _test_n3_contract() -> void:
 	check(is_equal_approx(PrisonController.PLAIN_BURST, 10.0) and is_equal_approx(PrisonController.PLAIN_DPS, 10.0), "普通监狱 10 burst/10 DPS")
 	check(is_equal_approx(PrisonController.NODE_BURST, 15.0) and is_equal_approx(PrisonController.NODE_DPS, 30.0), "节点监狱 15 burst/30 DPS")
 	check(is_equal_approx(NpcActor.ENTER_RADIUS, 0.85 * NpcActor.TILE_SIZE) and is_equal_approx(NpcActor.RESET_RADIUS, 1.25 * NpcActor.TILE_SIZE), "NPC 接触迟滞半径")
+	var enemy_visual: EnemyActor = load("res://game/actors/enemy_actor.tscn").instantiate()
+	check(enemy_visual.get_node("Slime").scale.is_equal_approx(Vector2(1.25, 1.25)), "敌人美术放大到蛇身量级")
+	enemy_visual.free()
+	var enemy_shot: EnemyProjectile = load("res://game/projectiles/enemy_projectile.tscn").instantiate()
+	check(is_equal_approx(enemy_shot.get_node("CollisionShape2D").shape.radius, 7.0), "敌弹碰撞尺寸与豆子相同")
+	enemy_shot.free()
 
 
 func _test_n3_real_paths() -> void:
@@ -534,6 +540,17 @@ func _test_n3_real_paths() -> void:
 	player.invulnerability_left = 0.0
 	check(player.heal(1) == 1 and player.hearts == 3, "治疗回复 1 心")
 	check(player.heal(1) == 0 and player.hearts == 3, "治疗不超过最大生命")
+	check(player.feedback_color == Color.WHITE and player.body_chain.feedback_color == Color.WHITE, "受伤时整条蛇同步闪白")
+	player.hit_flash_left = 0.0
+	player._enter_danger("wall")
+	check(player.feedback_color == Color("ff4f4f") and player.body_chain.feedback_color == Color("ff4f4f"), "救援窗整条蛇红色闪动")
+	player.danger_seconds_left = player.rescue_seconds - 0.1
+	player._update_visual_feedback()
+	check(player.feedback_color.a == 0.0, "救援窗红色脉冲包含熄灭相位")
+	player._clear_danger()
+	player.invulnerability_left = 0.0
+	check(player.take_damage(1, &"enemy_contact"), "怪物接触触发受伤反馈")
+	check(not arena.get_node("Camera2D").offset.is_zero_approx(), "怪物接触触发轻微镜头震动")
 
 	var slime: EnemyActor = arena.get_node("Slime")
 	slime.global_position = Vector2(100, 360)

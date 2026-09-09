@@ -8,6 +8,7 @@ extends Node2D
 var path: Array[Vector2] = []
 var segments: Array[Vector2] = []
 var occupied_cells: Dictionary[Vector2i, bool] = {}
+var feedback_color := Color.TRANSPARENT
 
 
 func _ready() -> void:
@@ -124,5 +125,7 @@ func _draw() -> void:
 		return
 	for index in range(segments.size() - 1, 0, -1):
 		var fade := float(index) / float(maxi(1, segments.size() - 1))
-		draw_circle(segments[index], 8.5, Color(0.25, 0.62 + fade * 0.15, 0.22))
-		draw_circle(segments[index], 5.0, Color(0.42, 0.84, 0.31))
+		var outer := feedback_color if feedback_color.a > 0.0 else Color(0.25, 0.62 + fade * 0.15, 0.22)
+		var inner := feedback_color if feedback_color.a > 0.0 else Color(0.42, 0.84, 0.31)
+		draw_circle(segments[index], 8.5, outer)
+		draw_circle(segments[index], 5.0, inner)

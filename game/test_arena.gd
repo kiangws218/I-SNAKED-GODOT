@@ -11,6 +11,7 @@ extends Node2D
 @onready var prison_controller: PrisonController = $PrisonController
 @onready var interact_audio: AudioStreamPlayer = $InteractAudio
 @onready var prison_audio: AudioStreamPlayer = $PrisonAudio
+@onready var camera: Camera2D = $Camera2D
 
 var enclosure_count := 0
 var node_prison_count := 0
@@ -21,6 +22,7 @@ const BEAN_PROJECTILE_SCENE := preload("res://game/projectiles/bean_projectile.t
 func _ready() -> void:
 	player.died.connect(_on_player_died)
 	player.health_changed.connect(_on_player_health_changed)
+	player.damaged.connect(_on_player_damaged)
 	slime.setup(player)
 	mushroom.setup(player)
 	keti.setup(player)
@@ -113,6 +115,16 @@ func _on_prison_burst(_target: Node2D, _damage: float, _node_prison: bool) -> vo
 
 func _on_player_health_changed(_current: int, _maximum: int) -> void:
 	_update_hud()
+
+
+func _on_player_damaged(reason: StringName) -> void:
+	if reason != &"enemy_contact":
+		return
+	camera.offset = Vector2(3.0, -2.0)
+	var shake := create_tween()
+	shake.tween_property(camera, "offset", Vector2(-2.0, 1.0), 0.04)
+	shake.tween_property(camera, "offset", Vector2(1.0, -1.0), 0.04)
+	shake.tween_property(camera, "offset", Vector2.ZERO, 0.04)
 
 
 func _update_hud() -> void:

@@ -5,6 +5,7 @@ signal died(reason: String)
 signal danger_changed(active: bool, seconds_left: float)
 signal resources_changed
 signal health_changed(current: int, maximum: int)
+signal damaged(reason: StringName)
 signal actor_released(payload: Dictionary, at_position: Vector2)
 signal actor_interacted(payload: Dictionary)
 
@@ -16,6 +17,8 @@ const SPIT_BRAKE_SECONDS := 0.12
 const SPIT_SPEED_RESPONSE := 28.0
 const CUT_COOLDOWN := 10.0
 const NODE_EXEMPTION_RADIUS := 1.15 * TILE_SIZE
+const HIT_FLASH_SECONDS := 0.12
+const DANGER_FLASH_PERIOD := 0.16
 const PROJECTILE_SCENE := preload("res://game/projectiles/bean_projectile.tscn")
 const RING_NODE_SCENE := preload("res://game/nodes/ring_node.tscn")
 
@@ -52,6 +55,8 @@ var _spit_smoothing_active := false
 var max_hearts := 3
 var hearts := 3
 var invulnerability_left := 0.0
+var hit_flash_left := 0.0
+var feedback_color := Color.TRANSPARENT
 
 
 func _ready() -> void:
@@ -60,6 +65,8 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	invulnerability_left = maxf(0.0, invulnerability_left - delta)
+	hit_flash_left = maxf(0.0, hit_flash_left - delta)
+	_update_visual_feedback()
 	shot_cooldown_left = maxf(0.0, shot_cooldown_left - delta)
 	cut_cooldown_left = maxf(0.0, cut_cooldown_left - delta)
 	if is_dead:
@@ -132,8 +139,11 @@ func reset_at(spawn_position: Vector2, spawn_direction := Vector2.RIGHT) -> void
 	_last_sampled_input = Vector2.ZERO
 	hearts = max_hearts
 	invulnerability_left = 0.0
+	hit_flash_left = 0.0
+	feedback_color = Color.TRANSPARENT
 	if is_node_ready():
 		body_chain.reset(global_position, direction)
+		body_chain.feedback_color = feedback_color
 	queue_redraw()
 	resources_changed.emit()
 	health_changed.emit(hearts, max_hearts)
@@ -343,9 +353,12 @@ func take_damage(amount: int, reason: StringName = &"damage") -> bool:
 		return false
 	hearts = maxi(0, hearts - amount)
 	invulnerability_left = 1.0
+	hit_flash_left = HIT_FLASH_SECONDS
+	_update_visual_feedback()
 	if play_sfx:
 		hurt_audio.play()
 	health_changed.emit(hearts, max_hearts)
+	damaged.emit(reason)
 	queue_redraw()
 	if hearts == 0:
 		_die(String(reason))
@@ -411,14 +424,14 @@ func _enter_danger(kind: String) -> void:
 	danger_kind = kind
 	danger_seconds_left = rescue_seconds
 	danger_changed.emit(true, danger_seconds_left)
-	queue_redraw()
+	_update_visual_feedback()
 
 
 func _clear_danger() -> void:
 	danger_kind = ""
 	danger_seconds_left = 0.0
 	danger_changed.emit(false, 0.0)
-	queue_redraw()
+	_update_visual_feedback()
 
 
 func _die(kind: String) -> void:
@@ -428,8 +441,22 @@ func _die(kind: String) -> void:
 	queue_redraw()
 
 
+func _update_visual_feedback() -> void:
+	feedback_color = Color.TRANSPARENT
+	if not danger_kind.is_empty():
+		var elapsed := rescue_seconds - danger_seconds_left
+		if fmod(elapsed, DANGER_FLASH_PERIOD) < DANGER_FLASH_PERIOD * 0.5:
+			feedback_color = Color("ff4f4f")
+	elif hit_flash_left > 0.0:
+		feedback_color = Color.WHITE
+	if is_node_ready():
+		body_chain.feedback_color = feedback_color
+		body_chain.queue_redraw()
+	queue_redraw()
+
+
 func _draw() -> void:
-	var head_color := Color("ff5d5d") if is_dead or not danger_kind.is_empty() or invulnerability_left > 0.0 else Color("63c74d")
+	var head_color := feedback_color if feedback_color.a > 0.0 else Color("ff5d5d") if is_dead else Color("63c74d")
 	draw_circle(Vector2.ZERO, 10.0, head_color)
 	draw_circle(direction * 4.5 + direction.rotated(-PI * 0.5) * 3.0, 1.7, Color.WHITE)
 	draw_circle(direction * 4.5 + direction.rotated(PI * 0.5) * 3.0, 1.7, Color.WHITE)

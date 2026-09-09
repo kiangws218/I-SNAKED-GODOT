@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://game/projectiles/enemy_projectile.gd" id="1_projectile"]
 
 [sub_resource type="CircleShape2D" id="ProjectileShape"]
-radius = 5.0
+radius = 7.0
 
 [node name="EnemyProjectile" type="CharacterBody2D"]
 z_index = 2

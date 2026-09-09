@@ -72,8 +72,10 @@ shape = SubResource("EnemyShape")
 
 [node name="Mushroom" type="AnimatedSprite2D" parent="."]
 position = Vector2(0, -10)
+scale = Vector2(1.25, 1.25)
 sprite_frames = SubResource("MushroomFrames")
 
 [node name="Slime" type="AnimatedSprite2D" parent="."]
 position = Vector2(0, -8)
+scale = Vector2(1.25, 1.25)
 sprite_frames = SubResource("SlimeFrames")

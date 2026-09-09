@@ -25,6 +25,10 @@ func _capture() -> void:
 	mushroom.queue_redraw()
 	keti.global_position = Vector2(384, 216)
 	player.reset_at(Vector2(372, 336), Vector2.RIGHT)
+	var enemy_shot: EnemyProjectile = load("res://game/projectiles/enemy_projectile.tscn").instantiate()
+	arena.add_child(enemy_shot)
+	enemy_shot.launch(Vector2(564, 240), Vector2.LEFT, 2.0, player, mushroom)
+	enemy_shot.set_physics_process(false)
 	for index in range(12):
 		await process_frame
 	await RenderingServer.frame_post_draw
