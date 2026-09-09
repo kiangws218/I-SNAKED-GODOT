@@ -1,7 +1,12 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://game/test_arena.gd" id="1_arena"]
 [ext_resource type="PackedScene" path="res://game/player/snake_player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://game/actors/enemy_actor.tscn" id="3_enemy"]
+[ext_resource type="PackedScene" path="res://game/actors/npc_actor.tscn" id="4_npc"]
+[ext_resource type="Script" path="res://game/systems/prison_controller.gd" id="5_prison"]
+[ext_resource type="AudioStream" path="res://assets/audio/interact.wav" id="6_interact"]
+[ext_resource type="AudioStream" path="res://assets/audio/prison.wav" id="7_prison"]
 
 [sub_resource type="RectangleShape2D" id="ShapeHorizontal"]
 size = Vector2(768, 24)
@@ -73,6 +78,28 @@ color = Color(0.18, 0.29, 0.22, 1)
 polygon = PackedVector2Array(492, 120, 516, 120, 516, 360, 492, 360)
 color = Color(0.28, 0.42, 0.31, 1)
 
+[node name="Slime" parent="." instance=ExtResource("3_enemy")]
+position = Vector2(216, 168)
+enemy_kind = &"slime"
+
+[node name="Mushroom" parent="." instance=ExtResource("3_enemy")]
+position = Vector2(624, 168)
+enemy_kind = &"mushroom"
+
+[node name="Keti" parent="." instance=ExtResource("4_npc")]
+position = Vector2(216, 336)
+npc_id = &"keti"
+damageable = false
+
+[node name="PrisonController" type="Node" parent="."]
+script = ExtResource("5_prison")
+
+[node name="InteractAudio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_interact")
+
+[node name="PrisonAudio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("7_prison")
+
 [node name="SnakePlayer" parent="." instance=ExtResource("2_player")]
 position = Vector2(336, 240)
 
@@ -82,7 +109,7 @@ position = Vector2(336, 240)
 offset_left = 36.0
 offset_top = 36.0
 offset_right = 354.0
-offset_bottom = 106.0
+offset_bottom = 162.0
 theme_override_styles/panel = SubResource("PanelStyle")
 
 [node name="Text" type="VBoxContainer" parent="UI/Info"]
@@ -93,12 +120,30 @@ theme_override_constants/separation = 4
 layout_mode = 2
 theme_override_colors/font_color = Color(0.56, 0.89, 0.42, 1)
 theme_override_font_sizes/font_size = 18
-text = "N2 · 豆子 / 胃袋 / 节点测试场"
+text = "N3 · 敌人 / NPC / 监狱测试场"
 
 [node name="Help" type="Label" parent="UI/Info/Text"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.75, 0.78, 0.82, 1)
 text = "WASD 转向 · J/空格吐出 · Q/E 胃袋 · K 断尾 · F 节点"
+
+[node name="Combat" type="Label" parent="UI/Info/Text"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.84, 0.54, 1)
+text = "心 ♥♥♥ · 史莱姆 14/14 · 蘑菇 16/16"
+
+[node name="Prison" type="Label" parent="UI/Info/Text"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.72, 0.92, 1)
+text = "活动监狱 0 · 节点监狱 0"
+
+[node name="NpcHint" type="Label" parent="UI"]
+offset_left = 36.0
+offset_top = 174.0
+offset_right = 354.0
+offset_bottom = 198.0
+theme_override_colors/font_color = Color(0.42, 0.82, 0.9, 1)
+text = ""
 
 [node name="State" type="Label" parent="UI"]
 offset_left = 36.0

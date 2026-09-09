@@ -15,8 +15,10 @@ func _run() -> void:
 	await _test_real_input_and_rescue()
 	await _test_n2_input_dispatch()
 	await _test_n2_real_resource_input()
+	_test_n3_contract()
+	await _test_n3_real_paths()
 	if failures.is_empty():
-		print("N2 TESTS PASSED (INCLUDING N1 REGRESSION)")
+		print("N3 TESTS PASSED (INCLUDING N1/N2 REGRESSION)")
 		quit(0)
 	else:
 		for failure in failures:
@@ -49,17 +51,23 @@ func _test_project_contract() -> void:
 		)
 	for scene_path in [
 		"res://game/main.tscn", "res://game/test_arena.tscn", "res://game/player/snake_player.tscn",
-		"res://game/projectiles/bean_projectile.tscn", "res://game/nodes/ring_node.tscn",
+		"res://game/projectiles/bean_projectile.tscn", "res://game/projectiles/enemy_projectile.tscn",
+		"res://game/nodes/ring_node.tscn", "res://game/actors/enemy_actor.tscn", "res://game/actors/npc_actor.tscn",
 	]:
 		check(ResourceLoader.exists(scene_path), "场景存在：%s" % scene_path)
-	for audio_path in ["res://assets/audio/spit.wav", "res://assets/audio/pickup.wav", "res://assets/audio/node.wav"]:
-		check(ResourceLoader.exists(audio_path), "N2 音效存在：%s" % audio_path)
+	for audio_path in [
+		"res://assets/audio/spit.wav", "res://assets/audio/pickup.wav", "res://assets/audio/node.wav",
+		"res://assets/audio/hurt.wav", "res://assets/audio/interact.wav", "res://assets/audio/prison.wav",
+	]:
+		check(ResourceLoader.exists(audio_path), "N2/N3 音效存在：%s" % audio_path)
+	check(ResourceLoader.exists("res://assets/enemies/mushroom/idle.png"), "蘑菇待机素材存在")
+	check(ResourceLoader.exists("res://assets/enemies/slime/idle.png"), "史莱姆素材存在")
 	var production_audio: Array[String] = []
 	for file_name in DirAccess.get_files_at("res://assets/audio"):
 		if not file_name.ends_with(".import"):
 			production_audio.append(file_name)
 	production_audio.sort()
-	check(production_audio == ["node.wav", "pickup.wav", "spit.wav"], "N2 只导入已选音效")
+	check(production_audio == ["hurt.wav", "interact.wav", "node.wav", "pickup.wav", "prison.wav", "spit.wav"], "N2/N3 只导入已选音效")
 
 
 func _test_body_chain() -> void:
@@ -489,6 +497,242 @@ func _test_n2_input_dispatch() -> void:
 	arena.queue_free()
 	await process_frame
 	await process_frame
+
+
+func _test_n3_contract() -> void:
+	var contract_player := SnakePlayer.new()
+	check(contract_player.max_hearts == 3, "玩家最大生命 3 心")
+	contract_player.free()
+	check(is_equal_approx(EnemyActor.TYPES[&"slime"].hp, 14.0), "史莱姆 HP 14")
+	check(is_equal_approx(EnemyActor.TYPES[&"slime"].speed, 2.0), "史莱姆速度 2 格/秒")
+	check(int(EnemyActor.TYPES[&"slime"].drops) == 2, "史莱姆死亡掉 2 豆")
+	var mushroom: Dictionary = EnemyActor.TYPES[&"mushroom"]
+	check(is_equal_approx(mushroom.hp, 16.0) and is_equal_approx(mushroom.speed, 0.0), "蘑菇 HP/速度")
+	check(is_equal_approx(mushroom.cadence, 4.0) and is_equal_approx(mushroom.telegraph, 0.7), "蘑菇周期/预警")
+	check(is_equal_approx(mushroom.bullet_speed, 2.0), "蘑菇针刺弹速 2 格/秒")
+	check(is_equal_approx(PrisonController.PLAIN_BURST, 10.0) and is_equal_approx(PrisonController.PLAIN_DPS, 10.0), "普通监狱 10 burst/10 DPS")
+	check(is_equal_approx(PrisonController.NODE_BURST, 15.0) and is_equal_approx(PrisonController.NODE_DPS, 30.0), "节点监狱 15 burst/30 DPS")
+	check(is_equal_approx(NpcActor.ENTER_RADIUS, 0.85 * NpcActor.TILE_SIZE) and is_equal_approx(NpcActor.RESET_RADIUS, 1.25 * NpcActor.TILE_SIZE), "NPC 接触迟滞半径")
+
+
+func _test_n3_real_paths() -> void:
+	var arena: Node = load("res://game/test_arena.tscn").instantiate()
+	root.add_child(arena)
+	arena.get_node("InteractAudio").stream = null
+	arena.get_node("PrisonAudio").stream = null
+	await physics_frame
+	var player: SnakePlayer = arena.get_node("SnakePlayer")
+	player.play_sfx = false
+	player.set_physics_process(false)
+	arena.set_process(false)
+	player.reset_at(Vector2(300, 240), Vector2.RIGHT)
+	player.hearts = player.max_hearts
+	player.invulnerability_left = 0.0
+	check(player.take_damage(1, &"n3_test") and player.hearts == 2, "头部受伤扣 1 心并保留 3 心上限")
+	check(is_equal_approx(player.invulnerability_left, 1.0), "受伤启动 1 秒无敌")
+	check(not player.take_damage(1, &"n3_test") and player.hearts == 2, "无敌窗内不重复扣血")
+	player.invulnerability_left = 0.0
+	check(player.heal(1) == 1 and player.hearts == 3, "治疗回复 1 心")
+	check(player.heal(1) == 0 and player.hearts == 3, "治疗不超过最大生命")
+
+	var slime: EnemyActor = arena.get_node("Slime")
+	slime.global_position = Vector2(100, 360)
+	var chase_start := slime.global_position.distance_to(player.global_position)
+	for index in range(30):
+		await physics_frame
+	check(slime.global_position.distance_to(player.global_position) < chase_start, "史莱姆真实物理帧追击玩家")
+	player.hearts = 3
+	player.invulnerability_left = 0.0
+	player.body_chain.reset(player.global_position, Vector2.RIGHT)
+	slime.global_position = Vector2(315, 240)
+	slime.velocity = Vector2.ZERO
+	for index in range(8):
+		await physics_frame
+		if player.hearts < 3:
+			break
+	check(player.hearts == 2 and slime.velocity.x > 0.0, "史莱姆接触头部造成伤害并反弹")
+	player.hearts = 3
+	player.invulnerability_left = 0.0
+	player.body_chain.segments.assign([
+		Vector2(300, 240), Vector2(276, 240), Vector2(252, 240), Vector2(228, 240), Vector2(204, 240),
+	])
+	slime.global_position = Vector2(180, 240)
+	slime.velocity = Vector2.ZERO
+	for index in range(60):
+		await physics_frame
+	check(player.hearts == 3 and slime.global_position.x < 245.0, "史莱姆被身体阻挡且不伤害头部")
+	slime.set_physics_process(false)
+
+	var mushroom: EnemyActor = arena.get_node("Mushroom")
+	mushroom.enemy_kind = &"mushroom"
+	mushroom.global_position = Vector2(420, 240)
+	mushroom.shot_timer = 4.0
+	mushroom.warning_active = false
+	await process_frame
+	for index in range(200):
+		await physics_frame
+	check(mushroom.warning_active and _count_n3_enemy_projectiles(arena) == 0, "蘑菇 0.7 秒预警且不提前出弹")
+	for index in range(50):
+		await physics_frame
+		if _count_n3_enemy_projectiles(arena) > 0:
+			break
+	check(_count_n3_enemy_projectiles(arena) == 1, "蘑菇首个 4 秒周期只发一枚针刺弹")
+	var fired: EnemyProjectile = _first_n3_enemy_projectile(arena)
+	check(fired != null and is_equal_approx(fired.speed, 2.0 * EnemyProjectile.TILE_SIZE), "针刺弹真实速度 2 格/秒")
+	if fired:
+		check(fired.flight_direction.x < 0.0, "针刺弹真实瞄准玩家头部")
+
+	player.body_chain.segments.assign([
+		Vector2(300, 240), Vector2(276, 240), Vector2(252, 240), Vector2(228, 240), Vector2(204, 240),
+	])
+	player.hearts = 3
+	player.invulnerability_left = 0.0
+	var head_shot: EnemyProjectile = load("res://game/projectiles/enemy_projectile.tscn").instantiate()
+	arena.add_child(head_shot)
+	head_shot.launch(Vector2(360, 240), Vector2.LEFT, 2.0, player, mushroom)
+	for index in range(90):
+		await physics_frame
+		if player.hearts < 3:
+			break
+	check(player.hearts == 2 and not is_instance_valid(head_shot), "敌弹真实命中头部扣 1 心")
+	player.hearts = 3
+	player.invulnerability_left = 0.0
+	var body_shot: EnemyProjectile = load("res://game/projectiles/enemy_projectile.tscn").instantiate()
+	arena.add_child(body_shot)
+	body_shot.launch(Vector2(180, 240), Vector2.RIGHT, 2.0, player, mushroom)
+	for index in range(90):
+		await physics_frame
+		if body_shot.reflected_by_body:
+			break
+	check(body_shot.reflected_by_body and player.hearts == 3, "敌弹真实撞身体反射且不伤头")
+
+	var enemy_target: EnemyActor = slime
+	enemy_target.set_physics_process(false)
+	enemy_target.global_position = Vector2(420, 300)
+	var bean: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
+	arena.add_child(bean)
+	bean.launch({"id": &"bean", "damage": 4, "length": 1, "weight": 0}, Vector2(380, 300), Vector2.RIGHT, player)
+	for index in range(90):
+		await physics_frame
+		if enemy_target.hp < enemy_target.max_hp:
+			break
+	check(is_equal_approx(enemy_target.hp, 10.0) and bean.has_bounced, "豆通过 EnemyHurtbox Area2D 命中敌人")
+
+	var npc: NpcActor = arena.get_node("Keti")
+	npc.global_position = Vector2(420, 180)
+	npc.damageable = true
+	npc.hp = 10.0
+	var potion: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
+	arena.add_child(potion)
+	potion.launch({"id": &"healing_potion", "healing": 1, "length": 1, "weight": 1}, Vector2(380, 180), Vector2.RIGHT, player)
+	for index in range(90):
+		await physics_frame
+		if npc.hp > 10.0:
+			break
+	check(is_equal_approx(npc.hp, 11.0) and potion.is_queued_for_deletion(), "药水通过 NPC Area2D 命中并治疗")
+
+	player.direction = Vector2.RIGHT
+	player.queue_direction(Vector2.UP)
+	player.global_position = npc.global_position
+	await physics_frame
+	await physics_frame
+	check(npc.get_overlapping_bodies().has(player) and npc.interaction_count == 1, "NPC Area2D 接触只请求一次互动")
+	for index in range(5):
+		await physics_frame
+	check(npc.interaction_count == 1, "NPC 停留重叠不重复互动")
+	npc.finish_interaction()
+	check(player.direction.is_equal_approx(Vector2.RIGHT) and player.direction_queue.is_empty(), "NPC 互动结束恢复原方向")
+	player.global_position = npc.global_position + Vector2(32, 0)
+	await physics_frame
+	player.global_position = npc.global_position
+	await physics_frame
+	check(npc.interaction_count == 2, "NPC 超过 1.25 格后重入再次互动")
+
+	var enemy_for_prison: EnemyActor = slime
+	enemy_for_prison.set_physics_process(false)
+	enemy_for_prison.max_hp = 1000.0
+	enemy_for_prison.hp = 1000.0
+	var bounds := Rect2i(0, 0, 8, 8)
+	var blocked := _n3_prison_ring(false)
+	enemy_for_prison.global_position = Vector2(3.5, 3.5) * PrisonController.TILE_SIZE
+	var plain_prison := PrisonController.new()
+	root.add_child(plain_prison)
+	plain_prison.step(0.0, bounds, blocked, [enemy_for_prison], [])
+	check(is_equal_approx(enemy_for_prison.hp, 990.0), "普通监狱进入瞬时扣 10")
+	plain_prison.step(0.5, bounds, blocked, [enemy_for_prison], [])
+	check(is_equal_approx(enemy_for_prison.hp, 985.0), "普通监狱持续伤害 10/秒")
+	enemy_for_prison.global_position = Vector2(7.5, 3.5) * PrisonController.TILE_SIZE
+	plain_prison.step(0.1, bounds, blocked, [enemy_for_prison], [])
+	check(is_equal_approx(enemy_for_prison.hp, 985.0), "普通监狱离开后停止伤害")
+	enemy_for_prison.global_position = Vector2(3.5, 3.5) * PrisonController.TILE_SIZE
+	plain_prison.step(0.1, bounds, blocked, [enemy_for_prison], [])
+	check(is_equal_approx(enemy_for_prison.hp, 984.0), "普通监狱重入冷却内只有持续伤害")
+	enemy_for_prison.global_position = Vector2(7.5, 3.5) * PrisonController.TILE_SIZE
+	plain_prison.step(0.9, bounds, blocked, [enemy_for_prison], [])
+	enemy_for_prison.global_position = Vector2(3.5, 3.5) * PrisonController.TILE_SIZE
+	plain_prison.step(0.0, bounds, blocked, [enemy_for_prison], [])
+	check(is_equal_approx(enemy_for_prison.hp, 974.0), "普通监狱冷却结束重入再次 burst")
+
+	arena.set_process(false)
+	var node_ring: RingNode = load("res://game/nodes/ring_node.tscn").instantiate()
+	root.add_child(node_ring)
+	node_ring.setup(Vector2i(3, 2), Vector2(3.5, 2.5) * PrisonController.TILE_SIZE)
+	var node_ring_2: RingNode = load("res://game/nodes/ring_node.tscn").instantiate()
+	root.add_child(node_ring_2)
+	node_ring_2.setup(Vector2i(4, 2), Vector2(3.5, 2.5) * PrisonController.TILE_SIZE)
+	var node_prison := PrisonController.new()
+	root.add_child(node_prison)
+	enemy_for_prison.hp = 1000.0
+	enemy_for_prison.global_position = Vector2(3.5, 3.5) * PrisonController.TILE_SIZE
+	var node_blocked := _n3_prison_ring(true)
+	node_prison.step(0.0, bounds, node_blocked, [enemy_for_prison], [node_ring, node_ring_2])
+	check(is_equal_approx(enemy_for_prison.hp, 985.0), "节点监狱进入瞬时扣 15")
+	node_prison.step(0.5, bounds, node_blocked, [enemy_for_prison], [node_ring, node_ring_2])
+	check(is_equal_approx(enemy_for_prison.hp, 970.0), "节点监狱持续伤害 30/秒")
+	node_prison.step(0.5, bounds, node_blocked, [enemy_for_prison], [node_ring, node_ring_2])
+	check(node_ring.hp == 1 and node_ring_2.hp == 2, "节点每秒最多咬一个")
+	node_prison.step(1.0, bounds, node_blocked, [enemy_for_prison], [node_ring, node_ring_2])
+	check(node_ring.finished and node_ring_2.hp == 2, "节点每秒最多咬一个")
+
+	for child in arena.get_children():
+		if child is AudioStreamPlayer:
+			child.stop()
+			child.stream = null
+	arena.queue_free()
+	plain_prison.queue_free()
+	node_prison.queue_free()
+	node_ring.queue_free()
+	node_ring_2.queue_free()
+	await process_frame
+	await process_frame
+
+
+func _n3_prison_ring(node_cap: bool) -> Dictionary:
+	var blocked: Dictionary = {}
+	for x in range(2, 6):
+		blocked[Vector2i(x, 2)] = &"body"
+		blocked[Vector2i(x, 5)] = &"body"
+	for y in range(2, 6):
+		blocked[Vector2i(2, y)] = &"body"
+		blocked[Vector2i(5, y)] = &"body"
+	if node_cap:
+		blocked[Vector2i(3, 2)] = &"node"
+	return blocked
+
+
+func _count_n3_enemy_projectiles(arena: Node) -> int:
+	var count := 0
+	for child in arena.get_children():
+		if child is EnemyProjectile:
+			count += 1
+	return count
+
+
+func _first_n3_enemy_projectile(arena: Node) -> EnemyProjectile:
+	for child in arena.get_children():
+		if child is EnemyProjectile:
+			return child
+	return null
 
 
 func _has_key(action: StringName, physical_keycode: Key) -> bool:

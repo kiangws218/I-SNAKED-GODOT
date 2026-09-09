@@ -1,6 +1,6 @@
 # I SNAKED-GODOT 内容与素材追踪基线
 
-状态：N2 审阅版
+状态：N3 审阅版
 
 基线日期：2026-09-07
 
@@ -62,12 +62,14 @@
 
 ### N3：敌人、NPC 与监狱
 
-- 史莱姆、蘑菇远程敌人、哥布林弓箭手的通用行为骨架；只实例化剧情需要者。
-- 蘑菇显示名和资源 ID 为 `enemy.mushroom`；攻击参数沿用针刺花，不把美术名写进战斗逻辑。
-- NPC 接触与头部伤害分流；进入/停留/离开/重入的交互去重。
-- 地图 NPC、胃袋、飞行投射物、骑乘者四种表示互斥。
-- 普通/节点监狱的瞬时与持续伤害、多监狱、断口、边界、节点被咬毁与重入。
-- 资源：蘑菇四帧待机、史莱姆、NPC 代码绘制、敌方弹体；`sfx.hurt`、`sfx.prison`。
+- `done`：追击史莱姆，HP 14、2 格/秒、接触头部伤害并反弹、死亡掉 2 豆。
+- `done`：蘑菇远程敌人，HP 16、固定不移动、4 秒周期、0.7 秒预警、2 格/秒针刺；显示资源为 `enemy.mushroom`，行为保持针刺花基线。
+- `done`：玩家三心、1 秒受伤无敌；敌方针刺命中头部，身体负责阻挡史莱姆和反射针刺。
+- `done`：NPC 进入/停留/离开/重入迟滞去重，对话前方向显式快照并在结束后恢复；豆伤害与药水治疗走真实 Area2D 路径。
+- `done`：普通/节点监狱 burst、DPS、重入冷却、多个节点监狱衰减，以及每秒最多一次节点啃咬。
+- `done`：蘑菇四帧待机、史莱姆四帧待机、NPC/敌方弹体代码绘制；`sfx.hurt`、`sfx.prison`、接触提示所需 `sfx.interact`。
+- `deferred`：哥布林弓箭手仅在 N7 剧情洞窟需要，N3 不建立无实例使用者的通用骨架。
+- `deferred`：地图 NPC、胃袋、飞行投射物、骑乘者的唯一身份状态机随 N4 会话状态和 N7 角色流程实现。
 
 ### N4：地图、机关、会话与存档
 
@@ -128,7 +130,7 @@
 | `sfx.node` | `godot/assets/audio/node.wav` | N2 |
 | `sfx.hurt` | `godot/assets/audio/hurt.wav` | N3 |
 | `sfx.prison` | `godot/assets/audio/prison.wav` | N3 |
-| `sfx.interact` | `godot/assets/audio/interact.wav` | N5 |
+| `sfx.interact` | `godot/assets/audio/interact.wav` | N3 |
 
 ### 已有候选，阶段内选择最小集合
 
@@ -160,3 +162,15 @@
 | `sfx.node` | `assets/audio/node.wav` | 节点放置/回收 | done |
 | `item.bean` | 代码绘制的 8px 圆形 | 飞行/落地豆 | deferred：候选豆图是混合食物图集，N8 统一像素风时替换，当前不导入整张候选库。 |
 | `item.iron_sword` / `item.healing_potion` | 代码颜色区分 | N2 特殊投射物 | deferred：N8 统一物品像素表现。 |
+
+### N3 实际选定
+
+| 稳定 ID | 新项目文件 | 使用位置 | 状态 |
+| --- | --- | --- | --- |
+| `enemy.slime` | `assets/enemies/slime/idle.png` | TestArena 近战敌人 | done |
+| `enemy.mushroom` | `assets/enemies/mushroom/idle.png` | TestArena 针刺远程敌人 | done |
+| `npc.keti.prototype` | 代码绘制 | TestArena 接触互动 | deferred：N6 接入正式地图造型。 |
+| `projectile.enemy_seed` | 代码绘制 | 蘑菇针刺弹 | deferred：N8 统一像素表现。 |
+| `sfx.hurt` | `assets/audio/hurt.wav` | 玩家受伤 | done |
+| `sfx.prison` | `assets/audio/prison.wav` | 监狱 burst | done |
+| `sfx.interact` | `assets/audio/interact.wav` | NPC 接触提示 | done |

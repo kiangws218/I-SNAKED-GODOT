@@ -29,6 +29,8 @@ var source: SnakePlayer
 var actor_released := false
 var actor_interaction_emitted := false
 var flight_distance := 0.0
+var _last_target_id := 0
+var _target_hit_cooldown := 0.0
 
 
 func launch(data: Dictionary, origin: Vector2, direction: Vector2, owner_player: SnakePlayer) -> void:
@@ -48,6 +50,7 @@ func launch(data: Dictionary, origin: Vector2, direction: Vector2, owner_player:
 
 func _physics_process(delta: float) -> void:
 	age += delta
+	_target_hit_cooldown = maxf(0.0, _target_hit_cooldown - delta)
 	if age >= LIFETIME and not is_landed:
 		land()
 	if not is_landed:
@@ -69,6 +72,10 @@ func _physics_process(delta: float) -> void:
 				if source.try_collect_payload(payload):
 					collected.emit(payload.duplicate(true))
 					queue_free()
+		elif payload.id == &"healing_potion" and age >= 0.22 and is_instance_valid(source):
+			if global_position.distance_to(source.global_position) < 0.7 * TILE_SIZE:
+				source.heal(int(payload.get("healing", 1)))
+				queue_free()
 	if is_landed and is_instance_valid(source) and age >= 0.25:
 		if global_position.distance_to(source.global_position) <= PICKUP_RADIUS:
 			if not bool(payload.get("actor", false)) and source.try_collect_payload(payload):
@@ -119,6 +126,31 @@ func _source_body_collision_normal() -> Vector2:
 		if delta.length() < 16.0:
 			return delta.normalized() if not delta.is_zero_approx() else -flight_direction
 	return Vector2.ZERO
+
+
+func hit_target(target: Node2D) -> bool:
+	if is_landed or not is_instance_valid(target):
+		return false
+	var target_id := target.get_instance_id()
+	if target_id == _last_target_id and _target_hit_cooldown > 0.0:
+		return false
+	_last_target_id = target_id
+	_target_hit_cooldown = 0.2
+	if payload.id == &"healing_potion":
+		if target.has_method("heal"):
+			target.heal(float(payload.get("healing", 1)))
+		queue_free()
+		return true
+	var damage := float(payload.get("damage", 4))
+	if target.has_method("take_damage"):
+		target.take_damage(damage, &"projectile")
+	if bool(payload.get("actor", false)):
+		var metadata: Dictionary = payload.get("metadata", {}).duplicate(true)
+		metadata["hp"] = maxf(0.0, float(metadata.get("hp", 1.0)) - damage)
+		payload["metadata"] = metadata
+	var normal := target.global_position.direction_to(global_position)
+	_on_collision(normal if not normal.is_zero_approx() else -flight_direction)
+	return true
 
 
 func interact() -> bool:

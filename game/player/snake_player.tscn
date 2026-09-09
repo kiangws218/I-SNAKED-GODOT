@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://game/player/snake_player.gd" id="1_player"]
 [ext_resource type="Script" path="res://game/player/body_chain.gd" id="2_chain"]
 [ext_resource type="AudioStream" path="res://assets/audio/spit.wav" id="3_spit"]
 [ext_resource type="AudioStream" path="res://assets/audio/pickup.wav" id="4_pickup"]
 [ext_resource type="AudioStream" path="res://assets/audio/node.wav" id="5_node"]
+[ext_resource type="AudioStream" path="res://assets/audio/hurt.wav" id="6_hurt"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_head"]
 radius = 8.0
@@ -30,3 +31,6 @@ stream = ExtResource("4_pickup")
 
 [node name="NodeAudio" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("5_node")
+
+[node name="HurtAudio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_hurt")

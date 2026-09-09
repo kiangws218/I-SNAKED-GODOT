@@ -4,6 +4,7 @@ extends CharacterBody2D
 signal died(reason: String)
 signal danger_changed(active: bool, seconds_left: float)
 signal resources_changed
+signal health_changed(current: int, maximum: int)
 signal actor_released(payload: Dictionary, at_position: Vector2)
 signal actor_interacted(payload: Dictionary)
 
@@ -30,6 +31,7 @@ const RING_NODE_SCENE := preload("res://game/nodes/ring_node.tscn")
 @onready var spit_audio: AudioStreamPlayer = $SpitAudio
 @onready var pickup_audio: AudioStreamPlayer = $PickupAudio
 @onready var node_audio: AudioStreamPlayer = $NodeAudio
+@onready var hurt_audio: AudioStreamPlayer = $HurtAudio
 
 var direction := Vector2.RIGHT
 var direction_queue: Array[Vector2] = []
@@ -47,6 +49,9 @@ var placed_nodes: Array[RingNode] = []
 var _last_sampled_input := Vector2.ZERO
 var _special_spit_latched := false
 var _spit_smoothing_active := false
+var max_hearts := 3
+var hearts := 3
+var invulnerability_left := 0.0
 
 
 func _ready() -> void:
@@ -54,6 +59,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	invulnerability_left = maxf(0.0, invulnerability_left - delta)
 	shot_cooldown_left = maxf(0.0, shot_cooldown_left - delta)
 	cut_cooldown_left = maxf(0.0, cut_cooldown_left - delta)
 	if is_dead:
@@ -124,10 +130,13 @@ func reset_at(spawn_position: Vector2, spawn_direction := Vector2.RIGHT) -> void
 	_special_spit_latched = false
 	_spit_smoothing_active = false
 	_last_sampled_input = Vector2.ZERO
+	hearts = max_hearts
+	invulnerability_left = 0.0
 	if is_node_ready():
 		body_chain.reset(global_position, direction)
 	queue_redraw()
 	resources_changed.emit()
+	health_changed.emit(hearts, max_hearts)
 
 
 func set_length(value: int) -> void:
@@ -329,6 +338,40 @@ func try_collect_payload(payload: Dictionary) -> bool:
 	return true
 
 
+func take_damage(amount: int, reason: StringName = &"damage") -> bool:
+	if amount <= 0 or invulnerability_left > 0.0 or is_dead:
+		return false
+	hearts = maxi(0, hearts - amount)
+	invulnerability_left = 1.0
+	if play_sfx:
+		hurt_audio.play()
+	health_changed.emit(hearts, max_hearts)
+	queue_redraw()
+	if hearts == 0:
+		_die(String(reason))
+	return true
+
+
+func heal(amount: int) -> int:
+	if amount <= 0 or is_dead:
+		return 0
+	var before := hearts
+	hearts = mini(max_hearts, hearts + amount)
+	if hearts != before:
+		health_changed.emit(hearts, max_hearts)
+		queue_redraw()
+	return hearts - before
+
+
+func restore_direction(saved_direction: Vector2) -> void:
+	if saved_direction.is_zero_approx():
+		return
+	direction = saved_direction.normalized()
+	direction_queue.clear()
+	_last_sampled_input = Vector2.ZERO
+	queue_redraw()
+
+
 func _on_actor_released(payload: Dictionary, at_position: Vector2) -> void:
 	actor_released.emit(payload, at_position)
 
@@ -386,7 +429,7 @@ func _die(kind: String) -> void:
 
 
 func _draw() -> void:
-	var head_color := Color("ff5d5d") if is_dead or not danger_kind.is_empty() else Color("63c74d")
+	var head_color := Color("ff5d5d") if is_dead or not danger_kind.is_empty() or invulnerability_left > 0.0 else Color("63c74d")
 	draw_circle(Vector2.ZERO, 10.0, head_color)
 	draw_circle(direction * 4.5 + direction.rotated(-PI * 0.5) * 3.0, 1.7, Color.WHITE)
 	draw_circle(direction * 4.5 + direction.rotated(PI * 0.5) * 3.0, 1.7, Color.WHITE)

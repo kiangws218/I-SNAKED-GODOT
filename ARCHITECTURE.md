@@ -1,6 +1,6 @@
 # I SNAKED-GODOT 最小架构
 
-状态：N2 审阅版
+状态：N3 审阅版
 
 引擎：Godot 4.7.2
 
@@ -102,6 +102,8 @@ SessionState
 - NPC 自动接触交互的去重和对话前方向恢复。
 
 出口：历史碰撞、重叠和重复互动问题进入回归测试。
+
+实现边界：`EnemyActor` 用一个类型表承载史莱姆与蘑菇的少量静态差异；`EnemyProjectile` 独立处理针刺的墙体命中、身体反射与头部伤害；`NpcActor` 只负责接触迟滞和互动方向快照；`PrisonController` 在现有 `EnclosureDetector` 结果上维护 burst、DPS、重入冷却和节点啃咬状态。没有加入行为树、通用属性组件、全局战斗管理器或 N4 机关接口。
 
 ### N4：地图、机关、会话与存档
 
