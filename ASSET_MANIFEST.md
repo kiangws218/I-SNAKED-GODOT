@@ -2,13 +2,14 @@
 
 更新时间：2026-09-09（N7A 交接）
 
-本清单回答三件事：仓库里已经选用了什么、当前哪些视觉仍是占位、后续剧情还需要补什么。它是制作状态清单，不是素材候选库；本个人学习项目不维护素材许可证清单，也不设置发布阻断规则。
+本清单回答三件事：仓库里已经选用了什么、当前哪些视觉仍是占位、后续剧情还需要补什么。它是制作状态清单，不是素材候选库。第三方占位素材保留最小来源与许可证记录，方便后续安全替换。
 
 ## 1. 同步原则
 
 - 只提交游戏当前实际引用、制作人已确认采用，或交接所必需的源文件。
 - `.godot/imported/` 是每台电脑由 Godot 重建的缓存，不提交；`assets/` 下的源文件、`.import` 设置和 `.tres` 资源提交。
 - 未采用的旧项目候选素材包不复制。需要替换占位时，只挑选最终会进入场景的最小集合。
+- Kenney 完整 2D CC0 素材库保存在仓库外的 `D:\Kenney_CC0_2D_Library`；仓库内只保留实际引用的语义化副本。
 - “代码绘制占位”没有遗漏图片：它的可见内容就在对应 `.gd` / `.tscn` 中，这些文件随仓库同步。
 
 ## 2. 已选用并随仓库同步
@@ -27,6 +28,9 @@
 | `sfx.hurt` | `assets/audio/hurt.wav` | 玩家受伤 | 已选用 |
 | `sfx.prison` | `assets/audio/prison.wav` | 监狱成立反馈 | 已选用；N8 可拆分成立/解除专用声 |
 | `sfx.interact` | `assets/audio/interact.wav` | NPC 接触提示和对话 UI | 已选用 |
+| `placeholder.npc.*` | `assets/placeholders/kenney/tiny_dungeon/characters/`（16×16） | 六名 NPC 地图辨识占位、角色载荷占位 | Kenney Tiny Dungeon CC0；N8 由制作人正式素材替换 |
+| `placeholder.item.iron_sword` | `assets/placeholders/kenney/tiny_dungeon/items/iron_sword.png`（16×16） | 铁剑拾取物与投射物 | Kenney Tiny Dungeon CC0；N8 替换 |
+| `placeholder.item.healing_potion` | `assets/placeholders/kenney/tiny_dungeon/items/healing_potion.png`（16×16） | 药水拾取物与投射物 | Kenney Tiny Dungeon CC0；N8 替换 |
 
 以上源文件及其 Godot `.import` 设置均受 Git 跟踪。导出模板和 Godot 导入缓存不是项目资产，不上传。
 
@@ -35,9 +39,9 @@
 | 稳定 ID / 对象 | 当前占位所有者 | 当前用途 | 替换阶段 |
 | --- | --- | --- | --- |
 | 玩家蛇头与身体 | `game/player/snake_player.gd`、`game/player/body_chain.gd` | 圆形像素稳定绘制、受伤闪烁与身体链 | N8 统一美术时评估，玩法不依赖外部贴图 |
-| 豆、铁剑、药水和角色投射物 | `game/projectiles/bean_projectile.gd` | 颜色/形状区分载荷 | 第一章实体接入时先保证辨识；N8 统一像素素材 |
+| 豆、铁剑、药水和角色投射物 | `game/projectiles/bean_projectile.gd` | 豆继续代码绘制；其余使用 Kenney 临时贴图区分载荷 | N8 统一像素素材 |
 | 蘑菇针刺弹 / 哥布林箭矢基础形态 | `game/projectiles/enemy_projectile.gd` | 当前敌方弹体绘制 | 哥布林实现时区分箭矢；N8 统一表现 |
-| 可蒂、阿杰、丽丝、阿见、巴克、米罗 | `game/actors/npc_actor.gd` | 通用人物轮廓；N7A 已在地图预摆位置 | N7B–N7D 接入角色状态，N8 换正式造型与头像 |
+| 可蒂、阿杰、丽丝、阿见、巴克、米罗 | `game/actors/npc_actor.gd` | Kenney Tiny Dungeon 六个不同人物图块；N7A 已在地图预摆位置 | N7B–N7D 接入角色状态，N8 换正式造型与头像 |
 | 教学三豆门 | `game/maps/fragile_gate.gd` | 门体、命中进度 | N8 统一地图道具风格 |
 | 森林桥桩与充能环 | `game/maps/bridge_pillar_visual.gd` | 充能进度、完成反馈与动画接点 | N7 吊桥落下接入，N8 定稿色板 |
 | 铁剑、汤、药水、洞口等地图标识 | `game/maps/map_prop_visual.gd` | 编辑器与运行时临时辨识 | 对应 N7 剧情实体接入时替换 |

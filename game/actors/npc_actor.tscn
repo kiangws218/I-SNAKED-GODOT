@@ -13,3 +13,8 @@ script = ExtResource("1_npc")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("NpcShape")
+
+[node name="PlaceholderSprite" type="Sprite2D" parent="."]
+z_index = 1
+position = Vector2(0, -4)
+scale = Vector2(1.5, 1.5)

@@ -8,6 +8,14 @@ signal defeated(npc: NpcActor)
 const TILE_SIZE := 24.0
 const ENTER_RADIUS := 0.85 * TILE_SIZE
 const RESET_RADIUS := 1.25 * TILE_SIZE
+const PLACEHOLDER_TEXTURES := {
+	&"keti": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/keti.png"),
+	&"ajie": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/ajie.png"),
+	&"lisi": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/lisi.png"),
+	&"ajian": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/ajian.png"),
+	&"buck": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/buck.png"),
+	&"miro": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/miro.png"),
+}
 
 @export var npc_id: StringName = &"keti"
 @export var max_hp := 14.0
@@ -20,10 +28,12 @@ var interaction_count := 0
 var interaction_open := false
 var _contact_armed := true
 var _saved_direction := Vector2.RIGHT
+@onready var placeholder_sprite: Sprite2D = $PlaceholderSprite
 
 
 func _ready() -> void:
 	hp = max_hp
+	placeholder_sprite.texture = PLACEHOLDER_TEXTURES.get(npc_id) as Texture2D
 	body_entered.connect(_on_body_entered)
 	add_to_group(&"npc")
 	add_to_group(&"prison_target")
@@ -105,8 +115,9 @@ func _on_body_entered(body: Node2D) -> void:
 
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 10.0, Color("f4f1de"))
-	draw_circle(Vector2(0, -7), 6.0, Color("f2cc8f"))
-	draw_line(Vector2(0, 3), Vector2(0, 13), Color("81b29a"), 5.0)
+	if placeholder_sprite.texture == null:
+		draw_circle(Vector2.ZERO, 10.0, Color("f4f1de"))
+		draw_circle(Vector2(0, -7), 6.0, Color("f2cc8f"))
+		draw_line(Vector2(0, 3), Vector2(0, 13), Color("81b29a"), 5.0)
 	if interaction_open:
 		draw_arc(Vector2.ZERO, 16.0, 0.0, TAU, 20, Color("69d2e7"), 2.0)

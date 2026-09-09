@@ -3,6 +3,12 @@ extends Area2D
 
 signal collected(pickup: StoryPickup)
 
+const PLACEHOLDER_TEXTURES := {
+	&"iron_sword": preload("res://assets/placeholders/kenney/tiny_dungeon/items/iron_sword.png"),
+	&"healing_potion": preload("res://assets/placeholders/kenney/tiny_dungeon/items/healing_potion.png"),
+	&"ring": preload("res://assets/nodes/ring.png"),
+}
+
 @export var item_id: StringName
 @export var pickup_id: StringName
 @export var display_name := "剧情物品"
@@ -36,5 +42,9 @@ func _on_body_entered(body: Node2D) -> void:
 		collected.emit(self)
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 9.0, Color("f6bd60"))
+	var texture := PLACEHOLDER_TEXTURES.get(item_id) as Texture2D
+	if texture:
+		draw_texture_rect(texture, Rect2(-12, -12, 24, 24), false)
+	else:
+		draw_circle(Vector2.ZERO, 9.0, Color("f6bd60"))
 	draw_arc(Vector2.ZERO, 13.0, 0.0, TAU, 20, Color("fff1b8"), 2.0)

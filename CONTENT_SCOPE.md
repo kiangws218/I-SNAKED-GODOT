@@ -173,7 +173,7 @@
 | `sfx.pickup` | `assets/audio/pickup.wav` | 豆/物品回收 | done |
 | `sfx.node` | `assets/audio/node.wav` | 节点放置/回收 | done |
 | `item.bean` | 代码绘制的 8px 圆形 | 飞行/落地豆 | deferred：候选豆图是混合食物图集，N8 统一像素风时替换，当前不导入整张候选库。 |
-| `item.iron_sword` / `item.healing_potion` | 代码颜色区分 | N2 特殊投射物 | deferred：N8 统一物品像素表现。 |
+| `item.iron_sword` / `item.healing_potion` | `assets/placeholders/kenney/tiny_dungeon/items/` | N2 特殊投射物与 N7A 拾取点 | temporary：Kenney CC0 辨识占位，N8 由正式物品素材替换。 |
 
 ### N3 实际选定
 
@@ -181,7 +181,7 @@
 | --- | --- | --- | --- |
 | `enemy.slime` | `assets/enemies/slime/idle.png` | TestArena 近战敌人 | done |
 | `enemy.mushroom` | `assets/enemies/mushroom/idle.png` | TestArena 针刺远程敌人 | done |
-| `npc.keti.prototype` | 代码绘制 | TestArena 接触互动 | deferred：N6 接入正式地图造型。 |
+| `npc.keti.prototype` | `assets/placeholders/kenney/tiny_dungeon/characters/keti.png` | TestArena 与荒野接触互动 | temporary：Kenney CC0 辨识占位，N8 接入正式地图造型。 |
 | `projectile.enemy_seed` | 代码绘制 | 蘑菇针刺弹 | deferred：N8 统一像素表现。 |
 | `sfx.hurt` | `assets/audio/hurt.wav` | 玩家受伤 | done |
 | `sfx.prison` | `assets/audio/prison.wav` | 监狱 burst | done |
@@ -194,4 +194,5 @@
 | `tiles.story_native` | `assets/tiles/story_tiles.svg` / `story_tileset.tres` | 四张剧情地图地表、水面、洞窟、山体、营地与碰撞 | done：项目原生 24px 小图集，视觉与碰撞共用同一 TileSet source |
 | `prop.fragile_gate` | 代码绘制 | 教学三豆门及进度 | done |
 | `prop.bridge_pillar` | 代码绘制 | 森林桥柱及 3 秒进度 | done |
-| `prop.story_items` | 代码绘制 | 铁剑、汤、药水、环形节点位置标记 | deferred：N7 接入正式拾取与统一像素素材 |
+| `prop.story_items` | Kenney 铁剑/药水临时贴图；汤继续代码绘制；环形节点使用现有贴图 | 铁剑、汤、药水、环形节点位置标记 | temporary：N7 接入剧情实体，N8 统一像素素材 |
+| `npc.chapter1.placeholders` | `assets/placeholders/kenney/tiny_dungeon/characters/` | 可蒂、阿杰、丽丝、阿见、巴克、米罗的 N7A 地图辨识 | temporary：只提供静态身份区分，不代表正式角色状态或动画 |

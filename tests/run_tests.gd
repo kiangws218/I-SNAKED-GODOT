@@ -1048,6 +1048,7 @@ func _test_n7a_authoring_contract() -> void:
 	world.setup(&"wilderness", {})
 	world.player.set_physics_process(false)
 	var keti: NpcActor = world.get_node("MapLayout/Actors/Keti")
+	check(keti.placeholder_sprite.texture != null, "Kenney 可蒂占位贴图已接入 N7A NPC")
 	world.camera.focus_seconds = 0.0
 	world.camera.restore_seconds = 0.0
 	world._on_npc_interaction_requested(keti, world.player)
@@ -1065,6 +1066,11 @@ func _test_n7a_authoring_contract() -> void:
 	var ajie: NpcActor = forest_world.get_node("MapLayout/Actors/Ajie")
 	check(not ajie.visible and ajie.player == null, "N7A 未激活 NPC 保留编辑器摆位但不参与运行")
 	check(forest_world.activate_npc(&"ajie") == ajie and ajie.visible and ajie.player == forest_world.player, "N7A 剧情可按 npc_id 激活预摆角色")
+	for npc_name in ["Ajie", "Lisi", "Buck", "Miro"]:
+		var npc: NpcActor = forest_world.get_node("MapLayout/Actors/%s" % npc_name)
+		check(npc.placeholder_sprite.texture != null, "Kenney 森林 NPC 占位贴图已接入：%s" % npc_name)
+	check(StoryPickup.PLACEHOLDER_TEXTURES.get(&"iron_sword") != null, "Kenney 铁剑拾取占位贴图可加载")
+	check(BeanProjectile.PLACEHOLDER_TEXTURES.get(&"healing_potion") != null, "Kenney 药水投射物占位贴图可加载")
 	forest_world.queue_free()
 	await process_frame
 

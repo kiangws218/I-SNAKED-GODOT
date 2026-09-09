@@ -18,6 +18,17 @@ const BOUNCE_MIN_CLOSE_ANGLE := 0.55
 const CLOSE_BOUNCE_DISTANCE := 6.0 * TILE_SIZE
 const LIFETIME := 6.0
 const PICKUP_RADIUS := 0.6 * TILE_SIZE
+const PLACEHOLDER_TEXTURES := {
+	&"iron_sword": preload("res://assets/placeholders/kenney/tiny_dungeon/items/iron_sword.png"),
+	&"healing_potion": preload("res://assets/placeholders/kenney/tiny_dungeon/items/healing_potion.png"),
+	&"keti": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/keti.png"),
+	&"keti_corpse": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/keti.png"),
+	&"ajie": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/ajie.png"),
+	&"lisi": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/lisi.png"),
+	&"ajian": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/ajian.png"),
+	&"bake": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/buck.png"),
+	&"miluo": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/miro.png"),
+}
 
 var payload := {"id": &"bean", "damage": 4}
 var flight_direction := Vector2.RIGHT
@@ -168,6 +179,12 @@ func interact() -> bool:
 
 func _draw() -> void:
 	var item_id: StringName = payload.get("id", &"bean")
+	var texture := PLACEHOLDER_TEXTURES.get(item_id) as Texture2D
+	if texture:
+		draw_texture_rect(texture, Rect2(-12, -12, 24, 24), false)
+		if has_bounced and not is_landed:
+			draw_arc(Vector2.ZERO, 13.0, 0.0, TAU, 12, Color.WHITE, 1.0)
+		return
 	var color := Color("f3d55b")
 	if item_id == &"iron_sword":
 		color = Color("d9e2e8")

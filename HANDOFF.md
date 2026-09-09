@@ -6,11 +6,13 @@
 
 - 主分支：`main`
 - 远端：`https://github.com/kiangws218/I-SNAKED-GODOT`
-- 当前阶段：N7A 可视化关卡编排基础已完成，并通过 N1–N7A 自动门禁，等待制作人审阅。
+- 当前阶段：N7A 可视化关卡编排基础已完成，等待制作人审阅；制作人另行授权的 Kenney CC0 占位素材补充已完成。
 - 停止线：制作人明确确认前不得进入 N7B 第一章剧情实现。
 - 当前可玩与验证证据：序章见 `N5_N6_REVIEW.md`，N7A 见 `N7A_REVIEW.md`。
 - 下一阶段范围：见 `ARCHITECTURE.md` 的 N7；当前不得实现森林第一章剧情命令。
 - 同步状态：制作人已授权同步 N7A、资产源文件与资产交接清单；交接者以 `origin/main` 最新提交为准。
+- 素材状态：本机 `D:\Kenney_CC0_2D_Library` 保存 Kenney 官方 2D 分类的 145 个完整包、CSV/JSON 索引与同步脚本；仓库只保存当前实际引用的 Tiny Dungeon 最小副本，映射见 `assets/placeholders/kenney/README.md`。
+- 当前验证：Godot 4.7.2 资源导入和 TestArena 冒烟通过；Kenney 资源断言通过。完整 `tests/run_tests.gd` 仍有一项“洞窟取得的环形节点经 Session 换图保留到森林”失败，并已在未修改的 `e15320d` 独立基线副本复现，属于本次素材接入前已存在的 N7A 门禁缺陷。
 
 仓库中的 `origin/main` 最新提交是交接事实基线。不要依赖聊天记录中的旧 commit 号；接手时用 `git log -1 --oneline` 确认实际版本。
 
@@ -51,7 +53,7 @@
 
 ## 本机配置提示
 
-- 办公室电脑曾使用：`D:\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe`。
+- 当前电脑使用：`D:\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64_console.exe`。
 - 家庭电脑可把 Godot 4.7.2 控制台程序加入 `PATH`，或在命令中使用自己的绝对路径。
 - GDA 可用时所有命令传 `--json`；不可用时直接使用 Godot 4.7.2 headless 和 TestArena。
 - 导出模板到 N8 才是必需项，每台机器可独立安装，不提交到仓库。
