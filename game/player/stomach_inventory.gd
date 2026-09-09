@@ -10,6 +10,7 @@ const DEFINITIONS := {
 	&"ajie": {"length": 1, "weight": 3, "actor": true, "stackable": false},
 	&"lisi": {"length": 1, "weight": 3, "actor": true, "stackable": false},
 	&"ajian": {"length": 1, "weight": 3, "actor": true, "stackable": false},
+	&"keti": {"length": 2, "weight": 3, "actor": true, "stackable": false},
 	&"bake": {"length": 1, "weight": 3, "actor": true, "stackable": false},
 	&"miluo": {"length": 1, "weight": 3, "actor": true, "stackable": false},
 	&"character_bones": {"length": 1, "weight": 1, "damage": 2, "stackable": false},

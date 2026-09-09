@@ -41,7 +41,7 @@
 4. `SOURCE_BEHAVIOR_INVENTORY.md`、`WEB_FEEDBACK_LEDGER.md`、`WEB_REGRESSION_CHECKLIST.md`。
 5. 旧 GDD 与旧 Godot 仅作历史参考。
 
-旧 `IM-SNAKE/godot/dialogue/story.dialogue` 在 N5 前只是对白迁移参考；N5 导入并验收后，新项目自己的 `.dialogue` 才成为唯一可编辑对白正文源。
+N5 对比插件方案后采用项目原生 JSON 剧情图作为唯一正文与跳转源；它由网页版 `story-data.js` 机械转换并可重复生成。旧 `.dialogue` 仅作历史参考，不作为运行时依赖。
 
 ## 3. 范围
 

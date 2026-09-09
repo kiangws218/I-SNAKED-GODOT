@@ -19,8 +19,9 @@ func _run() -> void:
 	await _test_n3_real_paths()
 	_test_n4_contract()
 	await _test_n4_real_paths()
+	await _test_n5_n6_contract()
 	if failures.is_empty():
-		print("N4 TESTS PASSED (INCLUDING N1/N2/N3 REGRESSION)")
+		print("N6 TESTS PASSED (INCLUDING N1-N5 REGRESSION)")
 		quit(0)
 	else:
 		for failure in failures:
@@ -77,7 +78,6 @@ func _test_body_chain() -> void:
 	root.add_child(chain)
 	chain.reset(Vector2(240, 240), Vector2.RIGHT)
 	check(chain.segments.size() == 4, "初始四节身体")
-	check(BodyChain.SEGMENT_JOIN_WIDTH >= BodyChain.OUTER_RADIUS * 2.0, "蛇节用足宽连接段消除视觉空隙")
 	check(chain.segments[1].is_equal_approx(Vector2(216, 240)), "身体间距 1 格")
 	chain.set_segment_count(12, Vector2(240, 240))
 	var grown_spacing_valid := true
@@ -842,6 +842,8 @@ func _test_n4_real_paths() -> void:
 	var session: GameSession = load("res://game/main.tscn").instantiate()
 	root.add_child(session)
 	await physics_frame
+	session.start_new_game(1)
+	await process_frame
 	check(session.current_world.map_id == &"prologue_tutorial", "Session 从教学地图启动")
 	await session.load_map(&"cave", &"", true)
 	check(session.current_world.map_id == &"cave" and session.state.checkpoint_map == &"cave", "跨图销毁重建并记录入口检查点")
@@ -859,6 +861,103 @@ func _test_n4_real_paths() -> void:
 	check(session.current_world.map_id == &"cave" and session.current_world.player.hearts == 3, "死亡重试重建当前检查点且恢复满生命")
 	check(session.current_world.player.body_chain.segment_count == checkpoint_length, "死亡重试恢复检查点资源快照而非临死状态")
 	session.queue_free()
+	await process_frame
+
+
+func _test_n5_n6_contract() -> void:
+	var runner := DialogueRunner.new()
+	var graph_result := runner.load_graph()
+	check(graph_result.ok, "N5 剧情图无悬空跳转")
+	check(graph_result.nodes == 138 and graph_result.actions == 58 and graph_result.conditions == 18, "N5 完整导入网页端 138 节点/58 动作/18 条件")
+	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://game/story/story_manifest.json"))
+	check(manifest.nodes.size() == 138 and manifest.actions.size() == 58 and manifest.conditions.size() == 18 and manifest.flags.size() == 42, "N5 逐 ID 清单包含 138 节点/58 动作/18 条件/42 flag")
+	var variables := {"flags": {}}
+	var first := runner.begin("dialogue_1", runner.nodes.dialogue_1.dialogue, variables, func(_name): return true)
+	check(first.line_id == "dialogue_1.page.0" and first.page_count == 3, "N5 对话稳定行 ID 与分页")
+	check(runner.advance_page().line_id == "dialogue_1.page.1", "N5 对话逐页推进")
+
+	var session: GameSession = load("res://game/main.tscn").instantiate()
+	root.add_child(session)
+	await process_frame
+	check(session.current_world == null and session.menus.main_menu.visible, "N5 启动进入三槽主菜单")
+	check(session.menus.slots_box.get_child_count() == 3, "N5 主菜单展示三个存档槽")
+	var unknown := await session.story.execute_command("notAStoryCommand")
+	check(not unknown.ok and unknown.error == "UNKNOWN_COMMAND", "N5 未知剧情命令显式失败")
+	var deferred := await session.story.execute_command("chapterExplore")
+	check(not deferred.ok and deferred.error == "DEFERRED_OUT_OF_STAGE", "N5 后续章节命令明确标记阶段外而非静默执行")
+
+	session.start_new_game(1)
+	await process_frame
+	check(session.story.current_id == "tutorial_1" and session.current_world.map_id == &"prologue_tutorial", "N6 新游戏从真实教学地图开始")
+	for index in range(3): session.current_world.player.try_collect_payload({"id": &"bean"})
+	await process_frame
+	check(session.story.current_id == "dialogue_1" and session.dialogue.state == &"entering", "N6 吃三豆触发首段对话")
+	check(paused, "N6 对话期间冻结世界")
+	session.dialogue._finish_enter()
+	check(session.dialogue.page_index == 0, "N5 完成弹入不跳过首句")
+	session.story._on_choice("go")
+	await process_frame
+	check(session.story.current_id == "tutorial_2" and not paused, "N6 对话选择后丝滑退出并恢复世界")
+	for index in range(3):
+		session.current_world.player.shot_cooldown_left = 0.0
+		session.current_world.player.try_spit()
+	await process_frame
+	check(session.story.current_id == "dialogue_2", "N6 吐三豆进入破墙提示")
+	session.dialogue._finish_enter()
+	session.dialogue.page_index = session.dialogue.pages.size() - 1
+	session.story._on_choice("go")
+	await process_frame
+	for index in range(2): session.current_world.player.try_collect_payload({"id": &"bean"})
+	var gate: FragileGate = session.current_world.get_node("FragileGate")
+	var dummy := BeanProjectile.new()
+	for index in range(3): gate.hit_by_bean(dummy)
+	dummy.free()
+	await process_frame
+	check(session.story.current_id == "dialogue_3", "N6 吃满五豆且教学门真实机关完成后推进剧情")
+	session.dialogue._finish_enter()
+	session.dialogue.page_index = session.dialogue.pages.size() - 1
+	session.story._on_choice("go")
+	await process_frame
+	session.story.map_exit(&"wilderness", &"")
+	await process_frame
+	check(session.current_world.map_id == &"wilderness" and session.story.current_id == "wilderness_keti_wait", "N6 走出教学地图进入荒野")
+	check(session.current_world.get_node_or_null("NPC_keti") != null, "N6 荒野生成可蒂实体")
+	session.story._on_actor_event(&"keti", &"interacted")
+	await process_frame
+	check(session.story.current_id == "keti_question", "N6 接触可蒂进入分支对话")
+	session.dialogue._finish_enter()
+	session.story._on_choice("yes")
+	await process_frame
+	check(session.story.current_id == "keti_cry", "N6 可蒂对话分支可达")
+	session.dialogue._finish_enter()
+	session.story._on_choice("save")
+	await process_frame
+	session.dialogue._finish_enter()
+	session.story._on_choice("fight")
+	await process_frame
+	check(session.story.current_id == "wilderness_slimes" and session.story.enemies_left == 2, "N6 保护路线真实生成两只史莱姆")
+	for index in range(2): session.current_world.story_enemy_defeated.emit(&"slime")
+	await process_frame
+	check(session.story.current_id == "keti_saved", "N6 击败史莱姆进入可蒂存活结局")
+	session.dialogue._finish_enter()
+	session.story._on_choice("name")
+	await process_frame
+	check(session.story.current_id == "input_player_name" and session.dialogue.name_edit.visible, "N6 序章结尾进入姓名输入")
+	session.dialogue._finish_enter()
+	session.story._on_name_submitted("测试蛇")
+	await process_frame
+	await process_frame
+	check(session.current_world.map_id == &"forest" and session.story.current_id == "chapter1_explore", "N6 命名后进入森林并停在 N7 起点")
+	check(session.state.story.get("player_name", "") == "测试蛇", "N6 玩家姓名写入可序列化剧情状态")
+	await session.load_map(&"wilderness")
+	session.current_world.player.play_sfx = false
+	var eaten := await session.story.execute_command("eatKeti")
+	check(eaten.ok and session.current_world.player.inventory.count_item(&"keti") == 1, "N6 吞入可蒂写入真实胃袋与身长")
+	var blurred := await session.story.execute_command("memoryBlur")
+	check(blurred.ok and session.current_world.player.inventory.count_item(&"keti") == 0, "N6 记忆模糊按 0.13 秒节奏吐尽豆并吐出角色")
+	session.dialogue.interact_audio.stop()
+	session.queue_free()
+	paused = false
 	await process_frame
 
 

@@ -3,6 +3,9 @@ extends Node2D
 
 signal exit_reached(target: StringName, entry: StringName)
 signal mechanism_changed(mechanism_id: StringName, done: bool)
+signal story_actor_interacted(actor_id: StringName)
+signal story_actor_defeated(actor_id: StringName)
+signal story_enemy_defeated(enemy_kind: StringName)
 
 const TILE_SIZE := 24.0
 const TILESET := preload("res://assets/tiles/story_tileset.tres")
@@ -10,6 +13,8 @@ const PLAYER_SCENE := preload("res://game/player/snake_player.tscn")
 const BEAN_SCENE := preload("res://game/projectiles/bean_projectile.tscn")
 const GATE_SCRIPT := preload("res://game/maps/fragile_gate.gd")
 const PROP_SCRIPT := preload("res://game/maps/map_prop_visual.gd")
+const NPC_SCENE := preload("res://game/actors/npc_actor.tscn")
+const ENEMY_SCENE := preload("res://game/actors/enemy_actor.tscn")
 const PILLAR_SCAN_INTERVAL := 0.1
 const PILLAR_ACTIVE_RADIUS := 14.0 * TILE_SIZE
 
@@ -35,6 +40,7 @@ func setup(id: StringName, saved_flags: Dictionary, entry := &"", saved_items: D
 	_spawn_beans()
 	_build_mechanisms()
 	_build_props()
+	_build_story_actors()
 	_build_camera()
 
 func _physics_process(delta: float) -> void:
@@ -236,3 +242,47 @@ func _update_story_item_pickups() -> void:
 
 func _story_item_key(item_id: StringName) -> String:
 	return "%s:item:%s" % [map_id, item_id]
+
+func _build_story_actors() -> void:
+	if map_id != &"wilderness":
+		return
+	for definition in data.get("npcs", []):
+		if definition.id == &"keti" and (bool(flags.get("keti_eaten", false)) or bool(flags.get("keti_dead", false))):
+			continue
+		spawn_npc(definition.id, Vector2(definition.position) * TILE_SIZE)
+
+func spawn_npc(actor_id: StringName, at_position: Vector2) -> NpcActor:
+	var npc: NpcActor = NPC_SCENE.instantiate()
+	npc.name = "NPC_%s" % actor_id
+	npc.npc_id = actor_id
+	add_child(npc)
+	npc.global_position = at_position
+	npc.setup(player)
+	npc.interaction_requested.connect(func(actor: NpcActor, _player: SnakePlayer): story_actor_interacted.emit(actor.npc_id))
+	npc.defeated.connect(func(actor: NpcActor): story_actor_defeated.emit(actor.npc_id))
+	return npc
+
+func spawn_enemy(kind: StringName, at_position: Vector2) -> EnemyActor:
+	var enemy: EnemyActor = ENEMY_SCENE.instantiate()
+	enemy.name = "StoryEnemy_%s" % get_child_count()
+	enemy.enemy_kind = kind
+	add_child(enemy)
+	enemy.global_position = at_position
+	enemy.setup(player)
+	enemy.defeated.connect(_on_story_enemy_defeated.bind(kind))
+	return enemy
+
+func remove_story_actor(actor_id: StringName) -> void:
+	var actor := get_node_or_null("NPC_%s" % actor_id)
+	if actor:
+		actor.queue_free()
+
+func _on_story_enemy_defeated(enemy: EnemyActor, drops: int, kind: StringName) -> void:
+	var death_position := enemy.global_position
+	story_enemy_defeated.emit(kind)
+	for index in range(drops):
+		var bean: BeanProjectile = BEAN_SCENE.instantiate()
+		add_child.call_deferred(bean)
+		bean.call_deferred("launch", {"id": &"bean", "damage": 4, "length": 1, "weight": 0}, death_position + Vector2(index * 8 - 4, 0), Vector2.RIGHT.rotated(index * PI), player)
+		bean.set_deferred("age", 0.25)
+		bean.call_deferred("land")

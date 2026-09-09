@@ -16,13 +16,17 @@ offset_right = 397.0
 offset_bottom = 102.0
 
 [node name="VBox" type="VBoxContainer" parent="HUD/Panel"]
+layout_mode = 2
 theme_override_constants/separation = 3
 
 [node name="Map" type="Label" parent="HUD/Panel/VBox"]
+layout_mode = 2
 text = "地图载入中"
 
 [node name="Status" type="Label" parent="HUD/Panel/VBox"]
+layout_mode = 2
 text = "1/2/3 选槽｜F1-F4 跨图｜F5 保存｜F6 载入｜F9 重试"
 
 [node name="Hint" type="Label" parent="HUD/Panel/VBox"]
+layout_mode = 2
 text = "WASD 移动 · J 吐豆 · F 放置节点"

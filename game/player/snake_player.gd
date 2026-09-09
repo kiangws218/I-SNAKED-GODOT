@@ -8,6 +8,8 @@ signal health_changed(current: int, maximum: int)
 signal damaged(reason: StringName)
 signal actor_released(payload: Dictionary, at_position: Vector2)
 signal actor_interacted(payload: Dictionary)
+signal bean_spit
+signal bean_collected
 
 const TILE_SIZE := 24.0
 const MAX_DIRECTION_QUEUE := 3
@@ -198,6 +200,8 @@ func try_spit() -> bool:
 		spit_audio.play()
 	shot_cooldown_left = SHOT_INTERVAL
 	resources_changed.emit()
+	if payload.get("id", &"") == &"bean":
+		bean_spit.emit()
 	return true
 
 
@@ -342,6 +346,7 @@ func try_collect_payload(payload: Dictionary) -> bool:
 	var item_id: StringName = payload.get("id", &"bean")
 	if item_id == &"bean":
 		body_chain.set_segment_count(body_chain.segment_count + 1, global_position)
+		bean_collected.emit()
 	else:
 		var metadata: Dictionary = payload.get("metadata", {})
 		if not inventory.add_item(item_id, metadata):

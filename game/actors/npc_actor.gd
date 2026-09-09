@@ -3,6 +3,7 @@ extends Area2D
 
 signal interaction_requested(npc: NpcActor, player: SnakePlayer)
 signal health_changed(current: float, maximum: float)
+signal defeated(npc: NpcActor)
 
 const TILE_SIZE := 24.0
 const ENTER_RADIUS := 0.85 * TILE_SIZE
@@ -68,6 +69,9 @@ func take_damage(amount: float, _source := &"projectile") -> float:
 	hp -= applied
 	health_changed.emit(hp, max_hp)
 	queue_redraw()
+	if hp <= 0.0:
+		defeated.emit(self)
+		queue_free()
 	return applied
 
 
