@@ -93,13 +93,15 @@ func _refresh_prisons(delta: float) -> void:
 func _on_enemy_defeated(enemy: EnemyActor, bean_drops: int) -> void:
 	if not is_instance_valid(enemy):
 		return
-	for index in range(bean_drops):
+	_spawn_enemy_loot.call_deferred(enemy.global_position, enemy.make_loot_burst(bean_drops))
+
+
+func _spawn_enemy_loot(death_position: Vector2, burst: Array[Dictionary]) -> void:
+	for launch_data in burst:
 		var bean: BeanProjectile = BEAN_PROJECTILE_SCENE.instantiate()
 		add_child(bean)
-		var spread := Vector2(float(index) - float(bean_drops - 1) * 0.5, 0.0) * 8.0
-		bean.launch({"id": &"bean", "damage": 4, "length": 1, "weight": 0}, enemy.global_position + spread, Vector2.RIGHT, player)
-		bean.age = 0.25
-		bean.land()
+		bean.launch({"id": &"bean", "damage": 4, "length": 1, "weight": 0}, death_position, launch_data.direction, player)
+		bean.speed = float(launch_data.speed)
 
 
 func _on_npc_interaction(npc: NpcActor, _target: SnakePlayer) -> void:

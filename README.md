@@ -32,6 +32,10 @@ gda scene preflight game/main.tscn --project . --json
 
 GDA 是效率工具，不是项目依赖。Godot 4.7.2 已完成首次无界面导入，N0 项目契约测试通过；`gda` 当前未加入 PATH，后续可用时再补充其结构化检查。
 
+## 编辑地图
+
+正式地图不是运行时代码生成。请在 Godot 文件系统面板打开 `game/maps/levels/` 下的 `prologue_tutorial.tscn`、`wilderness.tscn`、`forest.tscn` 或 `cave.tscn`，选择 `Ground` 或 `Collision` 的 `TileMapLayer`，即可在底部 TileMap 面板直接绘制。四图共享 `assets/tiles/story_tileset.tres`；出生点、剧情出口、机关区域和角色生成点仍在 `game/maps/story_map_catalog.gd` 中配置。
+
 办公室电脑的 Godot 4.7.2 官方标准导出模板已安装在 `D:\GodotExportTemplates\4.7.2.stable`。导出模板是本机配置，到 N8 导出阶段才要求每台构建机器分别安装。
 
 ## 文档

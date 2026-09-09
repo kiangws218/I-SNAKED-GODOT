@@ -145,7 +145,9 @@ func hit_target(target: Node2D) -> bool:
 		queue_free()
 		return true
 	var damage := float(payload.get("damage", 4))
-	if target.has_method("take_damage"):
+	if target.has_method("take_projectile_hit"):
+		target.take_projectile_hit(damage, self)
+	elif target.has_method("take_damage"):
 		target.take_damage(damage, &"projectile")
 	if bool(payload.get("actor", false)):
 		var metadata: Dictionary = payload.get("metadata", {}).duplicate(true)

@@ -69,8 +69,14 @@ func mechanism_completed(id: StringName) -> void:
 		enter_node("dialogue_3")
 
 func map_exit(target: StringName, entry: StringName) -> bool:
-	if session.state.current_map == &"prologue_tutorial" and current_id in ["dialogue_3", "tutorial_free_play"]:
-		enter_node("wilderness_start")
+	if session.state.current_map == &"prologue_tutorial":
+		if current_id in ["dialogue_3", "tutorial_free_play"]:
+			enter_node("wilderness_start")
+		else:
+			status_changed.emit("出口尚未开放：先完成教学")
+		return true
+	if session.state.current_map == &"wilderness" and not bool(session.state.flags.get("prologue_complete", false)):
+		status_changed.emit("出口尚未开放：先完成可蒂事件")
 		return true
 	return false
 
@@ -175,6 +181,7 @@ func _on_choice(choice_id: String) -> void:
 
 func _on_name_submitted(player_name: String) -> void:
 	session.state.story.player_name = player_name
+	session.state.flags["prologue_complete"] = true
 	panel.close()
 	pause_requested.emit(&"dialogue", false)
 	enter_node("chapter1_start")

@@ -8,7 +8,6 @@ signal story_actor_defeated(actor_id: StringName)
 signal story_enemy_defeated(enemy_kind: StringName)
 
 const TILE_SIZE := 24.0
-const TILESET := preload("res://assets/tiles/story_tileset.tres")
 const PLAYER_SCENE := preload("res://game/player/snake_player.tscn")
 const BEAN_SCENE := preload("res://game/projectiles/bean_projectile.tscn")
 const GATE_SCRIPT := preload("res://game/maps/fragile_gate.gd")
@@ -49,55 +48,27 @@ func _physics_process(delta: float) -> void:
 	var exit_data: Dictionary = data.get("exit", data.get("debug_exit", {}))
 	if not exit_data.is_empty():
 		var allowed := not data.has("gate") or bool(flags.get(String(data.gate.id), false))
-		if allowed and Rect2i(exit_data.rect).has_point(cell):
-			if _exit_armed:
-				exit_reached.emit(exit_data.target, exit_data.get("entry", &""))
-		else:
+		var inside := allowed and Rect2i(exit_data.rect).has_point(cell)
+		if inside and not _exit_armed:
 			_exit_armed = true
+			exit_reached.emit(exit_data.target, exit_data.get("entry", &""))
+		elif not inside:
+			_exit_armed = false
 	if data.has("pillar") and not pillar_done:
 		_update_pillar(delta)
 	_update_story_item_pickups()
 
 func _build_layers() -> void:
-	ground_layer = TileMapLayer.new()
-	ground_layer.name = "Ground"
-	ground_layer.tile_set = TILESET
-	ground_layer.z_index = -10
-	add_child(ground_layer)
-	wall_layer = TileMapLayer.new()
-	wall_layer.name = "Collision"
-	wall_layer.tile_set = TILESET
-	wall_layer.z_index = 1
-	add_child(wall_layer)
-	var walkable: Rect2i = data.walkable
-	var base_tile := int(data.get("ground", 0))
-	for y in range(walkable.position.y, walkable.end.y):
-		for x in range(walkable.position.x, walkable.end.x):
-			ground_layer.set_cell(Vector2i(x,y), 0, Vector2i(base_tile,0))
-	for terrain in data.get("terrain", []):
-		_paint_rect(ground_layer, terrain.rect, int(terrain.tile))
-	for x in range(walkable.position.x - 1, walkable.end.x + 1):
-		wall_layer.set_cell(Vector2i(x, walkable.position.y - 1), 0, Vector2i(5,0))
-		wall_layer.set_cell(Vector2i(x, walkable.end.y), 0, Vector2i(5,0))
-	for y in range(walkable.position.y, walkable.end.y):
-		wall_layer.set_cell(Vector2i(walkable.position.x - 1,y), 0, Vector2i(5,0))
-		wall_layer.set_cell(Vector2i(walkable.end.x,y), 0, Vector2i(5,0))
-	if data.has("gate"):
-		_paint_rect(ground_layer, data.exit.rect, base_tile)
-		for y in range(data.gate.barrier_rect.position.y, data.gate.barrier_rect.end.y):
-			for x in range(data.gate.barrier_rect.position.x, data.gate.barrier_rect.end.x):
-				wall_layer.erase_cell(Vector2i(x,y))
-	for obstacle in data.get("obstacles", []):
-		_paint_rect(wall_layer, obstacle, 5)
-	if data.has("bridge_gate") and not bool(flags.get("forest_bridge_open", false)):
-		_paint_rect(wall_layer, data.bridge_gate, 5)
-	ground_layer.update_internals()
-	wall_layer.update_internals()
-
-func _paint_rect(layer: TileMapLayer, rect: Rect2i, tile: int) -> void:
-	for y in range(rect.position.y, rect.end.y):
-		for x in range(rect.position.x, rect.end.x):
-			layer.set_cell(Vector2i(x,y), 0, Vector2i(tile,0))
+	var layout_scene: PackedScene = load(String(data.scene))
+	var layout := layout_scene.instantiate()
+	layout.name = "MapLayout"
+	add_child(layout)
+	ground_layer = layout.get_node("Ground")
+	wall_layer = layout.get_node("Collision")
+	if data.has("bridge_gate") and bool(flags.get("forest_bridge_open", false)):
+		for y in range(data.bridge_gate.position.y, data.bridge_gate.end.y):
+			for x in range(data.bridge_gate.position.x, data.bridge_gate.end.x): wall_layer.erase_cell(Vector2i(x, y))
+		wall_layer.update_internals()
 
 func _spawn_player(entry: StringName) -> void:
 	player = PLAYER_SCENE.instantiate()
@@ -204,13 +175,6 @@ func _build_camera() -> void:
 	camera.reset_smoothing.call_deferred()
 
 func _build_props() -> void:
-	var exit_data: Dictionary = data.get("exit", data.get("debug_exit", {}))
-	if not exit_data.is_empty():
-		var exit_marker := Node2D.new()
-		exit_marker.set_script(PROP_SCRIPT)
-		exit_marker.name = "ExitMarker"
-		add_child(exit_marker)
-		exit_marker.setup(&"exit", "exit", (Vector2(exit_data.rect.get_center()) + Vector2(0.5,0.5)) * TILE_SIZE)
 	for item in data.get("items", []):
 		if bool(item_states.get(_story_item_key(item.id), false)):
 			continue
@@ -279,10 +243,13 @@ func remove_story_actor(actor_id: StringName) -> void:
 
 func _on_story_enemy_defeated(enemy: EnemyActor, drops: int, kind: StringName) -> void:
 	var death_position := enemy.global_position
+	var burst := enemy.make_loot_burst(drops)
 	story_enemy_defeated.emit(kind)
-	for index in range(drops):
+	_spawn_story_loot.call_deferred(death_position, burst)
+
+func _spawn_story_loot(death_position: Vector2, burst: Array[Dictionary]) -> void:
+	for launch_data in burst:
 		var bean: BeanProjectile = BEAN_SCENE.instantiate()
-		add_child.call_deferred(bean)
-		bean.call_deferred("launch", {"id": &"bean", "damage": 4, "length": 1, "weight": 0}, death_position + Vector2(index * 8 - 4, 0), Vector2.RIGHT.rotated(index * PI), player)
-		bean.set_deferred("age", 0.25)
-		bean.call_deferred("land")
+		add_child(bean)
+		bean.launch({"id": &"bean", "damage": 4, "length": 1, "weight": 0}, death_position, launch_data.direction, player)
+		bean.speed = float(launch_data.speed)

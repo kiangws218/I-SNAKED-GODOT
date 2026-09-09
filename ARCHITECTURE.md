@@ -60,7 +60,7 @@ SessionState
 ## 5. 剧情与存档
 
 - 计划在需要对白的阶段固定并接入 Dialogue Manager；N0 不复制插件。
-- `.dialogue` 负责台词、选项、条件和跳转；不直接生成敌人、切地图、扣物品或改碰撞。
+- `story_graph.json` 负责台词、选项、条件和跳转；不直接生成敌人、切地图、扣物品或改碰撞。
 - 游戏命令通过白名单 StoryBridge 执行：完整校验 → 单次提交 → 发出结果。
 - 一次性事件使用稳定 ID 防重放；换图/重试提升 session generation，旧 signal 不得影响新会话。
 - 只在对话关闭、换图完成、检查点激活和无待提交命令的显式保存时写盘。
@@ -112,7 +112,7 @@ SessionState
 
 出口：无对白也能从教学地图走到第一章洞窟并可靠读档。
 
-实现边界：`StoryMapCatalog` 保存四图纯数据，`StoryMap` 用同一个外部 `TileSet` 批量构建地表与碰撞 `TileMapLayer`；`GameSession` 是换图、检查点和重试的唯一运行时所有者，`SessionState` 只持有可序列化事实，`SaveStore` 只负责三槽 JSON 信封与错误分类。检查点保存独立快照，死亡不会把临死状态反写为恢复点。N4 没有加入资源管理器、地图继承树、通用机关框架或 N5 对话依赖。
+实现边界：四张地图各自保存为 `game/maps/levels/*.tscn`，场景内 `Ground` 与 `Collision` 是可在 Godot TileMap 面板直接绘制的 `TileMapLayer`，共享外部 `story_tileset.tres`。`StoryMapCatalog` 只保存出生点、出口、机关和内容生成点等玩法元数据；`StoryMap` 实例化地图场景，不生成地形。`GameSession` 是正式游戏根节点和换图/检查点所有者，不是测试切片；`test_arena.tscn` 才是独立测试场。
 
 ### N5：剧情基础设施
 

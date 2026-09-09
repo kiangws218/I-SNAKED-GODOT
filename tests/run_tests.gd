@@ -736,8 +736,8 @@ func _test_n3_real_paths() -> void:
 func _test_n4_contract() -> void:
 	check(StoryMapCatalog.ORDER == [&"prologue_tutorial", &"wilderness", &"forest", &"cave"], "N4 四张剧情地图顺序固定")
 	check(StoryMapCatalog.MAPS[&"prologue_tutorial"].size == Vector2i(72, 48), "教学地图 72×48")
-	check(StoryMapCatalog.MAPS[&"forest"].exit.rect == Rect2i(55, 4, 5, 5), "森林洞口采用中央上方最终坐标")
-	check(StoryMapCatalog.MAPS[&"cave"].exit.rect == Rect2i(2, 14, 2, 5), "洞窟保留可见横向出口")
+	check(StoryMapCatalog.MAPS[&"forest"].exit.rect == Rect2i(55, 0, 5, 3), "森林洞口使用上边界 TileMap 缺口")
+	check(StoryMapCatalog.MAPS[&"cave"].exit.rect == Rect2i(1, 14, 3, 5), "洞窟出口使用左边界 TileMap 缺口")
 	check(float(StoryMapCatalog.MAPS[&"forest"].pillar.charge) == 3.0 and bool(StoryMapCatalog.MAPS[&"forest"].pillar.requires_node), "桥柱需节点闭环持续 3 秒")
 	check(ResourceLoader.exists("res://assets/tiles/story_tileset.tres"), "共享剧情 TileSet 存在")
 	var tile_set: TileSet = load("res://assets/tiles/story_tileset.tres")
@@ -754,7 +754,9 @@ func _test_n4_real_paths() -> void:
 	root.add_child(map)
 	map.setup(&"prologue_tutorial", {})
 	await physics_frame
-	check(map.get_node("Ground") is TileMapLayer and map.get_node("Collision") is TileMapLayer, "地图使用独立 TileMapLayer 地表/碰撞层")
+	check(map.ground_layer is TileMapLayer and map.wall_layer is TileMapLayer, "地图使用独立 TileMapLayer 地表/碰撞层")
+	check(map.get_node("MapLayout") != null and map.ground_layer.get_used_cells().size() > 0, "地图从可编辑场景实例化而非运行时逐格生成")
+	check(map.get_node_or_null("ExitMarker") == null, "地图出口不生成蓝色提示球")
 	check(map.ground_layer.get_cell_source_id(Vector2i(8, 24)) == 0, "教学出生区真实绘制地表瓦片")
 	check(map.wall_layer.get_cell_source_id(Vector2i(3, 16)) == 0, "地图边界真实绘制碰撞瓦片")
 	check(map.ground_layer.z_index < map.player.body_chain.z_index, "不透明地表绘制在蛇身下方")
@@ -922,6 +924,9 @@ func _test_n5_n6_contract() -> void:
 	await process_frame
 	check(session.current_world.map_id == &"wilderness" and session.story.current_id == "wilderness_keti_wait", "N6 走出教学地图进入荒野")
 	check(session.current_world.get_node_or_null("NPC_keti") != null, "N6 荒野生成可蒂实体")
+	session._on_exit_reached(&"forest", &"")
+	await process_frame
+	check(session.current_world.map_id == &"wilderness", "N6 可蒂事件完成前荒野出口保持锁定")
 	session.story._on_actor_event(&"keti", &"interacted")
 	await process_frame
 	check(session.story.current_id == "keti_question", "N6 接触可蒂进入分支对话")
@@ -953,11 +958,55 @@ func _test_n5_n6_contract() -> void:
 	session.current_world.player.play_sfx = false
 	var eaten := await session.story.execute_command("eatKeti")
 	check(eaten.ok and session.current_world.player.inventory.count_item(&"keti") == 1, "N6 吞入可蒂写入真实胃袋与身长")
+	check("可蒂" in session.inventory_slots.text, "N6 胃袋 HUD 立即显示吞入的可蒂")
 	var blurred := await session.story.execute_command("memoryBlur")
 	check(blurred.ok and session.current_world.player.inventory.count_item(&"keti") == 0, "N6 记忆模糊按 0.13 秒节奏吐尽豆并吐出角色")
 	session.dialogue.interact_audio.stop()
 	session.queue_free()
 	paused = false
+	await process_frame
+
+	for map_id in StoryMapCatalog.ORDER:
+		var layout_path := String(StoryMapCatalog.get_map(map_id).scene)
+		check(ResourceLoader.exists(layout_path), "可编辑 TileMap 场景存在：%s" % map_id)
+
+	var loot_enemy: EnemyActor = load("res://game/actors/enemy_actor.tscn").instantiate()
+	root.add_child(loot_enemy)
+	loot_enemy.set_physics_process(false)
+	loot_enemy.death_hit_direction = Vector2.LEFT
+	loot_enemy.death_head_distance = 0.0
+	var near_burst := loot_enemy.make_loot_burst(6)
+	loot_enemy.death_head_distance = 8.0 * EnemyActor.TILE_SIZE
+	var far_burst := loot_enemy.make_loot_burst(6)
+	var near_min := INF
+	var far_max := 0.0
+	var directions: Dictionary = {}
+	for launch_data in near_burst:
+		near_min = minf(near_min, float(launch_data.speed))
+		directions["%.3f" % Vector2(launch_data.direction).angle()] = true
+	for launch_data in far_burst: far_max = maxf(far_max, float(launch_data.speed))
+	check(near_min > far_max, "近距离击杀的豆子泼洒力度显著高于远距离击杀")
+	check(directions.size() > 1 and Vector2(near_burst[0].direction).dot(Vector2.LEFT) > 0.0, "战利品沿受击方向随机扇形泼洒")
+	loot_enemy.queue_free()
+	await process_frame
+
+	var loot_map := StoryMap.new()
+	root.add_child(loot_map)
+	loot_map.setup(&"wilderness", {})
+	loot_map.player.set_physics_process(false)
+	loot_map.player.play_sfx = false
+	var victim := loot_map.spawn_enemy(&"slime", loot_map.player.global_position + Vector2(12, 0))
+	var killing_bean: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
+	loot_map.add_child(killing_bean)
+	killing_bean.launch({"id": &"bean", "damage": 99}, loot_map.player.global_position, Vector2.RIGHT, loot_map.player)
+	victim.take_projectile_hit(99.0, killing_bean)
+	await process_frame
+	var flying_drops := 0
+	for child in loot_map.get_children():
+		if child is BeanProjectile and child != killing_bean and not child.is_landed and child.speed > BeanProjectile.INITIAL_SPEED:
+			flying_drops += 1
+	check(flying_drops == 2, "怪物死亡在真实地图生成两颗高速飞散豆而非原地落豆")
+	loot_map.queue_free()
 	await process_frame
 
 

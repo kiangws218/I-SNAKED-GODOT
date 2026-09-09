@@ -23,6 +23,8 @@ var bean_drops := 0
 var shot_timer := 0.0
 var warning_active := false
 var is_dead := false
+var death_hit_direction := Vector2.RIGHT
+var death_head_distance := 8.0 * TILE_SIZE
 var _recoil_left := 0.0
 var _contact_hitstop_left := 0.0
 
@@ -131,6 +133,26 @@ func take_damage(amount: float, _source := &"projectile") -> float:
 		defeated.emit(self, bean_drops)
 		queue_free()
 	return applied
+
+
+func take_projectile_hit(amount: float, projectile: BeanProjectile) -> float:
+	death_hit_direction = projectile.flight_direction.normalized()
+	if is_instance_valid(player): death_head_distance = global_position.distance_to(player.global_position)
+	return take_damage(amount, &"projectile")
+
+
+func make_loot_burst(count: int) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var closeness := 1.0 - clampf(death_head_distance / (8.0 * TILE_SIZE), 0.0, 1.0)
+	var distance_boost := lerpf(0.9, 2.35, closeness)
+	var base_direction := death_hit_direction if not death_hit_direction.is_zero_approx() else Vector2.RIGHT
+	for index in range(count):
+		var fan := (float(index) - float(count - 1) * 0.5) * 0.32
+		result.append({
+			"direction": base_direction.rotated(fan + randf_range(-0.38, 0.38)).normalized(),
+			"speed": BeanProjectile.INITIAL_SPEED * distance_boost * randf_range(0.78, 1.18),
+		})
+	return result
 
 
 func is_prison_target() -> bool:

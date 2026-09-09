@@ -11,6 +11,8 @@ const STORY_SCRIPT := preload("res://game/story/story_director.gd")
 @onready var map_label: Label = $HUD/Panel/VBox/Map
 @onready var status_label: Label = $HUD/Panel/VBox/Status
 @onready var hint_label: Label = $HUD/Panel/VBox/Hint
+@onready var inventory_title: Label = $HUD/InventoryPanel/VBox/Title
+@onready var inventory_slots: Label = $HUD/InventoryPanel/VBox/Slots
 var state := SessionState.new()
 var store := SaveStore.new()
 var current_world: StoryMap
@@ -199,4 +201,20 @@ func _restore_player() -> void:
 func _refresh_hud() -> void:
 	if not is_instance_valid(current_world) or not is_instance_valid(current_world.player): return
 	var v := current_world.player
-	status_label.text = "生命 %d/%d · 长度 %d · 豆 %d · 节点 %d" % [v.hearts, v.max_hearts, v.body_chain.segment_count, v.inventory.bean_ammo(v.body_chain.segment_count, SnakePlayer.MIN_LENGTH), v.node_charges]
+	var bean_ammo := v.inventory.bean_ammo(v.body_chain.segment_count, SnakePlayer.MIN_LENGTH)
+	status_label.text = "生命 %d/%d · 长度 %d · 豆 %d · 节点 %d" % [v.hearts, v.max_hearts, v.body_chain.segment_count, bean_ammo, v.node_charges]
+	inventory_title.text = "胃袋  %d/%d  [Q/E 切换]" % [v.inventory.current_weight(), StomachInventory.MAX_WEIGHT]
+	var lines: Array[String] = []
+	lines.append(("▶ " if v.inventory.selected_index == 0 else "　") + "豆子 ×%d" % bean_ammo)
+	for index in range(v.inventory.entries.size()):
+		var entry: Dictionary = v.inventory.entries[index]
+		var marker := "▶ " if v.inventory.selected_index == index + 1 else "　"
+		lines.append("%s%s ×%d（重%d）" % [marker, _item_name(entry.id), entry.count, int(entry.weight) * int(entry.count)])
+	inventory_slots.text = "\n".join(lines)
+
+func _item_name(item_id: StringName) -> String:
+	return {
+		&"keti": "可蒂", &"keti_corpse": "可蒂的尸体", &"iron_sword": "铁剑",
+		&"healing_potion": "治疗药水", &"ajie": "阿杰", &"lisi": "丽丝",
+		&"ajian": "阿见", &"bake": "巴克", &"miluo": "米洛", &"character_bones": "角色遗骨",
+	}.get(item_id, String(item_id))
