@@ -29,7 +29,7 @@ godot --headless --path . --script res://tests/run_tests.gd
 
 覆盖四图注册、共享 TileSet 物理层、真实 TileMapLayer 单元、三豆门、桥柱充能/回退/开桥、三槽隔离/覆盖/删除、坏 JSON、版本错误、Session 跨图和检查点资源回滚。
 
-实际 OpenGL 3 渲染截图：`.godot/n4_forest_bridge.png`（缓存证据，不提交）。
+实际 OpenGL 3 渲染截图：`.godot/n4_tutorial_gate.png`、`.godot/n4_forest_bridge.png`（缓存证据，不提交）。
 
 环境仅有两条无关业务的沙箱提示：无法写系统 `user://logs`，无法读取 Windows 根证书。测试存档定向写入被忽略的 `res://.godot/n4_test_saves`，正式运行仍使用 `user://saves`。
 
@@ -38,3 +38,11 @@ godot --headless --path . --script res://tests/run_tests.gd
 - N4 地图图集是本项目原生的最小 24px 审阅版，已经真实用于地表、水、洞窟、山体、营地和 World 碰撞；N8 再统一最终像素细节。
 - 尚未接入 N5 对话框，因此荒野到森林使用 F3 调试入口；这一入口会在剧情通路完成后移除。
 - GDA 当前不在 PATH，本阶段使用 Godot 4.7.2 headless 与真实 OpenGL 截图完成门禁。
+
+## 制作人审阅修正
+
+- 不透明地表层降到蛇身下方，修复只能看见蛇头。
+- 荒野与森林由绿色地表改为暖棕色，避免与绿色蛇体撞色。
+- 教学门改为占据边界中的独立门洞，第三豆后碰撞体消失并留下可穿越缺口。
+- 桥柱闭环检测由每物理帧全森林扫描，改为 10 Hz、近桥、已有节点时才扫描 17×20 局部区域；远处只进行常数时间回退。
+- 换图后立即重置 Camera2D 平滑，消除静止地图豆从画外滑入的错觉；预置豆出生即落地。

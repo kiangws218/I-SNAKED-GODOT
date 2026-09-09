@@ -756,6 +756,8 @@ func _test_n4_real_paths() -> void:
 	check(map.get_node("Ground") is TileMapLayer and map.get_node("Collision") is TileMapLayer, "地图使用独立 TileMapLayer 地表/碰撞层")
 	check(map.ground_layer.get_cell_source_id(Vector2i(8, 24)) == 0, "教学出生区真实绘制地表瓦片")
 	check(map.wall_layer.get_cell_source_id(Vector2i(3, 16)) == 0, "地图边界真实绘制碰撞瓦片")
+	check(map.ground_layer.z_index < map.player.body_chain.z_index, "不透明地表绘制在蛇身下方")
+	check(map.wall_layer.get_cell_source_id(Vector2i(49, 15)) == -1, "教学门使用独立碰撞体且边界预留门洞")
 	var first_map_bean: BeanProjectile
 	for child in map.get_children():
 		if child is BeanProjectile:
@@ -771,6 +773,8 @@ func _test_n4_real_paths() -> void:
 	check(gate.progress == 2 and not bool(map.flags.get("tutorial_fragile_gate", false)), "易碎门前两豆只累计进度")
 	gate.hit_by_bean(dummy)
 	check(bool(map.flags.get("tutorial_fragile_gate", false)), "易碎门第三豆开启并持久化标记")
+	await process_frame
+	check(not is_instance_valid(gate) and map.wall_layer.get_cell_source_id(Vector2i(49, 15)) == -1, "教学门开启后原位置留下可通行缺口")
 	dummy.queue_free()
 	map.queue_free()
 	await process_frame
@@ -779,6 +783,17 @@ func _test_n4_real_paths() -> void:
 	root.add_child(forest)
 	forest.setup(&"forest", {})
 	await physics_frame
+	var all_forest_beans_landed := true
+	for child in forest.get_children():
+		if child is BeanProjectile and not child.is_landed:
+			all_forest_beans_landed = false
+	check(all_forest_beans_landed, "森林预置豆出生即落地，不从画外飞入")
+	var perf_started := Time.get_ticks_usec()
+	for index in range(600):
+		forest._update_pillar(1.0 / 60.0)
+	var idle_scan_ms := (Time.get_ticks_usec() - perf_started) / 1000.0
+	print("N4 FOREST IDLE: 600 pillar ticks in %.3f ms" % idle_scan_ms)
+	check(idle_scan_ms < 250.0, "远离桥柱且无节点时不扫描整张森林地图")
 	var ring := _n4_pillar_ring(true)
 	forest.step_pillar(1.0, ring)
 	check(is_equal_approx(forest.pillar_progress, 1.0), "节点闭环开始为桥柱充能")

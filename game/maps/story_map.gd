@@ -10,6 +10,8 @@ const PLAYER_SCENE := preload("res://game/player/snake_player.tscn")
 const BEAN_SCENE := preload("res://game/projectiles/bean_projectile.tscn")
 const GATE_SCRIPT := preload("res://game/maps/fragile_gate.gd")
 const PROP_SCRIPT := preload("res://game/maps/map_prop_visual.gd")
+const PILLAR_SCAN_INTERVAL := 0.1
+const PILLAR_ACTIVE_RADIUS := 14.0 * TILE_SIZE
 
 var map_id: StringName
 var data: Dictionary
@@ -21,6 +23,7 @@ var player: SnakePlayer
 var pillar_progress := 0.0
 var pillar_done := false
 var _exit_armed := false
+var _pillar_scan_elapsed := 0.0
 
 func setup(id: StringName, saved_flags: Dictionary, entry := &"", saved_items: Dictionary = {}) -> void:
 	map_id = id
@@ -52,6 +55,7 @@ func _build_layers() -> void:
 	ground_layer = TileMapLayer.new()
 	ground_layer.name = "Ground"
 	ground_layer.tile_set = TILESET
+	ground_layer.z_index = -10
 	add_child(ground_layer)
 	wall_layer = TileMapLayer.new()
 	wall_layer.name = "Collision"
@@ -71,6 +75,11 @@ func _build_layers() -> void:
 	for y in range(walkable.position.y, walkable.end.y):
 		wall_layer.set_cell(Vector2i(walkable.position.x - 1,y), 0, Vector2i(5,0))
 		wall_layer.set_cell(Vector2i(walkable.end.x,y), 0, Vector2i(5,0))
+	if data.has("gate"):
+		_paint_rect(ground_layer, data.exit.rect, base_tile)
+		for y in range(data.gate.barrier_rect.position.y, data.gate.barrier_rect.end.y):
+			for x in range(data.gate.barrier_rect.position.x, data.gate.barrier_rect.end.x):
+				wall_layer.erase_cell(Vector2i(x,y))
 	for obstacle in data.get("obstacles", []):
 		_paint_rect(wall_layer, obstacle, 5)
 	if data.has("bridge_gate") and not bool(flags.get("forest_bridge_open", false)):
@@ -119,7 +128,7 @@ func _build_mechanisms() -> void:
 		var gate: FragileGate = GATE_SCRIPT.new()
 		gate.name = "FragileGate"
 		add_child(gate)
-		gate.setup(data.gate.id, data.gate.rect, int(data.gate.need))
+		gate.setup(data.gate.id, data.gate.get("barrier_rect", data.gate.rect), int(data.gate.need))
 		gate.opened.connect(_on_gate_opened)
 	if data.has("pillar"):
 		pillar_done = bool(flags.get("forest_bridge_open", false))
@@ -135,15 +144,29 @@ func _on_gate_opened(id: StringName) -> void:
 	mechanism_changed.emit(id, true)
 
 func _update_pillar(delta: float) -> void:
+	_pillar_scan_elapsed += delta
+	if _pillar_scan_elapsed < PILLAR_SCAN_INTERVAL:
+		return
+	var elapsed := _pillar_scan_elapsed
+	_pillar_scan_elapsed = 0.0
+	var pillar_position := (Vector2(data.pillar.cell) + Vector2(0.5,0.5)) * TILE_SIZE
+	if player.global_position.distance_to(pillar_position) > PILLAR_ACTIVE_RADIUS or player.placed_nodes.is_empty():
+		step_pillar(elapsed, {})
+		return
+	var scan_bounds: Rect2i = data.get("pillar_scan_bounds", data.walkable)
 	var blocked: Dictionary = {}
-	for cell in player.body_chain.occupied_cells: blocked[cell] = &"body"
+	for cell in player.body_chain.occupied_cells:
+		if scan_bounds.has_point(cell):
+			blocked[cell] = &"body"
 	for ring in player.placed_nodes:
-		if is_instance_valid(ring) and not ring.finished: blocked[ring.cell] = &"node"
-	step_pillar(delta, blocked)
+		if is_instance_valid(ring) and not ring.finished and scan_bounds.has_point(ring.cell):
+			blocked[ring.cell] = &"node"
+	step_pillar(elapsed, blocked)
 
 func step_pillar(delta: float, blocked: Dictionary) -> void:
 	var enclosed := false
-	for region in EnclosureDetector.find_regions(data.walkable, blocked):
+	var scan_bounds: Rect2i = data.get("pillar_scan_bounds", data.walkable)
+	for region in EnclosureDetector.find_regions(scan_bounds, blocked):
 		if region.cells.has(data.pillar.cell) and region.touches_body and region.touches_node:
 			enclosed = true
 			break
@@ -171,6 +194,7 @@ func _build_camera() -> void:
 	camera.limit_right = int(data.size.x * TILE_SIZE)
 	camera.limit_bottom = int(data.size.y * TILE_SIZE)
 	player.add_child(camera)
+	camera.reset_smoothing.call_deferred()
 
 func _build_props() -> void:
 	var exit_data: Dictionary = data.get("exit", data.get("debug_exit", {}))
