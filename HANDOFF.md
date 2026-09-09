@@ -10,14 +10,14 @@
 - 停止线：制作人明确确认前不得进入 N7B 第一章剧情实现。
 - 当前可玩与验证证据：序章见 `N5_N6_REVIEW.md`，N7A 见 `N7A_REVIEW.md`。
 - 下一阶段范围：见 `ARCHITECTURE.md` 的 N7；当前不得实现森林第一章剧情命令。
-- 同步状态：当前本地提交尚未获得新的推送授权，远端落后于本机；接力前须由制作人明确授权并完成推送。
+- 同步状态：制作人已授权同步 N7A、资产源文件与资产交接清单；交接者以 `origin/main` 最新提交为准。
 
 仓库中的 `origin/main` 最新提交是交接事实基线。不要依赖聊天记录中的旧 commit 号；接手时用 `git log -1 --oneline` 确认实际版本。
 
 ## 接手顺序
 
 1. 从远端克隆，或在已有仓库执行 `git status` 后再运行 `git pull --ff-only`。不得覆盖、清理或重置来源不明的本地修改。
-2. 按顺序阅读：`HANDOFF.md`、`AGENTS.md`、`LEAD_ONBOARDING.md`、`GDD.md`、`ARCHITECTURE.md`、`CONTENT_SCOPE.md`、当前阶段的 `N*_REVIEW.md`。
+2. 按顺序阅读：`HANDOFF.md`、`AGENTS.md`、`LEAD_ONBOARDING.md`、`GDD.md`、`ARCHITECTURE.md`、`CONTENT_SCOPE.md`、`ASSET_MANIFEST.md`、当前阶段的 `N*_REVIEW.md`。
 3. 使用 Godot 4.7.2 打开 `project.godot`。Godot、GDA 和导出模板的绝对路径属于各台机器的本地配置，不是仓库事实。
 4. 首次接手或拉取脚本/场景改动后运行：
 
