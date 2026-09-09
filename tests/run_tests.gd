@@ -17,8 +17,10 @@ func _run() -> void:
 	await _test_n2_real_resource_input()
 	_test_n3_contract()
 	await _test_n3_real_paths()
+	_test_n4_contract()
+	await _test_n4_real_paths()
 	if failures.is_empty():
-		print("N3 TESTS PASSED (INCLUDING N1/N2 REGRESSION)")
+		print("N4 TESTS PASSED (INCLUDING N1/N2/N3 REGRESSION)")
 		quit(0)
 	else:
 		for failure in failures:
@@ -728,6 +730,118 @@ func _test_n3_real_paths() -> void:
 	node_ring_2.queue_free()
 	await process_frame
 	await process_frame
+
+
+func _test_n4_contract() -> void:
+	check(StoryMapCatalog.ORDER == [&"prologue_tutorial", &"wilderness", &"forest", &"cave"], "N4 四张剧情地图顺序固定")
+	check(StoryMapCatalog.MAPS[&"prologue_tutorial"].size == Vector2i(72, 48), "教学地图 72×48")
+	check(StoryMapCatalog.MAPS[&"forest"].exit.rect == Rect2i(55, 4, 5, 5), "森林洞口采用中央上方最终坐标")
+	check(StoryMapCatalog.MAPS[&"cave"].exit.rect == Rect2i(2, 14, 2, 5), "洞窟保留可见横向出口")
+	check(float(StoryMapCatalog.MAPS[&"forest"].pillar.charge) == 6.0 and bool(StoryMapCatalog.MAPS[&"forest"].pillar.requires_node), "桥柱需节点闭环持续 6 秒")
+	check(ResourceLoader.exists("res://assets/tiles/story_tileset.tres"), "共享剧情 TileSet 存在")
+	var tile_set: TileSet = load("res://assets/tiles/story_tileset.tres")
+	check(tile_set.tile_size == Vector2i(24, 24) and tile_set.get_physics_layers_count() == 1, "共享 TileSet 使用 24px 并自带 World 碰撞")
+	var state := SessionState.new()
+	var snapshot := state.to_dictionary()
+	for key in ["story", "player", "inventory", "body", "mechanisms", "rewards", "encounters", "items", "gold", "checkpoint_snapshot"]:
+		check(snapshot.has(key), "存档状态覆盖字段：%s" % key)
+	check(not state.load_dictionary({"current_map": "missing", "checkpoint_map": "missing"}).ok, "未知地图存档拒绝载入")
+
+
+func _test_n4_real_paths() -> void:
+	var map := StoryMap.new()
+	root.add_child(map)
+	map.setup(&"prologue_tutorial", {})
+	await physics_frame
+	check(map.get_node("Ground") is TileMapLayer and map.get_node("Collision") is TileMapLayer, "地图使用独立 TileMapLayer 地表/碰撞层")
+	check(map.ground_layer.get_cell_source_id(Vector2i(8, 24)) == 0, "教学出生区真实绘制地表瓦片")
+	check(map.wall_layer.get_cell_source_id(Vector2i(3, 16)) == 0, "地图边界真实绘制碰撞瓦片")
+	var first_map_bean: BeanProjectile
+	for child in map.get_children():
+		if child is BeanProjectile:
+			first_map_bean = child
+			break
+	first_map_bean.collected.emit(first_map_bean.payload)
+	check(map.item_states.has("prologue_tutorial:bean:16:24"), "固定地图豆使用稳定键记录到 items 状态")
+	var gate: FragileGate = map.get_node("FragileGate")
+	var dummy: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
+	root.add_child(dummy)
+	gate.hit_by_bean(dummy)
+	gate.hit_by_bean(dummy)
+	check(gate.progress == 2 and not bool(map.flags.get("tutorial_fragile_gate", false)), "易碎门前两豆只累计进度")
+	gate.hit_by_bean(dummy)
+	check(bool(map.flags.get("tutorial_fragile_gate", false)), "易碎门第三豆开启并持久化标记")
+	dummy.queue_free()
+	map.queue_free()
+	await process_frame
+
+	var forest := StoryMap.new()
+	root.add_child(forest)
+	forest.setup(&"forest", {})
+	await physics_frame
+	var ring := _n4_pillar_ring(true)
+	forest.step_pillar(1.0, ring)
+	check(is_equal_approx(forest.pillar_progress, 1.0), "节点闭环开始为桥柱充能")
+	forest.step_pillar(1.0, {})
+	check(is_equal_approx(forest.pillar_progress, 0.8), "桥柱中断按网页版每秒 0.2 秒回退")
+	forest.step_pillar(5.2, ring)
+	check(forest.pillar_done and bool(forest.flags.get("forest_bridge_open", false)), "桥柱累计满 6 秒永久打开断桥")
+	check(forest.wall_layer.get_cell_source_id(Vector2i(92, 30)) == -1, "断桥完成后清除同一 TileMap 碰撞")
+	forest.queue_free()
+	await process_frame
+
+	var save_dir := "res://.godot/n4_test_saves"
+	var store := SaveStore.new(save_dir)
+	for slot in range(1, 4):
+		store.delete_slot(slot)
+	check(store.save_slot(1, {"current_map": "forest", "value": 1}).ok, "槽位 1 可保存")
+	check(store.save_slot(2, {"current_map": "cave", "value": 2}).ok, "槽位 2 独立保存")
+	check(int(store.load_slot(1).data.value) == 1 and int(store.load_slot(2).data.value) == 2, "三槽数据互不串位")
+	check(store.save_slot(1, {"current_map": "forest", "value": 9}).ok and int(store.load_slot(1).data.value) == 9, "同槽覆盖保存")
+	check(store.delete_slot(2).ok and store.load_slot(2).empty, "槽位删除后为空")
+	_write_n4_save(store, 2, "{broken")
+	check(store.load_slot(2).error.code == &"CORRUPT_JSON", "损坏 JSON 返回明确错误")
+	_write_n4_save(store, 2, JSON.stringify({"schema_version": 99, "state": {}}))
+	check(store.load_slot(2).error.code == &"SCHEMA_TOO_NEW", "未来版本存档拒绝载入")
+	_write_n4_save(store, 2, JSON.stringify({"schema_version": 0, "state": {}}))
+	check(store.load_slot(2).error.code == &"SCHEMA_UNSUPPORTED", "缺失迁移返回明确错误")
+	for slot in range(1, 4):
+		store.delete_slot(slot)
+
+	var session: GameSession = load("res://game/main.tscn").instantiate()
+	root.add_child(session)
+	await physics_frame
+	check(session.current_world.map_id == &"prologue_tutorial", "Session 从教学地图启动")
+	await session.load_map(&"cave", &"", true)
+	check(session.current_world.map_id == &"cave" and session.state.checkpoint_map == &"cave", "跨图销毁重建并记录入口检查点")
+	var checkpoint_length := session.current_world.player.body_chain.segment_count
+	session.current_world.player.set_length(checkpoint_length + 4)
+	session.current_world.player.hearts = 1
+	await session.retry_checkpoint()
+	check(session.current_world.map_id == &"cave" and session.current_world.player.hearts == 3, "死亡重试重建当前检查点且恢复满生命")
+	check(session.current_world.player.body_chain.segment_count == checkpoint_length, "死亡重试恢复检查点资源快照而非临死状态")
+	session.queue_free()
+	await process_frame
+
+
+func _n4_pillar_ring(include_node: bool) -> Dictionary:
+	var blocked: Dictionary = {}
+	for x in range(86, 89):
+		blocked[Vector2i(x, 29)] = &"body"
+		blocked[Vector2i(x, 31)] = &"body"
+	for y in range(29, 32):
+		blocked[Vector2i(86, y)] = &"body"
+		blocked[Vector2i(88, y)] = &"body"
+	if include_node:
+		blocked[Vector2i(87, 29)] = &"node"
+	return blocked
+
+
+func _write_n4_save(store: SaveStore, slot: int, content: String) -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(store.base_dir))
+	var file := FileAccess.open(store.base_dir.path_join("slot_%d.json" % slot), FileAccess.WRITE)
+	file.store_string(content)
+	file.close()
 
 
 func _n3_prison_ring(node_cap: bool) -> Dictionary:

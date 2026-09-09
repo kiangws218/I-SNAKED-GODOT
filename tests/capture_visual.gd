@@ -6,34 +6,18 @@ func _initialize() -> void:
 
 
 func _capture() -> void:
-	var main: Node = load("res://game/main.tscn").instantiate()
-	root.add_child(main)
-	for index in range(3):
-		await process_frame
-	var player: SnakePlayer = main.get_node("TestArena/SnakePlayer")
+	var arena := StoryMap.new()
+	root.add_child(arena)
+	arena.setup(&"forest", {})
+	var player: SnakePlayer = arena.player
 	player.set_physics_process(false)
 	player.play_sfx = false
-	var arena: Node2D = main.get_node("TestArena")
-	var slime: EnemyActor = arena.get_node("Slime")
-	var mushroom: EnemyActor = arena.get_node("Mushroom")
-	var keti: NpcActor = arena.get_node("Keti")
-	slime.set_physics_process(false)
-	mushroom.set_physics_process(false)
-	slime.global_position = Vector2(216, 240)
-	mushroom.global_position = Vector2(624, 240)
-	mushroom.warning_active = true
-	mushroom.queue_redraw()
-	keti.global_position = Vector2(384, 216)
-	player.reset_at(Vector2(372, 336), Vector2.RIGHT)
-	var enemy_shot: EnemyProjectile = load("res://game/projectiles/enemy_projectile.tscn").instantiate()
-	arena.add_child(enemy_shot)
-	enemy_shot.launch(Vector2(564, 240), Vector2.LEFT, 2.0, player, mushroom)
-	enemy_shot.set_physics_process(false)
+	player.reset_at(Vector2(86.5, 30.5) * StoryMap.TILE_SIZE, Vector2.RIGHT)
+	player.grant_node_charges(1)
 	for index in range(12):
 		await process_frame
-	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()
-	var error := image.save_png("res://.godot/n3_test_arena.png")
+	var error := image.save_png("res://.godot/n4_forest_bridge.png")
 	if error == OK:
-		print("N3 VISUAL CAPTURE SAVED")
+		print("N4 VISUAL CAPTURE SAVED")
 	quit(error)

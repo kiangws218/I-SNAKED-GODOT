@@ -1,6 +1,6 @@
 # I SNAKED-GODOT 内容与素材追踪基线
 
-状态：N3 审阅版
+状态：N4 审阅版
 
 基线日期：2026-09-07
 
@@ -79,6 +79,10 @@
 - Session 换图、检查点、死亡重建；三槽隔离、覆盖、删除、损坏 JSON、版本过高和缺迁移失败。
 - N4 的跨图验证使用明确标记的测试入口绕过对白，不冒充剧情通关。
 - 资源：实际森林/河岸/水面/洞窟 TileSet，门、桥、桥桩、洞口和营地；视觉 tile 与碰撞同源。
+- `done`：四图尺寸/出生/出口/地形/障碍/豆/NPC/物品/敌人/触发数据已登记；N5–N7 内容实例仍按阶段延后。
+- `done`：教学脆弱门、森林桥柱 6 秒节点闭环、0.2 倍中断回退、吊桥碰撞清除、洞口/洞窟出口标记。
+- `done`：Session 整图销毁重建、入口检查点独立快照、满生命重试、三槽隔离/覆盖/删除与坏档错误分类。
+- `deferred`：NPC、剧情物品、敌人和遭遇的数据已登记，但正式生成与剧情副作用归 N6/N7；N4 不伪造未接入对白的事件。
 
 ### N5：剧情基础设施与对话
 
@@ -174,3 +178,12 @@
 | `sfx.hurt` | `assets/audio/hurt.wav` | 玩家受伤 | done |
 | `sfx.prison` | `assets/audio/prison.wav` | 监狱 burst | done |
 | `sfx.interact` | `assets/audio/interact.wav` | NPC 接触提示 | done |
+
+### N4 实际选定
+
+| 稳定 ID | 新项目文件 | 使用位置 | 状态 |
+| --- | --- | --- | --- |
+| `tiles.story_native` | `assets/tiles/story_tiles.svg` / `story_tileset.tres` | 四张剧情地图地表、水面、洞窟、山体、营地与碰撞 | done：项目原生 24px 小图集，视觉与碰撞共用同一 TileSet source |
+| `prop.fragile_gate` | 代码绘制 | 教学三豆门及进度 | done |
+| `prop.bridge_pillar` | 代码绘制 | 森林桥柱及 6 秒进度 | done |
+| `prop.story_items` | 代码绘制 | 铁剑、汤、药水、环形节点位置标记 | deferred：N7 接入正式拾取与统一像素素材 |

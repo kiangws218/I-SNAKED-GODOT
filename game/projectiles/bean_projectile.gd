@@ -58,6 +58,9 @@ func _physics_process(delta: float) -> void:
 		var collision := move_and_collide(flight_direction * speed * delta)
 		flight_distance += previous_position.distance_to(global_position)
 		if collision:
+			var collider := collision.get_collider()
+			if payload.id == &"bean" and is_instance_valid(collider) and collider.has_method("hit_by_bean"):
+				collider.hit_by_bean(self)
 			_on_collision(collision.get_normal())
 		elif age >= 0.22 and is_instance_valid(source):
 			var body_normal := _source_body_collision_normal()
