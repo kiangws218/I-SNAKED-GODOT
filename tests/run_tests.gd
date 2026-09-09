@@ -20,8 +20,9 @@ func _run() -> void:
 	_test_n4_contract()
 	await _test_n4_real_paths()
 	await _test_n5_n6_contract()
+	await _test_n7a_authoring_contract()
 	if failures.is_empty():
-		print("N6 TESTS PASSED (INCLUDING N1-N5 REGRESSION)")
+		print("N7A TESTS PASSED (INCLUDING N1-N6 REGRESSION)")
 		quit(0)
 	else:
 		for failure in failures:
@@ -736,9 +737,14 @@ func _test_n3_real_paths() -> void:
 func _test_n4_contract() -> void:
 	check(StoryMapCatalog.ORDER == [&"prologue_tutorial", &"wilderness", &"forest", &"cave"], "N4 四张剧情地图顺序固定")
 	check(StoryMapCatalog.MAPS[&"prologue_tutorial"].size == Vector2i(72, 48), "教学地图 72×48")
-	check(StoryMapCatalog.MAPS[&"forest"].exit.rect == Rect2i(55, 0, 5, 3), "森林洞口使用上边界 TileMap 缺口")
-	check(StoryMapCatalog.MAPS[&"cave"].exit.rect == Rect2i(1, 14, 3, 5), "洞窟出口使用左边界 TileMap 缺口")
-	check(float(StoryMapCatalog.MAPS[&"forest"].pillar.charge) == 3.0 and bool(StoryMapCatalog.MAPS[&"forest"].pillar.requires_node), "桥柱需节点闭环持续 3 秒")
+	var forest_layout: Node = load("res://game/maps/levels/forest.tscn").instantiate()
+	check(forest_layout.get_node("Triggers/ExitToCave") is MapExit, "森林洞口是编辑器可摆放的 MapExit")
+	var authored_pillar: BridgePillar = forest_layout.get_node("Interactables/ForestBridgePillar")
+	check(authored_pillar.charge_seconds == 3.0 and authored_pillar.requires_node, "桥柱参数由场景 Inspector 保存")
+	var cave_layout: Node = load("res://game/maps/levels/cave.tscn").instantiate()
+	check(cave_layout.get_node("Triggers/ExitToForest") is MapExit, "洞窟出口是编辑器可摆放的 MapExit")
+	forest_layout.free()
+	cave_layout.free()
 	check(ResourceLoader.exists("res://assets/tiles/story_tileset.tres"), "共享剧情 TileSet 存在")
 	var tile_set: TileSet = load("res://assets/tiles/story_tileset.tres")
 	check(tile_set.tile_size == Vector2i(24, 24) and tile_set.get_physics_layers_count() == 1, "共享 TileSet 使用 24px 并自带 World 碰撞")
@@ -768,7 +774,7 @@ func _test_n4_real_paths() -> void:
 			break
 	first_map_bean.collected.emit(first_map_bean.payload)
 	check(map.item_states.has("prologue_tutorial:bean:16:24"), "固定地图豆使用稳定键记录到 items 状态")
-	var gate: FragileGate = map.get_node("FragileGate")
+	var gate: FragileGate = map.get_node("MapLayout/Interactables/TutorialFragileGate")
 	var dummy: BeanProjectile = load("res://game/projectiles/bean_projectile.tscn").instantiate()
 	root.add_child(dummy)
 	gate.hit_by_bean(dummy)
@@ -793,7 +799,7 @@ func _test_n4_real_paths() -> void:
 	check(all_forest_beans_landed, "森林预置豆出生即落地，不从画外飞入")
 	var perf_started := Time.get_ticks_usec()
 	for index in range(600):
-		forest._update_pillar(1.0 / 60.0)
+		forest.bridge_pillar._physics_process(1.0 / 60.0)
 	var idle_scan_ms := (Time.get_ticks_usec() - perf_started) / 1000.0
 	print("N4 FOREST IDLE: 600 pillar ticks in %.3f ms" % idle_scan_ms)
 	check(idle_scan_ms < 250.0, "远离桥柱且无节点时不扫描整张森林地图")
@@ -815,11 +821,13 @@ func _test_n4_real_paths() -> void:
 	cave.player.set_physics_process(false)
 	cave.player.play_sfx = false
 	cave.player.global_position = Vector2(58.5, 16.5) * StoryMap.TILE_SIZE
-	cave._physics_process(0.01)
+	await physics_frame
+	await physics_frame
+	await process_frame
 	check(cave.player.node_unlocked and cave.player.node_charges == 1, "洞窟环形节点基础拾取解锁能力并给予 1 点充能")
 	check(bool(cave_items.get("cave:item:ring", false)), "洞窟环形节点拾取写入持久物品状态")
-	await process_frame
-	check(cave.get_node_or_null("Item_ring") == null, "已拾取环形节点从地图移除")
+	var ring_pickup: StoryPickup = cave.get_node("MapLayout/Pickups/RingNodePickup")
+	check(ring_pickup.consumed and not ring_pickup.visible, "已拾取环形节点从地图隐藏")
 	cave.queue_free()
 	await process_frame
 
@@ -852,7 +860,9 @@ func _test_n4_real_paths() -> void:
 	session.current_world.player.set_physics_process(false)
 	session.current_world.player.play_sfx = false
 	session.current_world.player.global_position = Vector2(58.5, 16.5) * StoryMap.TILE_SIZE
-	session.current_world._physics_process(0.01)
+	await physics_frame
+	await physics_frame
+	await process_frame
 	await session.load_map(&"forest")
 	check(session.current_world.player.node_unlocked and session.current_world.player.node_charges == 1, "洞窟取得的环形节点经 Session 换图保留到森林")
 	await session.load_map(&"cave")
@@ -910,7 +920,7 @@ func _test_n5_n6_contract() -> void:
 	session.story._on_choice("go")
 	await process_frame
 	for index in range(2): session.current_world.player.try_collect_payload({"id": &"bean"})
-	var gate: FragileGate = session.current_world.get_node("FragileGate")
+	var gate: FragileGate = session.current_world.get_node("MapLayout/Interactables/TutorialFragileGate")
 	var dummy := BeanProjectile.new()
 	for index in range(3): gate.hit_by_bean(dummy)
 	dummy.free()
@@ -923,7 +933,7 @@ func _test_n5_n6_contract() -> void:
 	session.story.map_exit(&"wilderness", &"")
 	await process_frame
 	check(session.current_world.map_id == &"wilderness" and session.story.current_id == "wilderness_keti_wait", "N6 走出教学地图进入荒野")
-	check(session.current_world.get_node_or_null("NPC_keti") != null, "N6 荒野生成可蒂实体")
+	check(session.current_world.get_node_or_null("MapLayout/Actors/Keti") != null, "N6 荒野从场景加载可蒂实体")
 	session._on_exit_reached(&"forest", &"")
 	await process_frame
 	check(session.current_world.map_id == &"wilderness", "N6 可蒂事件完成前荒野出口保持锁定")
@@ -1021,6 +1031,56 @@ func _n4_pillar_ring(include_node: bool) -> Dictionary:
 	if include_node:
 		blocked[Vector2i(87, 29)] = &"node"
 	return blocked
+
+
+func _test_n7a_authoring_contract() -> void:
+	for map_id in StoryMapCatalog.ORDER:
+		var definition: Dictionary = StoryMapCatalog.get_map(map_id)
+		check(not definition.has("spawn") and not definition.has("npcs") and not definition.has("items"), "N7A 坐标不再由 Catalog 持有：%s" % map_id)
+		var layout: Node = load(String(definition.scene)).instantiate()
+		for group_name in ["Actors", "Interactables", "Pickups", "Triggers", "SpawnPoints"]:
+			check(layout.get_node_or_null(group_name) != null, "N7A 地图可编辑分组 %s/%s" % [map_id, group_name])
+		check(layout.get_node_or_null("SpawnPoints/Default") is MapEntry, "N7A 地图默认出生点可拖拽：%s" % map_id)
+		layout.free()
+
+	var world := StoryMap.new()
+	root.add_child(world)
+	world.setup(&"wilderness", {})
+	world.player.set_physics_process(false)
+	var keti: NpcActor = world.get_node("MapLayout/Actors/Keti")
+	world.camera.focus_seconds = 0.0
+	world.camera.restore_seconds = 0.0
+	world._on_npc_interaction_requested(keti, world.player)
+	await process_frame
+	check(world.active_npc == keti and world.camera.position != Vector2.ZERO and world.camera.zoom.x > 1.0, "N7A 互动镜头平滑聚焦蛇头与目标")
+	world.finish_actor_interaction()
+	await process_frame
+	check(world.active_npc == null and world.camera.position.is_zero_approx() and world.camera.zoom.is_equal_approx(Vector2.ONE), "N7A 互动结束镜头平滑恢复")
+	world.queue_free()
+	await process_frame
+
+	var forest_world := StoryMap.new()
+	root.add_child(forest_world)
+	forest_world.setup(&"forest", {})
+	var ajie: NpcActor = forest_world.get_node("MapLayout/Actors/Ajie")
+	check(not ajie.visible and ajie.player == null, "N7A 未激活 NPC 保留编辑器摆位但不参与运行")
+	check(forest_world.activate_npc(&"ajie") == ajie and ajie.visible and ajie.player == forest_world.player, "N7A 剧情可按 npc_id 激活预摆角色")
+	forest_world.queue_free()
+	await process_frame
+
+	var wilderness_layout: Node = load("res://game/maps/levels/wilderness.tscn").instantiate()
+	var forest_exit: MapExit = wilderness_layout.get_node("Triggers/ExitToForest")
+	check(not forest_exit.is_unlocked({}) and forest_exit.is_unlocked({"prologue_complete": true}), "N7A 出口锁定条件由场景 Inspector 配置")
+	wilderness_layout.free()
+
+	var transition: ScreenTransition = load("res://game/ui/screen_transition.tscn").instantiate()
+	root.add_child(transition)
+	await transition.fade_out()
+	check(is_equal_approx(transition.shade.modulate.a, 1.0), "N7A 全屏转场可渐黑")
+	await transition.fade_in()
+	check(is_zero_approx(transition.shade.modulate.a), "N7A 全屏转场可恢复")
+	transition.queue_free()
+	await process_frame
 
 
 func _write_n4_save(store: SaveStore, slot: int, content: String) -> void:

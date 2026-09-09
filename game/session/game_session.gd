@@ -7,6 +7,7 @@ const MENU_SCRIPT := preload("res://game/ui/menu_controller.gd")
 const STORY_SCRIPT := preload("res://game/story/story_director.gd")
 
 @onready var world_host: Node2D = $WorldHost
+@onready var screen_transition: ScreenTransition = $ScreenTransition
 @onready var hud: CanvasLayer = $HUD
 @onready var map_label: Label = $HUD/Panel/VBox/Map
 @onready var status_label: Label = $HUD/Panel/VBox/Status
@@ -21,6 +22,7 @@ var dialogue: DialoguePanel
 var menus: MenuController
 var story: StoryDirector
 var pause_reasons: Dictionary = {}
+var map_transition_active := false
 
 func _ready() -> void:
 	dialogue = DIALOGUE_SCRIPT.new()
@@ -80,7 +82,9 @@ func continue_game(slot: int) -> void:
 	story.resume()
 
 func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_current := true) -> bool:
-	if not StoryMapCatalog.is_valid(map_id): return false
+	if not StoryMapCatalog.is_valid(map_id) or map_transition_active: return false
+	map_transition_active = true
+	await screen_transition.fade_out()
 	if capture_current: _capture_player()
 	if is_instance_valid(current_world):
 		current_world.queue_free()
@@ -91,6 +95,7 @@ func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_c
 	current_world.setup(map_id, state.flags, entry, state.items)
 	_restore_player()
 	current_world.exit_reached.connect(_on_exit_reached)
+	current_world.exit_blocked.connect(func(message: String): status_label.text = message)
 	current_world.mechanism_changed.connect(_on_mechanism_changed)
 	current_world.player.died.connect(_on_player_died)
 	current_world.player.resources_changed.connect(_refresh_hud)
@@ -100,6 +105,8 @@ func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_c
 	map_label.text = "%s  [%s]" % [current_world.data.title, map_id]
 	status_label.text = "开发跨图" if debug_bypass else "检查点已记录"
 	_refresh_hud()
+	await screen_transition.fade_in()
+	map_transition_active = false
 	return true
 
 func remember_checkpoint(map_id: StringName, entry := &"") -> void:
@@ -168,6 +175,7 @@ func _reload_from_menu() -> void:
 	retry_checkpoint()
 
 func _on_exit_reached(target: StringName, entry: StringName) -> void:
+	if map_transition_active: return
 	if story.map_exit(target, entry): return
 	await load_map(target, entry)
 

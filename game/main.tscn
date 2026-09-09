@@ -1,11 +1,14 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://game/session/game_session.gd" id="1_session"]
+[ext_resource type="PackedScene" path="res://game/ui/screen_transition.tscn" id="2_transition"]
 
 [node name="GameSession" type="Node"]
 script = ExtResource("1_session")
 
 [node name="WorldHost" type="Node2D" parent="."]
+
+[node name="ScreenTransition" parent="." instance=ExtResource("2_transition")]
 
 [node name="HUD" type="CanvasLayer" parent="."]
 

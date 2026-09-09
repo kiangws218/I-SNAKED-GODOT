@@ -6,7 +6,7 @@
 
 ## 当前阶段
 
-N5–N6：剧情基础设施与序章垂直切片已完成，等待制作人审阅。
+N7A：可视化关卡编排基础已完成，等待制作人审阅；尚未进入第一章剧情命令实现。
 
 运行主场景先进入三槽标题菜单；选择新游戏后，可不借助调试键从教学、荒野和可蒂事件玩到第一章森林入口。WASD/方向键转向，J/空格吐出，Q/E 切换胃袋，K 断尾，F 放置节点，回车推进对白，P/Escape 暂停。调试构建仍保留 F1–F4 跨图、F5/F6 存读档与 F9 检查点重试。
 
@@ -34,7 +34,7 @@ GDA 是效率工具，不是项目依赖。Godot 4.7.2 已完成首次无界面�
 
 ## 编辑地图
 
-正式地图不是运行时代码生成。请在 Godot 文件系统面板打开 `game/maps/levels/` 下的 `prologue_tutorial.tscn`、`wilderness.tscn`、`forest.tscn` 或 `cave.tscn`，选择 `Ground` 或 `Collision` 的 `TileMapLayer`，即可在底部 TileMap 面板直接绘制。四图共享 `assets/tiles/story_tileset.tres`；出生点、剧情出口、机关区域和角色生成点仍在 `game/maps/story_map_catalog.gd` 中配置。
+正式地图不是运行时代码生成。请在 Godot 文件系统面板打开 `game/maps/levels/` 下的地图场景：`Ground`/`Collision` 用 TileMap 面板绘制；NPC、敌人刷出点、豆、剧情物品、洞口、出口、桥桩和剧情区域均可在 2D 编辑器直接拖动。详细步骤见 `LEVEL_AUTHORING.md`。`StoryMapCatalog` 不再保存这些坐标。
 
 办公室电脑的 Godot 4.7.2 官方标准导出模板已安装在 `D:\GodotExportTemplates\4.7.2.stable`。导出模板是本机配置，到 N8 导出阶段才要求每台构建机器分别安装。
 
@@ -51,5 +51,7 @@ GDA 是效率工具，不是项目依赖。Godot 4.7.2 已完成首次无界面�
 - `N3_REVIEW.md`：N3 战斗、NPC、监狱、素材接入与回归证据。
 - `N4_REVIEW.md`：N4 地图、机关、会话、三槽存档与回归证据。
 - `N5_N6_REVIEW.md`：剧情基础设施、序章垂直切片、视觉与回归证据。
+- `LEVEL_AUTHORING.md`：TileMap、角色、机关、出口、物品和刷怪点的编辑器操作指南。
+- `N7A_REVIEW.md`：N7A 可视化关卡编排、镜头、转场和验证证据。
 
 本项目仅供个人学习。素材在真正需要时只复制当前阶段用到的最小集合。

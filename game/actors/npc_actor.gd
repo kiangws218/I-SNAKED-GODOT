@@ -12,6 +12,7 @@ const RESET_RADIUS := 1.25 * TILE_SIZE
 @export var npc_id: StringName = &"keti"
 @export var max_hp := 14.0
 @export var damageable := true
+@export var initially_active := true
 
 var hp := 14.0
 var player: SnakePlayer
@@ -26,11 +27,20 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	add_to_group(&"npc")
 	add_to_group(&"prison_target")
+	set_actor_active(initially_active)
 	queue_redraw()
 
 
 func setup(target: SnakePlayer) -> void:
 	player = target
+
+func set_actor_active(active: bool) -> void:
+	visible = active
+	set_physics_process(active)
+	set_deferred("monitoring", active)
+	var collision := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision:
+		collision.set_deferred("disabled", not active)
 
 
 func _physics_process(_delta: float) -> void:

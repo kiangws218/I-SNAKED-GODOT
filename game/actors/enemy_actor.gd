@@ -13,6 +13,8 @@ const TYPES := {
 }
 
 @export var enemy_kind: StringName = &"slime"
+@export var spawn_id: StringName
+@export var initially_active := true
 
 var player: SnakePlayer
 var hp := 1.0

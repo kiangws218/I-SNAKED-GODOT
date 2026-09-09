@@ -125,13 +125,16 @@ func _run_action(action: String, parameters: Dictionary, source_id: String) -> D
 		"waitForWall":
 			return {"ok": true, "waiting": true}
 		"waitForExit":
+			session.state.flags["tutorial_exit_open"] = true
 			_start_exit_timer(source_id)
 			return {"ok": true, "waiting": true}
 		"spawnSlimes":
 			if enemies_left == 0 and is_instance_valid(session.current_world):
+				if not session.current_world.has_enemy_spawn(&"keti_slime_1") or not session.current_world.has_enemy_spawn(&"keti_slime_2"):
+					return {"ok": false, "error": "MISSING_SPAWN_POINT", "action": action}
 				enemies_left = 2
-				session.current_world.spawn_enemy(&"slime", Vector2(48, 21) * StoryMap.TILE_SIZE)
-				session.current_world.spawn_enemy(&"slime", Vector2(50, 28) * StoryMap.TILE_SIZE)
+				session.current_world.spawn_enemy_at(&"keti_slime_1")
+				session.current_world.spawn_enemy_at(&"keti_slime_2")
 			return {"ok": true, "waiting": true}
 		"eatKeti", "eatCorpse":
 			if not bool(session.state.flags.get("keti_eaten", false)):
@@ -171,6 +174,7 @@ func _on_choice(choice_id: String) -> void:
 	if not result.ok: return
 	panel.close()
 	pause_requested.emit(&"dialogue", false)
+	_finish_world_interaction()
 	var action := String(result.get("action", ""))
 	if not action.is_empty():
 		var command := await _run_action(action, result.choice, current_id)
@@ -184,7 +188,12 @@ func _on_name_submitted(player_name: String) -> void:
 	session.state.flags["prologue_complete"] = true
 	panel.close()
 	pause_requested.emit(&"dialogue", false)
+	_finish_world_interaction()
 	enter_node("chapter1_start")
+
+func _finish_world_interaction() -> void:
+	if is_instance_valid(session.current_world):
+		session.current_world.finish_actor_interaction()
 
 func _on_actor_event(actor_id: StringName, event: StringName) -> void:
 	if actor_id != &"keti" or current_id != "wilderness_keti_wait": return
