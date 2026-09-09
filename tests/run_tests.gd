@@ -77,6 +77,7 @@ func _test_body_chain() -> void:
 	root.add_child(chain)
 	chain.reset(Vector2(240, 240), Vector2.RIGHT)
 	check(chain.segments.size() == 4, "初始四节身体")
+	check(BodyChain.SEGMENT_JOIN_WIDTH >= BodyChain.OUTER_RADIUS * 2.0, "蛇节用足宽连接段消除视觉空隙")
 	check(chain.segments[1].is_equal_approx(Vector2(216, 240)), "身体间距 1 格")
 	chain.set_segment_count(12, Vector2(240, 240))
 	var grown_spacing_valid := true
@@ -737,7 +738,7 @@ func _test_n4_contract() -> void:
 	check(StoryMapCatalog.MAPS[&"prologue_tutorial"].size == Vector2i(72, 48), "教学地图 72×48")
 	check(StoryMapCatalog.MAPS[&"forest"].exit.rect == Rect2i(55, 4, 5, 5), "森林洞口采用中央上方最终坐标")
 	check(StoryMapCatalog.MAPS[&"cave"].exit.rect == Rect2i(2, 14, 2, 5), "洞窟保留可见横向出口")
-	check(float(StoryMapCatalog.MAPS[&"forest"].pillar.charge) == 6.0 and bool(StoryMapCatalog.MAPS[&"forest"].pillar.requires_node), "桥柱需节点闭环持续 6 秒")
+	check(float(StoryMapCatalog.MAPS[&"forest"].pillar.charge) == 3.0 and bool(StoryMapCatalog.MAPS[&"forest"].pillar.requires_node), "桥柱需节点闭环持续 3 秒")
 	check(ResourceLoader.exists("res://assets/tiles/story_tileset.tres"), "共享剧情 TileSet 存在")
 	var tile_set: TileSet = load("res://assets/tiles/story_tileset.tres")
 	check(tile_set.tile_size == Vector2i(24, 24) and tile_set.get_physics_layers_count() == 1, "共享 TileSet 使用 24px 并自带 World 碰撞")
@@ -799,10 +800,25 @@ func _test_n4_real_paths() -> void:
 	check(is_equal_approx(forest.pillar_progress, 1.0), "节点闭环开始为桥柱充能")
 	forest.step_pillar(1.0, {})
 	check(is_equal_approx(forest.pillar_progress, 0.8), "桥柱中断按网页版每秒 0.2 秒回退")
-	forest.step_pillar(5.2, ring)
-	check(forest.pillar_done and bool(forest.flags.get("forest_bridge_open", false)), "桥柱累计满 6 秒永久打开断桥")
+	forest.step_pillar(2.2, ring)
+	check(forest.pillar_done and bool(forest.flags.get("forest_bridge_open", false)), "桥柱累计满 3 秒永久打开断桥")
 	check(forest.wall_layer.get_cell_source_id(Vector2i(92, 30)) == -1, "断桥完成后清除同一 TileMap 碰撞")
 	forest.queue_free()
+	await process_frame
+
+	var cave_items: Dictionary = {}
+	var cave := StoryMap.new()
+	root.add_child(cave)
+	cave.setup(&"cave", {}, &"", cave_items)
+	cave.player.set_physics_process(false)
+	cave.player.play_sfx = false
+	cave.player.global_position = Vector2(58.5, 16.5) * StoryMap.TILE_SIZE
+	cave._physics_process(0.01)
+	check(cave.player.node_unlocked and cave.player.node_charges == 1, "洞窟环形节点基础拾取解锁能力并给予 1 点充能")
+	check(bool(cave_items.get("cave:item:ring", false)), "洞窟环形节点拾取写入持久物品状态")
+	await process_frame
+	check(cave.get_node_or_null("Item_ring") == null, "已拾取环形节点从地图移除")
+	cave.queue_free()
 	await process_frame
 
 	var save_dir := "res://.godot/n4_test_saves"
@@ -829,6 +845,13 @@ func _test_n4_real_paths() -> void:
 	check(session.current_world.map_id == &"prologue_tutorial", "Session 从教学地图启动")
 	await session.load_map(&"cave", &"", true)
 	check(session.current_world.map_id == &"cave" and session.state.checkpoint_map == &"cave", "跨图销毁重建并记录入口检查点")
+	session.current_world.player.set_physics_process(false)
+	session.current_world.player.play_sfx = false
+	session.current_world.player.global_position = Vector2(58.5, 16.5) * StoryMap.TILE_SIZE
+	session.current_world._physics_process(0.01)
+	await session.load_map(&"forest")
+	check(session.current_world.player.node_unlocked and session.current_world.player.node_charges == 1, "洞窟取得的环形节点经 Session 换图保留到森林")
+	await session.load_map(&"cave")
 	var checkpoint_length := session.current_world.player.body_chain.segment_count
 	session.current_world.player.set_length(checkpoint_length + 4)
 	session.current_world.player.hearts = 1

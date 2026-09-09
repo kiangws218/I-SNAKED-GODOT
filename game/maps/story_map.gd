@@ -50,6 +50,7 @@ func _physics_process(delta: float) -> void:
 			_exit_armed = true
 	if data.has("pillar") and not pillar_done:
 		_update_pillar(delta)
+	_update_story_item_pickups()
 
 func _build_layers() -> void:
 	ground_layer = TileMapLayer.new()
@@ -205,8 +206,33 @@ func _build_props() -> void:
 		add_child(exit_marker)
 		exit_marker.setup(&"exit", "exit", (Vector2(exit_data.rect.get_center()) + Vector2(0.5,0.5)) * TILE_SIZE)
 	for item in data.get("items", []):
+		if bool(item_states.get(_story_item_key(item.id), false)):
+			continue
 		var marker := Node2D.new()
 		marker.set_script(PROP_SCRIPT)
 		marker.name = "Item_%s" % item.id
 		add_child(marker)
 		marker.setup(item.id, String(item.id), Vector2(item.cell) * TILE_SIZE)
+
+func _update_story_item_pickups() -> void:
+	if map_id != &"cave":
+		return
+	for item in data.get("items", []):
+		if item.id != &"ring":
+			continue
+		var item_key := _story_item_key(item.id)
+		if bool(item_states.get(item_key, false)):
+			return
+		if player.global_position.distance_to(Vector2(item.cell) * TILE_SIZE) > 0.7 * TILE_SIZE:
+			return
+		item_states[item_key] = true
+		player.grant_node_charges(1, true)
+		if player.play_sfx:
+			player.pickup_audio.play()
+		var marker := get_node_or_null("Item_%s" % item.id)
+		if marker:
+			marker.queue_free()
+		return
+
+func _story_item_key(item_id: StringName) -> String:
+	return "%s:item:%s" % [map_id, item_id]

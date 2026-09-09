@@ -1,6 +1,10 @@
 class_name BodyChain
 extends Node2D
 
+const OUTER_RADIUS := 8.5
+const INNER_RADIUS := 5.0
+const SEGMENT_JOIN_WIDTH := OUTER_RADIUS * 2.0
+
 @export_range(3, 512, 1) var segment_count := 4
 @export var spacing := 24.0
 @export var tile_size := 24.0
@@ -127,5 +131,7 @@ func _draw() -> void:
 		var fade := float(index) / float(maxi(1, segments.size() - 1))
 		var outer := feedback_color if feedback_color.a > 0.0 else Color(0.25, 0.62 + fade * 0.15, 0.22)
 		var inner := feedback_color if feedback_color.a > 0.0 else Color(0.42, 0.84, 0.31)
-		draw_circle(segments[index], 8.5, outer)
-		draw_circle(segments[index], 5.0, inner)
+		draw_line(segments[index], segments[index - 1], outer, SEGMENT_JOIN_WIDTH, true)
+		draw_line(segments[index], segments[index - 1], inner, INNER_RADIUS * 2.0, true)
+		draw_circle(segments[index], OUTER_RADIUS, outer)
+		draw_circle(segments[index], INNER_RADIUS, inner)

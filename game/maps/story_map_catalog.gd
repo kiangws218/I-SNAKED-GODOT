@@ -25,7 +25,7 @@ const MAPS := {
 		"obstacles": [Rect2i(38,2,15,8), Rect2i(60,2,27,8), Rect2i(17,18,3,2), Rect2i(24,38,4,2), Rect2i(37,31,3,3), Rect2i(57,15,4,2), Rect2i(62,39,3,2), Rect2i(45,51,47,7), Rect2i(92,10,4,17), Rect2i(92,33,4,25)],
 		"terrain": [{"rect": Rect2i(45,51,47,7), "tile": 2}, {"rect": Rect2i(38,2,54,8), "tile": 4}, {"rect": Rect2i(68,43,10,7), "tile": 1}],
 		"beans": [Vector2i(11,29),Vector2i(14,32),Vector2i(17,27),Vector2i(20,34),Vector2i(23,30),Vector2i(26,33),Vector2i(34,25),Vector2i(38,29),Vector2i(42,34),Vector2i(46,27)],
-		"bridge_gate": Rect2i(92,27,4,6), "pillar": {"id": &"forest_bridge_pillar", "cell": Vector2i(87,30), "charge": 6.0, "requires_node": true},
+		"bridge_gate": Rect2i(92,27,4,6), "pillar": {"id": &"forest_bridge_pillar", "cell": Vector2i(87,30), "charge": 3.0, "requires_node": true},
 		"pillar_scan_bounds": Rect2i(80,20,17,20),
 		"exit": {"rect": Rect2i(55,4,5,5), "target": &"cave"},
 		"entries": {&"forest_cave_return": {"spawn": Vector2(56.5,11.5), "direction": Vector2.DOWN}},
