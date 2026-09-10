@@ -175,8 +175,8 @@
 | `sfx.spit` | `assets/audio/spit.wav` | 玩家吐出 | done |
 | `sfx.pickup` | `assets/audio/pickup.wav` | 豆/物品回收 | done |
 | `sfx.node` | `assets/audio/node.wav` | 节点放置/回收 | done |
-| `item.bean` | 代码绘制的 8px 圆形 | 飞行/落地豆 | deferred：候选豆图是混合食物图集，N8 统一像素风时替换，当前不导入整张候选库。 |
-| `item.iron_sword` / `item.healing_potion` | 代码颜色区分 | N2 特殊投射物 | deferred：N8 统一物品像素表现。 |
+| `item.bean` | `assets/items/bean.svg` | 飞行/落地豆 | done：16×16 绿色像素图，左上四个浅绿高光像素。 |
+| `item.iron_sword` / `item.healing_potion` | 铁剑代码占位 / `assets/items/green_potion.png` | N2 特殊投射物 | 药水 done；铁剑 deferred 到 N8 统一像素表现。 |
 
 ### N3 实际选定
 
@@ -197,4 +197,4 @@
 | `tiles.story_native` | `assets/tiles/story_tiles.svg` / `story_tileset.tres` | 四张剧情地图地表、水面、洞窟、山体、营地与碰撞 | done：项目原生 24px 小图集，视觉与碰撞共用同一 TileSet source |
 | `prop.fragile_gate` | 代码绘制 | 教学三豆门及进度 | done |
 | `prop.bridge_pillar` | 代码绘制 | 森林桥柱及 3 秒进度 | done |
-| `prop.story_items` | 代码绘制 | 铁剑、汤、药水、环形节点位置标记 | deferred：N7 接入正式拾取与统一像素素材 |
+| `prop.story_items` | 药水与环形节点使用贴图；铁剑、汤仍为代码绘制 | 铁剑、汤、药水、环形节点位置标记 | N7 实体接入已完成；剩余占位留 N8。 |

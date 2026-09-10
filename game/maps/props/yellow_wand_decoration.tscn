@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/items/yellow_wand.png" id="1_wand"]
+
+[node name="YellowWandDecoration" type="Sprite2D"]
+texture_filter = 1
+texture = ExtResource("1_wand")
+scale = Vector2(1.5, 1.5)
+

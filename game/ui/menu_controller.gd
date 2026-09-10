@@ -2,6 +2,7 @@ class_name MenuController
 extends CanvasLayer
 
 const UI_FONT := preload("res://assets/fonts/fusion-pixel-10px-monospaced-zh_hans.ttf")
+const UI_THEME := preload("res://game/ui/fantasy_ui_theme.tres")
 
 signal new_game(slot: int)
 signal continue_game(slot: int)
@@ -20,6 +21,8 @@ func _ready() -> void:
 	layer = 30
 	main_menu = _make_screen(Color("10162bdf"))
 	pause_menu = _make_screen(Color("090d18cc"))
+	main_menu.theme = UI_THEME
+	pause_menu.theme = UI_THEME
 	main_menu.add_theme_font_override("font", UI_FONT)
 	pause_menu.add_theme_font_override("font", UI_FONT)
 	_build_main()

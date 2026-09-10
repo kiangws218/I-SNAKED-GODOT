@@ -10,6 +10,7 @@ const STORY_SCRIPT := preload("res://game/story/story_director.gd")
 @onready var screen_transition: ScreenTransition = $ScreenTransition
 @onready var hud: CanvasLayer = $HUD
 @onready var map_label: Label = $HUD/Panel/VBox/Map
+@onready var health_display = $HUD/Panel/VBox/Health
 @onready var status_label: Label = $HUD/Panel/VBox/Status
 @onready var hint_label: Label = $HUD/Panel/VBox/Hint
 @onready var inventory_title: Label = $HUD/InventoryPanel/VBox/Title
@@ -222,6 +223,7 @@ func _refresh_hud() -> void:
 	if not is_instance_valid(current_world) or not is_instance_valid(current_world.player): return
 	var v := current_world.player
 	var bean_ammo := v.inventory.bean_ammo(v.body_chain.segment_count, SnakePlayer.MIN_LENGTH)
+	health_display.set_health(v.hearts, v.max_hearts)
 	status_label.text = "生命 %d/%d · 长度 %d · 豆 %d · 节点 %d" % [v.hearts, v.max_hearts, v.body_chain.segment_count, bean_ammo, v.node_charges]
 	inventory_title.text = "胃袋  %d/%d  [Q/E 切换]" % [v.inventory.current_weight(), StomachInventory.MAX_WEIGHT]
 	var lines: Array[String] = []

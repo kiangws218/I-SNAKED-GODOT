@@ -18,6 +18,8 @@ const BOUNCE_MIN_CLOSE_ANGLE := 0.55
 const CLOSE_BOUNCE_DISTANCE := 6.0 * TILE_SIZE
 const LIFETIME := 6.0
 const PICKUP_RADIUS := 0.6 * TILE_SIZE
+const BEAN_TEXTURE := preload("res://assets/items/bean.svg")
+const GREEN_POTION_TEXTURE := preload("res://assets/items/green_potion.png")
 
 var payload := {"id": &"bean", "damage": 4}
 var flight_direction := Vector2.RIGHT
@@ -181,11 +183,17 @@ func _draw() -> void:
 	if bool(payload.get("actor", false)) or not String(payload.get("metadata", {}).get("actor_id", "")).is_empty():
 		_draw_actor_payload(StringName(payload.get("metadata", {}).get("actor_id", item_id)))
 		return
+	if item_id == &"bean":
+		draw_texture(BEAN_TEXTURE, Vector2(-8, -8))
+		if has_bounced and not is_landed:
+			draw_arc(Vector2.ZERO, 9.5, 0.0, TAU, 12, Color.WHITE, 1.0)
+		return
+	if item_id == &"healing_potion":
+		draw_texture(GREEN_POTION_TEXTURE, Vector2(-8, -8))
+		return
 	var color := Color("f3d55b")
 	if item_id == &"iron_sword":
 		color = Color("d9e2e8")
-	elif item_id == &"healing_potion":
-		color = Color("f06c9b")
 	draw_circle(Vector2.ZERO, 8.0 if is_landed else 7.5, color)
 	if has_bounced and not is_landed:
 		draw_arc(Vector2.ZERO, 9.5, 0.0, TAU, 12, Color.WHITE, 1.0)

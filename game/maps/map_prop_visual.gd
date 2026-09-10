@@ -1,5 +1,7 @@
 extends Node2D
 
+const GREEN_POTION_TEXTURE := preload("res://assets/items/green_potion.png")
+
 var kind: StringName = &"item"
 var label := ""
 
@@ -17,7 +19,7 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, 9.0, Color("7a4d35"))
 		draw_arc(Vector2.ZERO, 7.0, PI, TAU, 12, Color("ffcf70"), 3.0)
 	elif kind == &"healing_potion":
-		draw_rect(Rect2(-6, -8, 12, 16), Color("f06c9b"))
+		draw_texture(GREEN_POTION_TEXTURE, Vector2(-8, -8))
 	elif kind == &"ring":
 		draw_arc(Vector2.ZERO, 9.0, 0.0, TAU, 18, Color("ffd76e"), 3.0)
 	else:

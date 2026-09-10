@@ -1,6 +1,6 @@
 # I SNAKED-GODOT 内容资产交接清单
 
-更新时间：2026-09-09（N7A 交接）
+更新时间：2026-09-10（UI/HUD 视觉基线）
 
 本清单回答三件事：仓库里已经选用了什么、当前哪些视觉仍是占位、后续剧情还需要补什么。它是制作状态清单，不是素材候选库；本个人学习项目不维护素材许可证清单，也不设置发布阻断规则。
 
@@ -20,6 +20,11 @@
 | `item.ring_node` | `assets/nodes/ring.png`（16×16） | 环形节点实例 | 已选用；N8 再补四状态统一表现 |
 | `portrait.player_snake` | `assets/portraits/player_snake.png`（1254×1254） | 对话框玩家头像 | 已选用；N8 检查与其他正式头像的一致性 |
 | `font.ui.zh_hans` | `assets/fonts/fusion-pixel-10px-monospaced-zh_hans.ttf` | 主菜单、暂停菜单和对话 UI | 已选用 |
+| `ui.fantasy.frame` | `assets/ui/fantasy/panel.png`、`button.png`、`button_focus.png` | `fantasy_ui_theme.tres` 的面板和按钮九宫格 | 已选用；控件只引用 Theme，后续可集中替换 |
+| `hud.heart` | `assets/ui/heart.png` | 左上生命值 | 已选用；空心状态通过同贴图着色表现 |
+| `item.healing_potion` | `assets/items/green_potion.png` | 洞穴拾取物和药水投射物 | 已选用 |
+| `item.bean` | `assets/items/bean.svg` | 豆投射物 | 已选用；16×16 绿色像素造型，左上四点浅绿高光 |
+| `decor.cave.yellow_wand` | `assets/items/yellow_wand.png` | 洞穴可编辑装饰实例 | 已选用；场景为 `yellow_wand_decoration.tscn` |
 | `tiles.story_native` | `assets/tiles/story_tiles.svg`、`assets/tiles/story_tileset.tres` | 教学、荒野、森林、洞窟的 TileMapLayer 与碰撞 | 当前生产基线；24px 原生图集，可在 Godot TileMap 面板继续绘制 |
 | `sfx.spit` | `assets/audio/spit.wav` | 吐豆/投射物 | 已选用 |
 | `sfx.pickup` | `assets/audio/pickup.wav` | 回收豆与拾取 | 已选用 |
@@ -35,7 +40,7 @@
 | 稳定 ID / 对象 | 当前占位所有者 | 当前用途 | 替换阶段 |
 | --- | --- | --- | --- |
 | 玩家蛇头与身体 | `game/player/snake_player.gd`、`game/player/body_chain.gd` | 圆形像素稳定绘制、受伤闪烁与身体链 | N8 统一美术时评估，玩法不依赖外部贴图 |
-| 豆、铁剑、药水和角色投射物 | `game/projectiles/bean_projectile.gd` | 颜色/形状区分载荷 | 第一章实体接入时先保证辨识；N8 统一像素素材 |
+| 铁剑和角色投射物 | `game/projectiles/bean_projectile.gd` | 颜色/形状区分载荷 | 第一章实体接入时先保证辨识；N8 统一像素素材 |
 | 蘑菇针刺弹 / 哥布林箭矢基础形态 | `game/projectiles/enemy_projectile.gd` | 当前敌方弹体绘制 | 哥布林实现时区分箭矢；N8 统一表现 |
 | 可蒂、阿杰、丽丝、阿见、巴克、米罗 | `game/actors/npc_actor.gd` | 通用人物轮廓；N7A 已在地图预摆位置 | N7B–N7D 接入角色状态，N8 换正式造型与头像 |
 | 教学三豆门 | `game/maps/fragile_gate.gd` | 门体、命中进度 | N8 统一地图道具风格 |

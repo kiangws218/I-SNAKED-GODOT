@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://game/maps/authoring/story_trigger.tscn" id="6_trigger"]
 [ext_resource type="PackedScene" path="res://game/maps/authoring/enemy_spawn_point.tscn" id="7_enemy_spawn"]
 [ext_resource type="PackedScene" path="res://game/actors/npc_actor.tscn" id="8_npc"]
+[ext_resource type="PackedScene" path="res://game/maps/props/yellow_wand_decoration.tscn" id="9_wand"]
 
 [node name="MapLayout" type="Node2D" unique_id=484976056]
 
@@ -31,6 +32,28 @@ initially_active = false
 defeat_mode = "downed"
 
 [node name="Interactables" type="Node2D" parent="." unique_id=827934457]
+
+[node name="Decorations" type="Node2D" parent="."]
+
+[node name="YellowWand01" parent="Decorations" instance=ExtResource("9_wand")]
+position = Vector2(300, 348)
+rotation = -0.349066
+
+[node name="YellowWand02" parent="Decorations" instance=ExtResource("9_wand")]
+position = Vector2(612, 468)
+rotation = 0.261799
+
+[node name="YellowWand03" parent="Decorations" instance=ExtResource("9_wand")]
+position = Vector2(876, 324)
+rotation = -0.174533
+
+[node name="YellowWand04" parent="Decorations" instance=ExtResource("9_wand")]
+position = Vector2(1116, 492)
+rotation = 0.436332
+
+[node name="YellowWand05" parent="Decorations" instance=ExtResource("9_wand")]
+position = Vector2(1320, 324)
+rotation = -0.261799
 
 [node name="Pickups" type="Node2D" parent="." unique_id=1870681718]
 

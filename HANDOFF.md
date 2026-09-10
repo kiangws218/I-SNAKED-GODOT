@@ -6,18 +6,18 @@
 
 - 主分支：`main`
 - 远端：`https://github.com/kiangws218/I-SNAKED-GODOT`
-- 当前阶段：N7 第一章实现与自动门禁已完成，等待制作人审阅。
-- 停止线：制作人明确确认前不得进入 N8 整体打磨与学习构建。
+- 当前阶段：N7 第一章实现与自动门禁已完成；制作人已确认 UI/HUD 素材方向，视觉基线已接入，完整 UI/HUD 功能待下一轮实现。
+- 停止线：下一位负责人先按 `UI_HUD_HANDOFF.md` 完成 UI/HUD 并交制作人审阅；不得顺带进入 N8 的角色美术、全局音效或构建打磨。
 - 当前可玩与验证证据：序章见 `N5_N6_REVIEW.md`，N7 见 `N7_REVIEW.md`。
-- 下一阶段范围：见 `ARCHITECTURE.md` 的 N8；当前停止在 N7 审阅边界。
-- 同步状态：本地 `main` 的最新提交是 N7 审阅基线；本轮未获推送授权，因此 `origin/main` 可能暂时落后，交接前先比较本地与远端。
+- 下一工作范围：见 `UI_HUD_HANDOFF.md`；它明确区分视觉基线、完整菜单、设置、任务栏和胃袋轮播。
+- 同步状态：本次交接完成后，本地 `main` 与 `origin/main` 应指向同一提交；接手时仍需用 `git status`、`git log -1 --oneline` 验证。
 
 仓库中的 `origin/main` 最新提交是交接事实基线。不要依赖聊天记录中的旧 commit 号；接手时用 `git log -1 --oneline` 确认实际版本。
 
 ## 接手顺序
 
 1. 从远端克隆，或在已有仓库执行 `git status` 后再运行 `git pull --ff-only`。不得覆盖、清理或重置来源不明的本地修改。
-2. 按顺序阅读：`HANDOFF.md`、`AGENTS.md`、`LEAD_ONBOARDING.md`、`GDD.md`、`ARCHITECTURE.md`、`CONTENT_SCOPE.md`、`ASSET_MANIFEST.md`、当前阶段的 `N*_REVIEW.md`。
+2. 按顺序阅读：`HANDOFF.md`、`UI_HUD_HANDOFF.md`、`AGENTS.md`、`LEAD_ONBOARDING.md`、`GDD.md`、`ARCHITECTURE.md`、`CONTENT_SCOPE.md`、`ASSET_MANIFEST.md`、`N7_REVIEW.md`。
 3. 使用 Godot 4.7.2 打开 `project.godot`。Godot、GDA 和导出模板的绝对路径属于各台机器的本地配置，不是仓库事实。
 4. 首次接手或拉取脚本/场景改动后运行：
 
@@ -54,5 +54,14 @@
 - 办公室电脑曾使用：`D:\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe`。
 - 家庭电脑可把 Godot 4.7.2 控制台程序加入 `PATH`，或在命令中使用自己的绝对路径。
 - GDA 可用时所有命令传 `--json`；不可用时直接使用 Godot 4.7.2 headless 和 TestArena。
+- 本机当前未安装可调用的 GDA，因此最近一次交付以 Godot 4.7.2 headless 完整测试作为验证证据。
 - 导出模板到 N8 才是必需项，每台机器可独立安装，不提交到仓库。
 - 旧 `IM-SNAKE` 只读参考通常位于仓库同级目录；家庭电脑没有该目录时，以本仓库 `GDD.md` 和已经提交的审计结论为准，不因此阻断已明确的工作。
+
+## 本次 UI 视觉交接摘要
+
+- UI 风格入口：`game/ui/fantasy_ui_theme.tres`。面板与按钮使用九宫格，不要把边框复制进各个页面。
+- 生命组件：`game/ui/health_display.tscn`；它已绑定玩家当前/最大生命，但正式 HUD 场景拆分尚未完成。
+- 洞穴 Yellow Wand 位于 `game/maps/levels/cave.tscn/Decorations`，每根都是可人工移动的 `yellow_wand_decoration.tscn` 实例。
+- 豆、Green Potion、Heart 和 Yellow Wand 的仓库源文件、Godot `.import` 设置与使用状态见 `ASSET_MANIFEST.md`。
+- 当前标题/暂停菜单仍由 `menu_controller.gd` 动态创建。下一轮应按 `UI_HUD_HANDOFF.md` 拆成可编辑 `.tscn`，但不得破坏测试依赖的三槽存档路径。

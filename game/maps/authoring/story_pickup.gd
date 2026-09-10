@@ -1,6 +1,8 @@
 class_name StoryPickup
 extends Area2D
 
+const GREEN_POTION_TEXTURE := preload("res://assets/items/green_potion.png")
+
 signal collected(pickup: StoryPickup)
 signal interaction_requested(pickup: StoryPickup)
 
@@ -48,5 +50,8 @@ func _on_body_exited(body: Node2D) -> void:
 		_interaction_armed = true
 
 func _draw() -> void:
+	if item_id == &"healing_potion":
+		draw_texture(GREEN_POTION_TEXTURE, Vector2(-8, -8))
+		return
 	draw_circle(Vector2.ZERO, 9.0, Color("f6bd60"))
 	draw_arc(Vector2.ZERO, 13.0, 0.0, TAU, 20, Color("fff1b8"), 2.0)
