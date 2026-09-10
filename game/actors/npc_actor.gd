@@ -34,6 +34,14 @@ func _ready() -> void:
 func setup(target: SnakePlayer) -> void:
 	player = target
 
+func restore_from_payload(payload: Dictionary) -> void:
+	var metadata: Dictionary = payload.get("metadata", {})
+	if metadata.has("hp"):
+		hp = clampf(float(metadata.hp), 0.0, max_hp)
+	interaction_open = false
+	_contact_armed = true
+	queue_redraw()
+
 func set_actor_active(active: bool) -> void:
 	visible = active
 	set_physics_process(active)

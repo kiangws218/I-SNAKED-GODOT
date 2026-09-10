@@ -33,11 +33,12 @@ var _last_target_id := 0
 var _target_hit_cooldown := 0.0
 
 
-func launch(data: Dictionary, origin: Vector2, direction: Vector2, owner_player: SnakePlayer) -> void:
+func launch(data: Dictionary, origin: Vector2, direction: Vector2, owner_player: SnakePlayer, cinematic := false) -> void:
 	payload = data.duplicate(true)
 	global_position = origin
 	flight_direction = direction.normalized()
 	source = owner_player
+	process_mode = Node.PROCESS_MODE_ALWAYS if cinematic else Node.PROCESS_MODE_INHERIT
 	speed = INITIAL_SPEED
 	if data.get("id", &"bean") != &"bean":
 		speed *= 0.75
@@ -111,15 +112,17 @@ func land() -> void:
 	speed = 0.0
 	collision_layer = 0
 	collision_mask = 0
-	if bool(payload.get("actor", false)):
+	if _is_actor_payload():
 		actor_released = true
 		var actor_payload := payload.duplicate(true)
 		var metadata: Dictionary = actor_payload.get("metadata", {}).duplicate(true)
 		metadata["unconscious"] = true
 		metadata["interactable"] = true
 		actor_payload["metadata"] = metadata
+		actor_payload["actor"] = true
 		payload = actor_payload
 		released_actor.emit(payload.duplicate(true), global_position)
+	process_mode = Node.PROCESS_MODE_INHERIT
 	queue_redraw()
 
 
@@ -149,7 +152,7 @@ func hit_target(target: Node2D) -> bool:
 		target.take_projectile_hit(damage, self)
 	elif target.has_method("take_damage"):
 		target.take_damage(damage, &"projectile")
-	if bool(payload.get("actor", false)):
+	if _is_actor_payload():
 		var metadata: Dictionary = payload.get("metadata", {}).duplicate(true)
 		metadata["hp"] = maxf(0.0, float(metadata.get("hp", 1.0)) - damage)
 		payload["metadata"] = metadata
@@ -164,6 +167,13 @@ func interact() -> bool:
 	actor_interaction_emitted = true
 	actor_interacted.emit(payload.duplicate(true))
 	return true
+
+
+func _is_actor_payload() -> bool:
+	if bool(payload.get("actor", false)):
+		return true
+	var metadata: Dictionary = payload.get("metadata", {})
+	return not String(metadata.get("actor_id", "")).is_empty()
 
 
 func _draw() -> void:

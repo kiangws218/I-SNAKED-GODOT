@@ -221,14 +221,14 @@ func _perform_memory_vomit() -> void:
 	player.inventory.selected_index = 0
 	for index in range(bean_count):
 		player.shot_cooldown_left = 0.0
-		player.try_spit()
+		player.try_spit(true)
 		await get_tree().create_timer(0.13, true, false, true).timeout
 	for item_id in [&"keti", &"keti_corpse"]:
 		for index in range(player.inventory.entries.size()):
 			if player.inventory.entries[index].id == item_id:
 				player.inventory.selected_index = index + 1
 				player.shot_cooldown_left = 0.0
-				player.try_spit()
+				player.try_spit(true)
 				break
 	player.inventory.selected_index = 0
 	pause_requested.emit(&"cutscene", false)

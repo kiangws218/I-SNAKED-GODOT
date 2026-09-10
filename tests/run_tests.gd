@@ -803,7 +803,15 @@ func _test_n4_real_paths() -> void:
 	var idle_scan_ms := (Time.get_ticks_usec() - perf_started) / 1000.0
 	print("N4 FOREST IDLE: 600 pillar ticks in %.3f ms" % idle_scan_ms)
 	check(idle_scan_ms < 250.0, "远离桥柱且无节点时不扫描整张森林地图")
+	var bridge_ring: RingNode = load("res://game/nodes/ring_node.tscn").instantiate()
+	forest.add_child(bridge_ring)
+	bridge_ring.setup(Vector2i(87, 29), (Vector2(87, 29) + Vector2(0.5, 0.5)) * StoryMap.TILE_SIZE)
+	forest.player.placed_nodes.append(bridge_ring)
 	var ring := _n4_pillar_ring(true)
+	forest.player.body_chain.occupied_cells.erase(bridge_ring.cell)
+	forest.step_pillar(1.0, ring)
+	check(is_zero_approx(forest.pillar_progress), "未穿过环形节点的身体闭环不能给桥柱充能")
+	forest.player.body_chain.occupied_cells[bridge_ring.cell] = true
 	forest.step_pillar(1.0, ring)
 	check(is_equal_approx(forest.pillar_progress, 1.0), "节点闭环开始为桥柱充能")
 	forest.step_pillar(1.0, {})
@@ -971,6 +979,26 @@ func _test_n5_n6_contract() -> void:
 	check("可蒂" in session.inventory_slots.text, "N6 胃袋 HUD 立即显示吞入的可蒂")
 	var blurred := await session.story.execute_command("memoryBlur")
 	check(blurred.ok and session.current_world.player.inventory.count_item(&"keti") == 0, "N6 记忆模糊按 0.13 秒节奏吐尽豆并吐出角色")
+	var released_keti_projectile: BeanProjectile
+	for child in session.current_world.get_children():
+		if child is BeanProjectile and child.payload.get("id", &"") == &"keti":
+			released_keti_projectile = child
+			break
+	check(released_keti_projectile != null and released_keti_projectile.process_mode == Node.PROCESS_MODE_ALWAYS, "剧情吐出物使用独立暂停处理域")
+	var cinematic_start := released_keti_projectile.global_position
+	paused = true
+	for index in range(4): await physics_frame
+	check(released_keti_projectile.global_position.distance_to(cinematic_start) > 1.0, "对白暂停时仍看得到剧情吐出演出")
+	released_keti_projectile.land()
+	paused = false
+	await process_frame
+	var restored_keti: NpcActor = session.current_world.get_node("MapLayout/Actors/Keti")
+	check(restored_keti.visible and is_equal_approx(restored_keti.hp, 14.0), "吐出的可蒂恢复原 NPC 外形和生命而非蓝球")
+	session.current_world.player.global_position = restored_keti.global_position
+	await physics_frame
+	await physics_frame
+	check(session.current_world.active_npc == restored_keti, "吐出的可蒂恢复真实 NPC 接触互动")
+	session.current_world.finish_actor_interaction()
 	session.dialogue.interact_audio.stop()
 	session.queue_free()
 	paused = false
@@ -988,6 +1016,7 @@ func _test_n5_n6_contract() -> void:
 	var near_burst := loot_enemy.make_loot_burst(6)
 	loot_enemy.death_head_distance = 8.0 * EnemyActor.TILE_SIZE
 	var far_burst := loot_enemy.make_loot_burst(6)
+	check(is_equal_approx(EnemyActor.LOOT_BURST_SPEED_SCALE, 0.6), "怪物掉豆初速度降为原手感的 60%")
 	var near_min := INF
 	var far_max := 0.0
 	var directions: Dictionary = {}
@@ -1053,6 +1082,10 @@ func _test_n7a_authoring_contract() -> void:
 	world._on_npc_interaction_requested(keti, world.player)
 	await process_frame
 	check(world.active_npc == keti and world.camera.position != Vector2.ZERO and world.camera.zoom.x > 1.0, "N7A 互动镜头平滑聚焦蛇头与目标")
+	var focus_point := world.player.global_position.lerp(keti.global_position, 0.5)
+	var screen_position := (focus_point - world.camera.global_position) * world.camera.zoom + world.camera.get_viewport_rect().size * 0.5
+	var expected_anchor := world.camera.get_viewport_rect().size * world.camera.focus_screen_anchor
+	check(screen_position.distance_to(expected_anchor) < 1.0, "互动主体构图到右侧对白框外的左侧中央")
 	world.finish_actor_interaction()
 	await process_frame
 	check(world.active_npc == null and world.camera.position.is_zero_approx() and world.camera.zoom.is_equal_approx(Vector2.ONE), "N7A 互动结束镜头平滑恢复")

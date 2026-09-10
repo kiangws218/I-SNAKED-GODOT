@@ -25,6 +25,7 @@ static func find_regions(bounds: Rect2i, blocked: Dictionary) -> Array[Dictionar
 			var region_cells: Array[Vector2i] = []
 			var touches_body := false
 			var touches_node := false
+			var touches_connected_node := false
 			var queue: Array[Vector2i] = [cell]
 			visited[cell] = true
 			while not queue.is_empty():
@@ -35,11 +36,18 @@ static func find_regions(bounds: Rect2i, blocked: Dictionary) -> Array[Dictionar
 					if blocked.has(neighbor):
 						var kind: StringName = blocked[neighbor]
 						touches_body = touches_body or kind == &"body"
-						touches_node = touches_node or kind == &"node"
+						var is_node := kind == &"node" or kind == &"node_connected"
+						touches_node = touches_node or is_node
+						touches_connected_node = touches_connected_node or kind == &"node_connected"
 					elif bounds.has_point(neighbor) and not visited.has(neighbor):
 						visited[neighbor] = true
 						queue.append(neighbor)
-			regions.append({"cells": region_cells, "touches_body": touches_body, "touches_node": touches_node})
+			regions.append({
+				"cells": region_cells,
+				"touches_body": touches_body,
+				"touches_node": touches_node,
+				"touches_connected_node": touches_connected_node,
+			})
 	return regions
 
 

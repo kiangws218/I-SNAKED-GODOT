@@ -7,6 +7,7 @@ signal shot_fired(projectile: EnemyProjectile)
 
 const TILE_SIZE := 24.0
 const PROJECTILE_SCENE := preload("res://game/projectiles/enemy_projectile.tscn")
+const LOOT_BURST_SPEED_SCALE := 0.6
 const TYPES := {
 	&"slime": {"hp": 14.0, "speed": 2.0, "radius": 0.55, "drops": 2},
 	&"mushroom": {"hp": 16.0, "speed": 0.0, "radius": 0.62, "drops": 2, "cadence": 4.0, "telegraph": 0.7, "bullet_speed": 2.0},
@@ -152,7 +153,7 @@ func make_loot_burst(count: int) -> Array[Dictionary]:
 		var fan := (float(index) - float(count - 1) * 0.5) * 0.32
 		result.append({
 			"direction": base_direction.rotated(fan + randf_range(-0.38, 0.38)).normalized(),
-			"speed": BeanProjectile.INITIAL_SPEED * distance_boost * randf_range(0.78, 1.18),
+			"speed": BeanProjectile.INITIAL_SPEED * LOOT_BURST_SPEED_SCALE * distance_boost * randf_range(0.78, 1.18),
 		})
 	return result
 

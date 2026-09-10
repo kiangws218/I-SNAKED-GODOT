@@ -54,6 +54,7 @@ func _build_layers() -> void:
 func _spawn_player(entry: StringName) -> void:
 	player = PLAYER_SCENE.instantiate()
 	add_child(player)
+	player.actor_released.connect(_on_player_actor_released)
 	var wanted := entry if not entry.is_empty() else &"default"
 	var marker := _find_entry(wanted)
 	if marker == null:
@@ -104,6 +105,14 @@ func _story_item_key(item_id: StringName) -> String:
 	return "%s:item:%s" % [map_id, item_id]
 
 func spawn_npc(actor_id: StringName, at_position: Vector2) -> NpcActor:
+	var existing := _find_npc(actor_id)
+	if is_instance_valid(existing):
+		existing.global_position = at_position
+		if existing.player == null:
+			_bind_npc(existing)
+		else:
+			existing.set_actor_active(true)
+		return existing
 	var npc: NpcActor = NPC_SCENE.instantiate()
 	npc.name = "NPC_%s" % actor_id
 	npc.npc_id = actor_id
@@ -111,6 +120,31 @@ func spawn_npc(actor_id: StringName, at_position: Vector2) -> NpcActor:
 	npc.global_position = at_position
 	_bind_npc(npc)
 	return npc
+
+func _find_npc(actor_id: StringName) -> NpcActor:
+	for node in _layout_nodes() + get_children():
+		if node is NpcActor and node.npc_id == actor_id and not node.is_queued_for_deletion():
+			return node
+	return null
+
+func _on_player_actor_released(payload: Dictionary, at_position: Vector2) -> void:
+	var metadata: Dictionary = payload.get("metadata", {})
+	var actor_id := StringName(metadata.get("actor_id", payload.get("id", "")))
+	if actor_id.is_empty() or actor_id == &"bean":
+		return
+	var npc := spawn_npc(actor_id, at_position)
+	npc.restore_from_payload(payload)
+	_discard_actor_projectile(actor_id, at_position)
+
+func _discard_actor_projectile(actor_id: StringName, at_position: Vector2) -> void:
+	for child in get_children():
+		if not child is BeanProjectile or not child.actor_released:
+			continue
+		var payload: Dictionary = child.payload
+		var metadata: Dictionary = payload.get("metadata", {})
+		var child_actor_id := StringName(metadata.get("actor_id", payload.get("id", "")))
+		if child_actor_id == actor_id and child.global_position.distance_to(at_position) < 1.0:
+			child.queue_free()
 
 func spawn_enemy(kind: StringName, at_position: Vector2) -> EnemyActor:
 	var enemy: EnemyActor = ENEMY_SCENE.instantiate()

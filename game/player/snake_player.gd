@@ -177,7 +177,7 @@ func grant_node_charges(amount: int, unlock := true) -> int:
 	return node_charges
 
 
-func try_spit() -> bool:
+func try_spit(cinematic := false) -> bool:
 	if shot_cooldown_left > 0.0 or is_dead:
 		return false
 	var payload: Dictionary
@@ -195,7 +195,7 @@ func try_spit() -> bool:
 	get_parent().add_child(projectile)
 	projectile.released_actor.connect(_on_actor_released)
 	projectile.actor_interacted.connect(_on_actor_interacted)
-	projectile.launch(payload, global_position + direction * TILE_SIZE * 0.9, direction, self)
+	projectile.launch(payload, global_position + direction * TILE_SIZE * 0.9, direction, self, cinematic)
 	if play_sfx:
 		spit_audio.play()
 	shot_cooldown_left = SHOT_INTERVAL

@@ -42,15 +42,18 @@ func _physics_process(delta: float) -> void:
 		if scan_bounds.has_point(cell):
 			blocked[cell] = &"body"
 	for ring in player.placed_nodes:
-		if is_instance_valid(ring) and not ring.finished and scan_bounds.has_point(ring.cell):
-			blocked[ring.cell] = &"node"
+		if not is_instance_valid(ring) or ring.finished or not scan_bounds.has_point(ring.cell):
+			continue
+		if player.body_chain.occupied_cells.has(ring.cell):
+			blocked[ring.cell] = &"node_connected"
 	step_charge(elapsed, blocked)
 
 func step_charge(delta: float, blocked: Dictionary) -> void:
+	blocked = _mark_connected_nodes(blocked)
 	var pillar_cell := Vector2i(floori(global_position.x / TILE_SIZE), floori(global_position.y / TILE_SIZE))
 	var enclosed := false
 	for region in EnclosureDetector.find_regions(scan_bounds, blocked):
-		if region.cells.has(pillar_cell) and region.touches_body and (region.touches_node or not requires_node):
+		if region.cells.has(pillar_cell) and region.touches_body and (region.touches_connected_node or not requires_node):
 			enclosed = true
 			break
 	progress = minf(charge_seconds, progress + delta) if enclosed else maxf(0.0, progress - delta * 0.2)
@@ -59,6 +62,20 @@ func step_charge(delta: float, blocked: Dictionary) -> void:
 		done = true
 		play_completion_animation()
 		completed.emit(self)
+
+func _mark_connected_nodes(blocked: Dictionary) -> Dictionary:
+	if not is_instance_valid(player):
+		return blocked
+	var result: Dictionary = blocked.duplicate()
+	for cell in result.keys():
+		if result[cell] == &"node_connected":
+			result[cell] = &"node"
+	for ring in player.placed_nodes:
+		if not is_instance_valid(ring) or ring.finished:
+			continue
+		if result.get(ring.cell, &"") == &"node" and player.body_chain.occupied_cells.has(ring.cell):
+			result[ring.cell] = &"node_connected"
+	return result
 
 func play_completion_animation() -> void:
 	if completion_animation_player.is_empty():
