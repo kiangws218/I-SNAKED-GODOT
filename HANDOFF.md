@@ -11,6 +11,8 @@
 - 当前可玩与验证证据：序章见 `N5_N6_REVIEW.md`，N7 见 `N7_REVIEW.md`。
 - 下一工作范围：见 `UI_HUD_HANDOFF.md`；它明确区分视觉基线、完整菜单、设置、任务栏和胃袋轮播。
 - 同步状态：本次交接完成后，本地 `main` 与 `origin/main` 应指向同一提交；接手时仍需用 `git status`、`git log -1 --oneline` 验证。
+- 素材状态：本机 `D:\Kenney_CC0_2D_Library` 保存 Kenney 官方 2D 分类的 145 个完整包、CSV/JSON 索引与同步脚本；仓库只保存当前实际引用的 Tiny Dungeon 最小副本，映射见 `assets/placeholders/kenney/README.md`。
+- 历史门禁说明：远端素材提交曾记录跨图环形节点失败；后续 N7 状态修复已解决，本次合并后的完整回归重新通过。
 
 仓库中的 `origin/main` 最新提交是交接事实基线。不要依赖聊天记录中的旧 commit 号；接手时用 `git log -1 --oneline` 确认实际版本。
 
@@ -51,7 +53,7 @@
 
 ## 本机配置提示
 
-- 办公室电脑曾使用：`D:\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe`。
+- 当前电脑使用：`D:\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64_console.exe`。
 - 家庭电脑可把 Godot 4.7.2 控制台程序加入 `PATH`，或在命令中使用自己的绝对路径。
 - GDA 可用时所有命令传 `--json`；不可用时直接使用 Godot 4.7.2 headless 和 TestArena。
 - 本机当前未安装可调用的 GDA，因此最近一次交付以 Godot 4.7.2 headless 完整测试作为验证证据。

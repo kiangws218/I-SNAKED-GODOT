@@ -6,6 +6,11 @@ const GREEN_POTION_TEXTURE := preload("res://assets/items/green_potion.png")
 signal collected(pickup: StoryPickup)
 signal interaction_requested(pickup: StoryPickup)
 
+const PLACEHOLDER_TEXTURES := {
+	&"iron_sword": preload("res://assets/placeholders/kenney/tiny_dungeon/items/iron_sword.png"),
+	&"ring": preload("res://assets/nodes/ring.png"),
+}
+
 @export var item_id: StringName
 @export var pickup_id: StringName
 @export var display_name := "剧情物品"
@@ -51,7 +56,11 @@ func _on_body_exited(body: Node2D) -> void:
 
 func _draw() -> void:
 	if item_id == &"healing_potion":
-		draw_texture(GREEN_POTION_TEXTURE, Vector2(-8, -8))
-		return
-	draw_circle(Vector2.ZERO, 9.0, Color("f6bd60"))
+		draw_texture_rect(GREEN_POTION_TEXTURE, Rect2(-12, -12, 24, 24), false)
+	else:
+		var texture := PLACEHOLDER_TEXTURES.get(item_id) as Texture2D
+		if texture:
+			draw_texture_rect(texture, Rect2(-12, -12, 24, 24), false)
+		else:
+			draw_circle(Vector2.ZERO, 9.0, Color("f6bd60"))
 	draw_arc(Vector2.ZERO, 13.0, 0.0, TAU, 20, Color("fff1b8"), 2.0)
