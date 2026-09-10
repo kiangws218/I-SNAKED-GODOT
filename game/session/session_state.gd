@@ -8,7 +8,7 @@ var checkpoint_map: StringName = DEFAULT_MAP
 var checkpoint_entry: StringName = &""
 var checkpoint_snapshot: Dictionary = {}
 var flags: Dictionary = {}
-var player: Dictionary = {"length": 4, "hearts": 3, "max_hearts": 3, "node_unlocked": false, "node_charges": 0, "inventory": [], "selected_index": 0}
+var player: Dictionary = {"length": 4, "hearts": 3, "max_hearts": 3, "node_unlocked": false, "node_charges": 0, "inventory": [], "selected_index": 0, "rider": ""}
 var story: Dictionary = {"story_id": "prologue", "chapter": "tutorial", "current_node": null}
 var inventory: Dictionary = {}
 var body: Dictionary = {}
@@ -16,10 +16,17 @@ var mechanisms: Dictionary = {}
 var rewards: Dictionary = {}
 var encounters: Dictionary = {}
 var items: Dictionary = {}
+var actors: Dictionary = {
+	"ajie": {"status": "alive", "location": "forest", "hp": 8.0, "max_hp": 8.0, "met": false, "damageable": false},
+	"lisi": {"status": "alive", "location": "forest", "hp": 8.0, "max_hp": 8.0, "met": false, "damageable": false},
+	"ajian": {"status": "bound_unconscious", "location": "cave", "hp": 8.0, "max_hp": 8.0, "met": false, "damageable": false},
+	"buck": {"status": "alive", "location": "forest", "hp": 8.0, "max_hp": 8.0, "met": false, "damageable": false},
+	"miro": {"status": "alive", "location": "forest", "hp": 8.0, "max_hp": 8.0, "met": false, "damageable": false},
+}
 var gold := 0
 
 func to_dictionary() -> Dictionary:
-	return {"current_map": String(current_map), "checkpoint_map": String(checkpoint_map), "checkpoint_entry": String(checkpoint_entry), "checkpoint_snapshot": checkpoint_snapshot.duplicate(true), "flags": flags.duplicate(true), "player": player.duplicate(true), "story": story.duplicate(true), "inventory": inventory.duplicate(true), "body": body.duplicate(true), "mechanisms": mechanisms.duplicate(true), "rewards": rewards.duplicate(true), "encounters": encounters.duplicate(true), "items": items.duplicate(true), "gold": gold}
+	return {"current_map": String(current_map), "checkpoint_map": String(checkpoint_map), "checkpoint_entry": String(checkpoint_entry), "checkpoint_snapshot": checkpoint_snapshot.duplicate(true), "flags": flags.duplicate(true), "player": player.duplicate(true), "story": story.duplicate(true), "inventory": inventory.duplicate(true), "body": body.duplicate(true), "mechanisms": mechanisms.duplicate(true), "rewards": rewards.duplicate(true), "encounters": encounters.duplicate(true), "items": items.duplicate(true), "actors": actors.duplicate(true), "gold": gold}
 
 func load_dictionary(data: Dictionary) -> Dictionary:
 	var map_id := StringName(data.get("current_map", DEFAULT_MAP))
@@ -39,6 +46,7 @@ func load_dictionary(data: Dictionary) -> Dictionary:
 	rewards = Dictionary(data.get("rewards", {})).duplicate(true)
 	encounters = Dictionary(data.get("encounters", {})).duplicate(true)
 	items = Dictionary(data.get("items", {})).duplicate(true)
+	actors = Dictionary(data.get("actors", actors)).duplicate(true)
 	gold = int(data.get("gold", 0))
 	return {"ok": true}
 
@@ -46,7 +54,7 @@ func remember_checkpoint() -> void:
 	checkpoint_snapshot = {
 		"player": player.duplicate(true), "flags": flags.duplicate(true), "mechanisms": mechanisms.duplicate(true),
 		"rewards": rewards.duplicate(true), "encounters": encounters.duplicate(true), "items": items.duplicate(true),
-		"inventory": inventory.duplicate(true), "body": body.duplicate(true), "gold": gold,
+		"inventory": inventory.duplicate(true), "body": body.duplicate(true), "actors": actors.duplicate(true), "gold": gold,
 	}
 
 func restore_checkpoint() -> void:
@@ -60,4 +68,5 @@ func restore_checkpoint() -> void:
 	items = Dictionary(checkpoint_snapshot.get("items", items)).duplicate(true)
 	inventory = Dictionary(checkpoint_snapshot.get("inventory", inventory)).duplicate(true)
 	body = Dictionary(checkpoint_snapshot.get("body", body)).duplicate(true)
+	actors = Dictionary(checkpoint_snapshot.get("actors", actors)).duplicate(true)
 	gold = int(checkpoint_snapshot.get("gold", gold))

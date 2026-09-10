@@ -138,6 +138,8 @@ func _update_hud() -> void:
 func _enemy_hp(enemy: Variant) -> String:
 	if not is_instance_valid(enemy) or not enemy is EnemyActor:
 		return "已击败"
+	if enemy.is_dead:
+		return "已击败"
 	return "%d/%d" % [roundi(enemy.hp), roundi(enemy.max_hp)]
 
 

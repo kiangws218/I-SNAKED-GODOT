@@ -26,6 +26,8 @@ tile_set = ExtResource("1_jweya")
 [node name="Ajian" parent="Actors" instance=ExtResource("8_npc")]
 position = Vector2(708, 300)
 npc_id = &"ajian"
+damageable = false
+defeat_mode = "downed"
 initially_active = false
 
 [node name="Interactables" type="Node2D" parent="."]
@@ -73,7 +75,6 @@ position = Vector2(1404, 396)
 item_id = &"ring"
 pickup_id = &"ring"
 display_name = "环形节点"
-auto_collect = true
 
 [node name="Triggers" type="Node2D" parent="."]
 

@@ -1,9 +1,39 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://game/maps/bridge_pillar_visual.gd" id="1"]
+[ext_resource type="PackedScene" path="res://game/maps/props/forest_bridge.tscn" id="2_bridge"]
+
+[sub_resource type="Animation" id="Animation_RESET"]
+resource_name = "RESET"
+length = 0.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Bridge:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {"times": PackedFloat32Array(0), "transitions": PackedFloat32Array(1), "update": 0, "values": [Vector2(132, -96)]}
+
+[sub_resource type="Animation" id="Animation_lower"]
+resource_name = "lower"
+length = 0.8
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Bridge:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {"times": PackedFloat32Array(0, 0.8), "transitions": PackedFloat32Array(1, 1), "update": 0, "values": [Vector2(132, -96), Vector2(132, 0)]}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_main"]
+_data = {&"RESET": SubResource("Animation_RESET"), &"lower": SubResource("Animation_lower")}
 
 [node name="BridgePillar" type="Node2D"]
 script = ExtResource("1")
+completion_animation_player = NodePath("AnimationPlayer")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {&"": SubResource("AnimationLibrary_main")}
 
+[node name="Bridge" parent="." instance=ExtResource("2_bridge")]
+position = Vector2(132, -96)

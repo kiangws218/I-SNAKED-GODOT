@@ -205,6 +205,33 @@ func try_spit(cinematic := false) -> bool:
 	return true
 
 
+func spit_item(item_id: StringName, cinematic := false, ignore_cooldown := false) -> bool:
+	var entry_index := -1
+	for index in range(inventory.entries.size()):
+		if inventory.entries[index].id == item_id:
+			entry_index = index
+			break
+	if entry_index < 0:
+		return false
+	var previous_index := inventory.selected_index
+	inventory.selected_index = entry_index + 1
+	if ignore_cooldown:
+		shot_cooldown_left = 0.0
+	var did_spit := try_spit(cinematic)
+	inventory.selected_index = mini(previous_index, inventory.entries.size())
+	resources_changed.emit()
+	return did_spit
+
+
+func consume_inventory_item(item_id: StringName) -> Dictionary:
+	var payload := inventory.remove_item(item_id)
+	if payload.is_empty():
+		return {}
+	body_chain.set_segment_count(body_chain.segment_count - int(payload.get("length", 0)), global_position)
+	resources_changed.emit()
+	return payload
+
+
 func cut_tail() -> int:
 	if cut_cooldown_left > 0.0 or is_dead:
 		return 0

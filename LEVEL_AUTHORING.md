@@ -21,7 +21,7 @@ MapLayout
 ## 常用操作
 
 - NPC：把 `game/actors/npc_actor.tscn` 拖入 `Actors`，设置唯一 `npc_id`。尚未接入剧情的预摆角色保持 `initially_active = false`。
-- 常驻敌人：把敌人场景拖入 `Actors`；剧情中途出现的敌人使用 `enemy_spawn_point.tscn`，设置唯一 `spawn_id` 和 `enemy_kind`。
+- 常驻敌人：把 `enemy_spawn_point.tscn` 拖入 `SpawnPoints`，设置唯一 `spawn_id`、`enemy_kind`，并勾选 `auto_spawn`；位置、种类和是否常驻都能直接在 Inspector 修改。剧情中途才出现的敌人保持 `auto_spawn = false`，由剧情动作使用同一个出生点。
 - 玩家出生点：拖入 `map_entry.tscn`，设置 `entry_id` 和 `facing`。每张地图必须有一个 `default`。
 - 地图出口：拖入 `map_exit.tscn`，设置 `target_map`、`target_entry`，需要锁定时填写 `required_flag` 和提示文字；直接拖动 `CollisionShape2D` 的手柄调整范围。
 - 剧情区域：拖入 `story_trigger.tscn`，设置稳定 `trigger_id`，调整其 `CollisionShape2D`。

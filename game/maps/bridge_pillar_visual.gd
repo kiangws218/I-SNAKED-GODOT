@@ -25,6 +25,8 @@ func setup(target: SnakePlayer, restored := false) -> void:
 	done = restored
 	progress = charge_seconds if restored else 0.0
 	queue_redraw()
+	if done:
+		play_completion_animation()
 
 func _physics_process(delta: float) -> void:
 	if done or not is_instance_valid(player):

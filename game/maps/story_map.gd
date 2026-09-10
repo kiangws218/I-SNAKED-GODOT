@@ -8,6 +8,7 @@ signal story_actor_defeated(actor_id: StringName)
 signal story_enemy_defeated(enemy_kind: StringName)
 signal story_trigger_entered(trigger_id: StringName)
 signal story_item_collected(item_id: StringName)
+signal story_item_interacted(item_id: StringName)
 signal exit_blocked(message: String)
 
 const TILE_SIZE := 24.0
@@ -21,27 +22,33 @@ var map_id: StringName
 var data: Dictionary
 var flags: Dictionary
 var item_states: Dictionary
+var actor_states: Dictionary
+var encounter_states: Dictionary
 var ground_layer: TileMapLayer
 var wall_layer: TileMapLayer
 var player: SnakePlayer
 var layout: Node2D
 var camera: InteractionCamera
 var active_npc: NpcActor
+var active_pickup: StoryPickup
 var bridge_pillar: BridgePillar
 var pillar_progress := 0.0
 var pillar_done := false
 
-func setup(id: StringName, saved_flags: Dictionary, entry := &"", saved_items: Dictionary = {}) -> void:
+func setup(id: StringName, saved_flags: Dictionary, entry := &"", saved_items: Dictionary = {}, saved_actors: Dictionary = {}, saved_encounters: Dictionary = {}) -> void:
 	map_id = id
 	data = StoryMapCatalog.get_map(id)
 	flags = saved_flags
 	item_states = saved_items
+	actor_states = saved_actors
+	encounter_states = saved_encounters
 	_build_layers()
 	_validate_authored_content()
 	_spawn_player(entry)
 	_spawn_beans()
 	_build_camera()
 	_bind_authored_content()
+	_spawn_automatic_enemies()
 
 func _build_layers() -> void:
 	var layout_scene: PackedScene = load(String(data.scene))
@@ -122,7 +129,9 @@ func spawn_npc(actor_id: StringName, at_position: Vector2) -> NpcActor:
 	return npc
 
 func _find_npc(actor_id: StringName) -> NpcActor:
-	for node in _layout_nodes() + get_children():
+	for node in get_tree().get_nodes_in_group(&"npc"):
+		if not is_ancestor_of(node):
+			continue
 		if node is NpcActor and node.npc_id == actor_id and not node.is_queued_for_deletion():
 			return node
 	return null
@@ -134,6 +143,11 @@ func _on_player_actor_released(payload: Dictionary, at_position: Vector2) -> voi
 		return
 	var npc := spawn_npc(actor_id, at_position)
 	npc.restore_from_payload(payload)
+	actor_states[String(actor_id)] = {
+		"status": "critical" if bool(metadata.get("critical", false)) else "unconscious",
+		"location": String(map_id), "hp": npc.hp, "max_hp": npc.max_hp,
+		"position": [at_position.x, at_position.y], "met": true,
+	}
 	_discard_actor_projectile(actor_id, at_position)
 
 func _discard_actor_projectile(actor_id: StringName, at_position: Vector2) -> void:
@@ -158,8 +172,28 @@ func spawn_enemy(kind: StringName, at_position: Vector2) -> EnemyActor:
 func spawn_enemy_at(spawn_id: StringName) -> EnemyActor:
 	for node in _layout_nodes():
 		if node is EnemySpawnPoint and node.spawn_id == spawn_id:
-			return spawn_enemy(StringName(node.enemy_kind), node.global_position)
+			var saved: Dictionary = encounter_states.get(_enemy_state_key(spawn_id), {})
+			if bool(saved.get("is_dead", false)):
+				return null
+			var enemy := spawn_enemy(StringName(node.enemy_kind), node.global_position)
+			enemy.spawn_id = spawn_id
+			if not saved.is_empty():
+				enemy.restore_persistent_state(saved)
+			return enemy
 	return null
+
+func _spawn_automatic_enemies() -> void:
+	for node in _layout_nodes():
+		if node is not EnemySpawnPoint or not node.auto_spawn:
+			continue
+		var state_key := _enemy_state_key(node.spawn_id)
+		var saved: Dictionary = encounter_states.get(state_key, {})
+		if bool(saved.get("is_dead", false)):
+			continue
+		spawn_enemy_at(node.spawn_id)
+
+func _enemy_state_key(spawn_id: StringName) -> String:
+	return "%s:enemy:%s" % [map_id, spawn_id]
 
 func has_enemy_spawn(spawn_id: StringName) -> bool:
 	for node in _layout_nodes():
@@ -182,6 +216,7 @@ func activate_npc(actor_id: StringName) -> NpcActor:
 			if node.player == null:
 				_bind_npc(node)
 			node.set_actor_active(true)
+			_restore_actor_state(node)
 			return node
 	return null
 
@@ -189,6 +224,7 @@ func finish_actor_interaction() -> void:
 	if is_instance_valid(active_npc):
 		active_npc.finish_interaction()
 	active_npc = null
+	active_pickup = null
 	if is_instance_valid(camera):
 		camera.restore()
 
@@ -214,11 +250,17 @@ func _bind_authored_content() -> void:
 				node.consume()
 			else:
 				node.collected.connect(_on_story_pickup_collected)
+				node.interaction_requested.connect(_on_story_pickup_interaction_requested)
 		elif node is NpcActor:
-			if not node.initially_active or (node.npc_id == &"keti" and (bool(flags.get("keti_eaten", false)) or bool(flags.get("keti_dead", false)))):
+			var actor_state: Dictionary = actor_states.get(String(node.npc_id), {})
+			var actor_here := StringName(actor_state.get("location", "")) == map_id
+			var actor_status := String(actor_state.get("status", "alive"))
+			var state_active := actor_here and actor_status not in ["dead", "swallowed", "riding", "left"]
+			if (not node.initially_active and not state_active) or (node.npc_id == &"keti" and (bool(flags.get("keti_eaten", false)) or bool(flags.get("keti_dead", false)))):
 				node.set_actor_active(false)
 			else:
 				_bind_npc(node)
+				_restore_actor_state(node)
 		elif node is EnemyActor:
 			if not node.initially_active:
 				node.queue_free()
@@ -230,8 +272,12 @@ func _bind_authored_content() -> void:
 func _bind_npc(npc: NpcActor) -> void:
 	npc.setup(player)
 	npc.set_actor_active(true)
-	npc.interaction_requested.connect(_on_npc_interaction_requested)
-	npc.defeated.connect(func(actor: NpcActor): story_actor_defeated.emit(actor.npc_id))
+	if not npc.interaction_requested.is_connected(_on_npc_interaction_requested):
+		npc.interaction_requested.connect(_on_npc_interaction_requested)
+	if not npc.defeated.is_connected(_on_npc_defeated):
+		npc.defeated.connect(_on_npc_defeated)
+	if not npc.downed.is_connected(_on_npc_defeated):
+		npc.downed.connect(_on_npc_defeated)
 
 func _bind_enemy(enemy: EnemyActor) -> void:
 	enemy.setup(player)
@@ -241,6 +287,24 @@ func _on_npc_interaction_requested(npc: NpcActor, _player: SnakePlayer) -> void:
 	active_npc = npc
 	camera.focus_on(npc)
 	story_actor_interacted.emit(npc.npc_id)
+
+func _on_story_pickup_interaction_requested(pickup: StoryPickup) -> void:
+	active_pickup = pickup
+	camera.focus_on(pickup)
+	story_item_interacted.emit(pickup.item_id if not pickup.item_id.is_empty() else pickup.persistent_id())
+
+func _on_npc_defeated(npc: NpcActor) -> void:
+	var actor_id := String(npc.npc_id)
+	var state: Dictionary = actor_states.get(actor_id, {})
+	state["status"] = "critical" if npc.npc_id == &"ajian" else ("downed" if npc.is_downed else "dead")
+	if npc.npc_id == &"ajian":
+		flags["ajianCritical"] = true
+	state["location"] = String(map_id)
+	state["hp"] = npc.hp
+	state["max_hp"] = npc.max_hp
+	state["position"] = [npc.global_position.x, npc.global_position.y]
+	actor_states[actor_id] = state
+	story_actor_defeated.emit(npc.npc_id)
 
 func _on_map_exit_requested(map_exit: MapExit) -> void:
 	if not map_exit.is_unlocked(flags):
@@ -259,6 +323,60 @@ func _on_story_pickup_collected(pickup: StoryPickup) -> void:
 			player.pickup_audio.play()
 	pickup.consume()
 	story_item_collected.emit(pickup.item_id)
+
+func consume_story_pickup(item_id: StringName) -> bool:
+	for node in _layout_nodes():
+		if node is StoryPickup and node.item_id == item_id and not node.consumed:
+			var item_key := _story_item_key(node.persistent_id())
+			item_states[item_key] = true
+			node.consume()
+			return true
+	return false
+
+func get_story_actor(actor_id: StringName) -> NpcActor:
+	return _find_npc(actor_id)
+
+func capture_actor_states() -> void:
+	for node in get_tree().get_nodes_in_group(&"npc"):
+		if not is_ancestor_of(node):
+			continue
+		if node is not NpcActor or node.npc_id == &"keti":
+			continue
+		var key := String(node.npc_id)
+		var state: Dictionary = actor_states.get(key, {})
+		var current_status := String(state.get("status", "alive"))
+		if current_status not in ["swallowed", "riding", "dead", "left"]:
+			state["status"] = "downed" if node.is_downed else ("dead" if node.is_dead else current_status)
+			state["location"] = String(map_id)
+			state["hp"] = node.hp
+			state["max_hp"] = node.max_hp
+			state["damageable"] = node.damageable
+			state["position"] = [node.global_position.x, node.global_position.y]
+		actor_states[key] = state
+
+func capture_enemy_states() -> void:
+	for node in get_tree().get_nodes_in_group(&"enemy"):
+		if not is_ancestor_of(node) or node is not EnemyActor or node.spawn_id.is_empty():
+			continue
+		var state: Dictionary = node.get_persistent_state()
+		state["position"] = [node.global_position.x, node.global_position.y]
+		encounter_states[_enemy_state_key(node.spawn_id)] = state
+
+func _restore_actor_state(npc: NpcActor) -> void:
+	var state: Dictionary = actor_states.get(String(npc.npc_id), {})
+	if state.is_empty():
+		return
+	var saved_position: Array = state.get("position", [])
+	if saved_position.size() == 2 and StringName(state.get("location", "")) == map_id:
+		npc.global_position = Vector2(float(saved_position[0]), float(saved_position[1]))
+	var status := String(state.get("status", "alive"))
+	npc.restore_persistent_state({
+		"npc_id": String(npc.npc_id), "persistent_state_id": String(npc.persistent_state_id),
+		"max_hp": float(state.get("max_hp", npc.max_hp)), "hp": float(state.get("hp", npc.max_hp)),
+		"damageable": bool(state.get("damageable", false)),
+		"active": status not in ["dead", "swallowed", "riding", "left"],
+		"is_dead": status == "dead", "is_downed": status == "downed",
+	})
 
 func _on_bridge_pillar_completed(pillar: BridgePillar) -> void:
 	pillar_done = true
@@ -329,6 +447,10 @@ func _append_descendants(parent: Node, result: Array[Node]) -> void:
 func _on_story_enemy_defeated(enemy: EnemyActor, drops: int, kind: StringName) -> void:
 	var death_position := enemy.global_position
 	var burst := enemy.make_loot_burst(drops)
+	if not enemy.spawn_id.is_empty():
+		var state := enemy.get_persistent_state()
+		state["position"] = [death_position.x, death_position.y]
+		encounter_states[_enemy_state_key(enemy.spawn_id)] = state
 	story_enemy_defeated.emit(kind)
 	_spawn_story_loot.call_deferred(death_position, burst)
 

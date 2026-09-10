@@ -20,9 +20,10 @@ func _run() -> void:
 	_test_n4_contract()
 	await _test_n4_real_paths()
 	await _test_n5_n6_contract()
-	await _test_n7a_authoring_contract()
+	await _test_n7_chapter_one_contract()
+	await _test_n7_integrated_story_paths()
 	if failures.is_empty():
-		print("N7A TESTS PASSED (INCLUDING N1-N6 REGRESSION)")
+		print("N7 TESTS PASSED (INCLUDING N1-N6 REGRESSION)")
 		quit(0)
 	else:
 		for failure in failures:
@@ -832,10 +833,8 @@ func _test_n4_real_paths() -> void:
 	await physics_frame
 	await physics_frame
 	await process_frame
-	check(cave.player.node_unlocked and cave.player.node_charges == 1, "洞窟环形节点基础拾取解锁能力并给予 1 点充能")
-	check(bool(cave_items.get("cave:item:ring", false)), "洞窟环形节点拾取写入持久物品状态")
 	var ring_pickup: StoryPickup = cave.get_node("MapLayout/Pickups/RingNodePickup")
-	check(ring_pickup.consumed and not ring_pickup.visible, "已拾取环形节点从地图隐藏")
+	check(not ring_pickup.auto_collect and not ring_pickup.consumed and ring_pickup.visible, "洞窟环形节点不再自动拾取，等待剧情选择")
 	cave.queue_free()
 	await process_frame
 
@@ -867,10 +866,16 @@ func _test_n4_real_paths() -> void:
 	check(session.current_world.map_id == &"cave" and session.state.checkpoint_map == &"cave", "跨图销毁重建并记录入口检查点")
 	session.current_world.player.set_physics_process(false)
 	session.current_world.player.play_sfx = false
-	session.current_world.player.global_position = Vector2(58.5, 16.5) * StoryMap.TILE_SIZE
-	await physics_frame
-	await physics_frame
+	session.state.flags["caveEntered"] = true
+	session.story.current_id = "cave_explore"
+	var session_ring: StoryPickup = session.current_world.get_node("MapLayout/Pickups/RingNodePickup")
+	session_ring.interaction_requested.emit(session_ring)
 	await process_frame
+	session.dialogue._finish_enter()
+	session.story._on_choice("eat")
+	await process_frame
+	session.set_pause_reason(&"dialogue", false)
+	session.dialogue.close()
 	await session.load_map(&"forest")
 	check(session.current_world.player.node_unlocked and session.current_world.player.node_charges == 1, "洞窟取得的环形节点经 Session 换图保留到森林")
 	await session.load_map(&"cave")
@@ -903,8 +908,14 @@ func _test_n5_n6_contract() -> void:
 	check(session.menus.slots_box.get_child_count() == 3, "N5 主菜单展示三个存档槽")
 	var unknown := await session.story.execute_command("notAStoryCommand")
 	check(not unknown.ok and unknown.error == "UNKNOWN_COMMAND", "N5 未知剧情命令显式失败")
-	var deferred := await session.story.execute_command("chapterExplore")
-	check(not deferred.ok and deferred.error == "DEFERRED_OUT_OF_STAGE", "N5 后续章节命令明确标记阶段外而非静默执行")
+	var chapter_explore := await session.story.execute_command("chapterExplore")
+	check(chapter_explore.ok and chapter_explore.get("error", "") != "DEFERRED_OUT_OF_STAGE", "N7 第一章命令不再标记阶段外")
+	var manifest_actions: Array = manifest.actions
+	var deferred_actions: Array[String] = []
+	for action in manifest_actions:
+		if not StoryDirector.N6_ACTIONS.has(action) and not StoryDirector.N7_ACTIONS.has(action):
+			deferred_actions.append(String(action))
+	check(deferred_actions.is_empty() and manifest_actions.size() == 58, "N7 58 个剧情动作全部进入可执行门禁")
 
 	session.start_new_game(1)
 	await process_frame
@@ -1062,14 +1073,14 @@ func _n4_pillar_ring(include_node: bool) -> Dictionary:
 	return blocked
 
 
-func _test_n7a_authoring_contract() -> void:
+func _test_n7_chapter_one_contract() -> void:
 	for map_id in StoryMapCatalog.ORDER:
 		var definition: Dictionary = StoryMapCatalog.get_map(map_id)
-		check(not definition.has("spawn") and not definition.has("npcs") and not definition.has("items"), "N7A 坐标不再由 Catalog 持有：%s" % map_id)
+		check(not definition.has("spawn") and not definition.has("npcs") and not definition.has("items"), "N7 坐标不再由 Catalog 持有：%s" % map_id)
 		var layout: Node = load(String(definition.scene)).instantiate()
 		for group_name in ["Actors", "Interactables", "Pickups", "Triggers", "SpawnPoints"]:
-			check(layout.get_node_or_null(group_name) != null, "N7A 地图可编辑分组 %s/%s" % [map_id, group_name])
-		check(layout.get_node_or_null("SpawnPoints/Default") is MapEntry, "N7A 地图默认出生点可拖拽：%s" % map_id)
+			check(layout.get_node_or_null(group_name) != null, "N7 地图可编辑分组 %s/%s" % [map_id, group_name])
+		check(layout.get_node_or_null("SpawnPoints/Default") is MapEntry, "N7 默认出生点可拖拽：%s" % map_id)
 		layout.free()
 
 	var world := StoryMap.new()
@@ -1081,14 +1092,16 @@ func _test_n7a_authoring_contract() -> void:
 	world.camera.restore_seconds = 0.0
 	world._on_npc_interaction_requested(keti, world.player)
 	await process_frame
-	check(world.active_npc == keti and world.camera.position != Vector2.ZERO and world.camera.zoom.x > 1.0, "N7A 互动镜头平滑聚焦蛇头与目标")
+
+
+	check(world.active_npc == keti and world.camera.position != Vector2.ZERO and world.camera.zoom.x > 1.0, "N7 互动镜头平滑聚焦蛇头与目标")
 	var focus_point := world.player.global_position.lerp(keti.global_position, 0.5)
 	var screen_position := (focus_point - world.camera.global_position) * world.camera.zoom + world.camera.get_viewport_rect().size * 0.5
 	var expected_anchor := world.camera.get_viewport_rect().size * world.camera.focus_screen_anchor
-	check(screen_position.distance_to(expected_anchor) < 1.0, "互动主体构图到右侧对白框外的左侧中央")
+	check(screen_position.distance_to(expected_anchor) < 1.0, "N7 互动主体构图到右侧对白框外的左侧中央")
 	world.finish_actor_interaction()
 	await process_frame
-	check(world.active_npc == null and world.camera.position.is_zero_approx() and world.camera.zoom.is_equal_approx(Vector2.ONE), "N7A 互动结束镜头平滑恢复")
+	check(world.active_npc == null and world.camera.position.is_zero_approx() and world.camera.zoom.is_equal_approx(Vector2.ONE), "N7 互动结束镜头平滑恢复")
 	world.queue_free()
 	await process_frame
 
@@ -1096,23 +1109,232 @@ func _test_n7a_authoring_contract() -> void:
 	root.add_child(forest_world)
 	forest_world.setup(&"forest", {})
 	var ajie: NpcActor = forest_world.get_node("MapLayout/Actors/Ajie")
-	check(not ajie.visible and ajie.player == null, "N7A 未激活 NPC 保留编辑器摆位但不参与运行")
-	check(forest_world.activate_npc(&"ajie") == ajie and ajie.visible and ajie.player == forest_world.player, "N7A 剧情可按 npc_id 激活预摆角色")
+	check(not ajie.visible and ajie.player == null, "N7 未激活 NPC 保留编辑器摆位但不参与运行")
+	check(forest_world.activate_npc(&"ajie") == ajie and ajie.visible and ajie.player == forest_world.player, "N7 剧情可按 npc_id 激活预摆角色")
+	check(not ajie.damageable, "N7 剧情 NPC 在正式战斗动作前不会被豆子提前击倒")
+	var automatic_enemies: Array[EnemyActor] = []
+	for child in forest_world.get_children():
+		if child is EnemyActor:
+			automatic_enemies.append(child)
+	check(automatic_enemies.size() == 5, "N7 森林五个 Inspector 出生点自动生成常驻敌人")
+	var defeated_spawn := automatic_enemies[0].spawn_id
+	automatic_enemies[0].take_damage(999.0, &"n7_persistence")
+	await process_frame
+	forest_world.capture_enemy_states()
+	var saved_encounters := forest_world.encounter_states.duplicate(true)
 	forest_world.queue_free()
+	await process_frame
+	var restored_forest := StoryMap.new()
+	root.add_child(restored_forest)
+	restored_forest.setup(&"forest", {}, &"", {}, {}, saved_encounters)
+	var restored_enemy_ids: Dictionary = {}
+	for child in restored_forest.get_children():
+		if child is EnemyActor:
+			restored_enemy_ids[String(child.spawn_id)] = true
+	check(restored_enemy_ids.size() == 4 and not restored_enemy_ids.has(String(defeated_spawn)), "N7 常驻敌人死亡状态跨重建保持且不会复活")
+	restored_forest.queue_free()
 	await process_frame
 
 	var wilderness_layout: Node = load("res://game/maps/levels/wilderness.tscn").instantiate()
 	var forest_exit: MapExit = wilderness_layout.get_node("Triggers/ExitToForest")
-	check(not forest_exit.is_unlocked({}) and forest_exit.is_unlocked({"prologue_complete": true}), "N7A 出口锁定条件由场景 Inspector 配置")
+	check(not forest_exit.is_unlocked({}) and forest_exit.is_unlocked({"prologue_complete": true}), "N7 出口锁定条件由场景 Inspector 配置")
 	wilderness_layout.free()
 
 	var transition: ScreenTransition = load("res://game/ui/screen_transition.tscn").instantiate()
 	root.add_child(transition)
 	await transition.fade_out()
-	check(is_equal_approx(transition.shade.modulate.a, 1.0), "N7A 全屏转场可渐黑")
+	check(is_equal_approx(transition.shade.modulate.a, 1.0), "N7 全屏转场可渐黑")
 	await transition.fade_in()
-	check(is_zero_approx(transition.shade.modulate.a), "N7A 全屏转场可恢复")
+	check(is_zero_approx(transition.shade.modulate.a), "N7 全屏转场可恢复")
 	transition.queue_free()
+	await process_frame
+
+	var authored_forest: Node = load("res://game/maps/levels/forest.tscn").instantiate()
+	var authored_ajian: NpcActor = authored_forest.get_node("Actors/Ajian")
+	var authored_pillar: Node = authored_forest.get_node("Interactables/ForestBridgePillar")
+	var authored_animation := authored_pillar.get_node_or_null("AnimationPlayer") as AnimationPlayer
+	check(authored_ajian.npc_id == &"ajian" and not authored_ajian.initially_active, "N7 森林场景保留可编辑阿见摆位")
+	check(authored_forest.get_node("Ground") is TileMapLayer and authored_forest.get_node("Collision") is TileMapLayer, "N7 森林地表与碰撞仍由 TileMapLayer 编辑")
+	check(authored_animation != null and authored_animation.has_animation(&"lower"), "N7 桥柱场景挂载可编辑 AnimationPlayer")
+	authored_forest.free()
+
+	var state := SessionState.new()
+	var state_ajie: Dictionary = state.actors["ajie"]
+	state_ajie["status"] = "downed"
+	state.gold = 4
+	var encoded := state.to_dictionary()
+	var loaded_state := SessionState.new()
+	var load_result := loaded_state.load_dictionary(encoded)
+	check(load_result.ok and String(loaded_state.actors["ajie"].get("status", "")) == "downed", "N7 角色状态随存档序列化并恢复")
+	state.remember_checkpoint()
+	state_ajie["status"] = "swallowed"
+	state.gold = 10
+	state.restore_checkpoint()
+	check(String(state.actors["ajie"].get("status", "")) == "downed" and state.gold == 4, "N7 检查点恢复角色状态与金币")
+	var critical_actor: NpcActor = load("res://game/actors/npc_actor.tscn").instantiate()
+	root.add_child(critical_actor)
+	critical_actor.restore_persistent_state({"hp": 0.0, "is_dead": false, "is_downed": false, "active": true})
+	check(not critical_actor.is_dead and not critical_actor.is_downed and critical_actor.visible, "N7 阿见 critical 零血状态读档后仍保留可互动实体")
+	critical_actor.queue_free()
+	await process_frame
+
+	var cave_session: GameSession = load("res://game/main.tscn").instantiate()
+	root.add_child(cave_session)
+	await process_frame
+	cave_session.state.flags["caveEntered"] = true
+	await cave_session.load_map(&"cave", &"", true)
+	cave_session.story.current_id = "cave_explore"
+	cave_session.current_world.player.set_physics_process(false)
+	cave_session.current_world.player.play_sfx = false
+	var ring_pickup_n7: StoryPickup = cave_session.current_world.get_node("MapLayout/Pickups/RingNodePickup")
+	check(not ring_pickup_n7.auto_collect and not ring_pickup_n7.consumed, "N7 环形节点靠近时不自动收集")
+	ring_pickup_n7.interaction_requested.emit(ring_pickup_n7)
+	await process_frame
+	check(cave_session.story.current_id == "chapter1_ring" and not ring_pickup_n7.consumed, "N7 剧情物品互动打开环形节点对白")
+	cave_session.dialogue._finish_enter()
+	cave_session.story._on_choice("eat")
+	await process_frame
+	check(cave_session.state.flags.get("chapter1RingTaken", false) and cave_session.current_world.player.node_charges == 1 and ring_pickup_n7.consumed, "N7 环形节点由对白选择后才消耗并给予充能")
+	cave_session.set_pause_reason(&"dialogue", false)
+	cave_session.dialogue.close()
+	cave_session.story.current_id = "cave_explore"
+	cave_session.state.flags["goblinFightStarted"] = false
+	var goblin_spawn := await cave_session.story.execute_command("spawnGoblinEncounter")
+	var goblins: Array[EnemyActor] = []
+	for child in cave_session.current_world.get_children():
+		if child is EnemyActor and child.enemy_kind == "goblin":
+			goblins.append(child)
+	var goblin_ids: Dictionary = {}
+	for goblin in goblins:
+		goblin_ids[String(goblin.spawn_id)] = true
+	check(goblin_spawn.ok and goblins.size() == 2 and goblin_ids.size() == 2, "N7 哥布林遭遇生成两只且类型/身份唯一")
+	cave_session.queue_free()
+	paused = false
+	await process_frame
+
+	var forest_session: GameSession = load("res://game/main.tscn").instantiate()
+	root.add_child(forest_session)
+	await process_frame
+	forest_session.state.flags.clear()
+	forest_session.state.actors = SessionState.new().actors.duplicate(true)
+	forest_session.state.actors["ajian"] = {"status": "alive", "location": "forest", "hp": 8.0, "max_hp": 8.0, "met": true}
+	await forest_session.load_map(&"forest", &"", true)
+	forest_session.story.current_id = "chapter1_explore"
+	var chapter_player := forest_session.current_world.player
+	chapter_player.set_physics_process(false)
+	chapter_player.play_sfx = false
+	chapter_player.inventory = StomachInventory.new()
+	chapter_player.set_length(8)
+	var swallow_ajie := await forest_session.story.execute_command("swallowAjie")
+	var swallow_lisi := await forest_session.story.execute_command("swallowLisi")
+	var swallowed_ids: Dictionary = {}
+	for entry in chapter_player.inventory.entries:
+		if entry.has("metadata"):
+			swallowed_ids[String(entry.metadata.get("actor_id", ""))] = true
+	check(swallow_ajie.ok and swallow_lisi.ok and swallowed_ids.has("ajie") and swallowed_ids.has("lisi") and swallowed_ids.size() == 2, "N7 角色吞入保留各自唯一身份")
+	var release_ajie := await forest_session.story.execute_command("releaseAjie")
+	var release_lisi := await forest_session.story.execute_command("releaseLisi")
+	var ajie_projectile := _find_actor_projectile(forest_session.current_world, &"ajie")
+	var lisi_projectile := _find_actor_projectile(forest_session.current_world, &"lisi")
+	check(release_ajie.ok and release_lisi.ok and ajie_projectile != null and lisi_projectile != null, "N7 角色吐出生成可追踪载荷")
+	if ajie_projectile != null and lisi_projectile != null:
+		check(StringName(ajie_projectile.payload.metadata.actor_id) == &"ajie" and StringName(lisi_projectile.payload.metadata.actor_id) == &"lisi", "N7 角色吐出不串用身份")
+
+	var ajian := forest_session.current_world.get_story_actor(&"ajian")
+	chapter_player.add_special_item(&"ajian", {"actor_id": &"ajian"})
+	var mount_result := await forest_session.story.execute_command("mountAjian")
+	check(mount_result.ok and chapter_player.inventory.count_item(&"ajian") == 0 and forest_session.state.player.rider == "ajian" and is_instance_valid(ajian) and ajian.is_riding(), "N7 阿见可从胃袋转为骑乘且状态唯一")
+
+	forest_session.state.flags.clear()
+	forest_session.state.gold = 0
+	await forest_session.story.execute_command("claimCampReward")
+	await forest_session.story.execute_command("claimCampReward")
+	check(forest_session.state.gold == 10 and forest_session.state.flags.get("campRewardClaimed", false), "N7 营地十金币奖励幂等")
+	forest_session.state.flags.erase("banditResolved")
+	forest_session.state.gold = 5
+	await forest_session.story.execute_command("payBandits")
+	await forest_session.story.execute_command("payBandits")
+	check(forest_session.state.gold == 2 and forest_session.state.flags.get("banditOutcome", "") == "paid", "N7 劫匪支付三金币且幂等")
+	forest_session.state.flags.erase("banditResolved")
+	forest_session.state.gold = 0
+	await forest_session.story.execute_command("reverseBanditRobbery")
+	await forest_session.story.execute_command("reverseBanditRobbery")
+	check(forest_session.state.gold == 6 and forest_session.state.flags.get("banditOutcome", "") == "robbed", "N7 劫匪反抢六金币且幂等")
+	forest_session.queue_free()
+	paused = false
+	await process_frame
+
+
+func _test_n7_integrated_story_paths() -> void:
+	var session: GameSession = load("res://game/main.tscn").instantiate()
+	root.add_child(session)
+	await process_frame
+	session.state.flags["prologue_complete"] = true
+	session.state.story["chapter"] = "第一章"
+	await session.load_map(&"forest", &"", true)
+	session.story.current_id = "chapter1_explore"
+	check(not session.story.map_exit(&"cave", &""), "N7 森林出口允许进入洞窟")
+	await session.load_map(&"cave")
+	check(session.story.current_id == "cave_intro", "N7 首次进入洞窟续接洞窟开场而非森林等待")
+	session.dialogue._finish_enter()
+	session.story._on_choice("continue")
+	await process_frame
+	check(session.story.current_id == "cave_explore" and bool(session.state.flags.get("caveEntered", false)), "N7 洞窟开场后进入可交互探索")
+
+	var ajian := session.current_world.get_story_actor(&"ajian")
+	session.current_world.story_actor_interacted.emit(&"ajian")
+	await process_frame
+	check(session.story.current_id == "cave_ajian_found", "N7 洞窟阿见按持久状态进入被绑分支")
+	var wake := await session.story.execute_command("wakeAjianFace")
+	var cut := await session.story.execute_command("cutAjianRope")
+	check(wake.ok and cut.ok and String(session.state.actors.ajian.status) == "alive", "N7 阿见唤醒与解绑原子写入唯一角色状态")
+	var encounter := await session.story.execute_command("spawnGoblinEncounter")
+	session.story.current_id = "cave_goblin_combat"
+	var goblins: Array[EnemyActor] = []
+	for child in session.current_world.get_children():
+		if child is EnemyActor and child.enemy_kind == "goblin": goblins.append(child)
+	for goblin in goblins:
+		goblin.take_damage(999.0, &"n7_integration")
+	await process_frame
+	await process_frame
+	check(encounter.ok and goblins.size() == 2 and session.story.current_id == "cave_ajian_rescued" and bool(session.state.flags.get("goblinsDefeated", false)), "N7 两名哥布林真实倒下后续接阿见获救分支")
+
+	await session.story.execute_command("revealAjian")
+	var mount := await session.story.execute_command("mountAjian")
+	check(mount.ok and session.state.player.rider == "ajian" and ajian.is_riding(), "N7 阿见以可见骑乘实体附着蛇身")
+	check(not session.story.map_exit(&"forest", &"forest_cave_return"), "N7 洞窟出口允许返回森林")
+	await session.load_map(&"forest", &"forest_cave_return")
+	var forest_ajian := session.current_world.get_story_actor(&"ajian")
+	check(session.story.current_id == "chapter1_explore" and is_instance_valid(forest_ajian) and forest_ajian.is_riding(), "N7 骑乘阿见跨图保持唯一身份与可见表现")
+	session.current_world.story_trigger_entered.emit(&"camp_settlement")
+	await process_frame
+	check(bool(session.state.flags.get("campSettlementSeen", false)) and session.state.player.rider == "" and String(session.state.actors.ajian.location) == "forest" and not forest_ajian.is_riding(), "N7 营地结算让骑乘阿见落地到可编辑森林实例")
+	session.queue_free()
+	paused = false
+	await process_frame
+
+	var combat_session: GameSession = load("res://game/main.tscn").instantiate()
+	root.add_child(combat_session)
+	await process_frame
+	combat_session.state.story["chapter"] = "第一章"
+	await combat_session.load_map(&"forest", &"", true)
+	combat_session.story.current_id = "chapter1_combat_pending"
+	await combat_session.story.execute_command("startAjieCombat")
+	await combat_session.story.execute_command("waitAjieCombat")
+	var ajie := combat_session.current_world.get_story_actor(&"ajie")
+	check(ajie.hostile and ajie.damageable, "N7 阿杰战斗命令实际激活可伤害敌对实体")
+	ajie.take_damage(999.0, &"n7_integration")
+	await process_frame
+	check(ajie.is_downed and combat_session.story.current_id == "chapter1_ajie_downed_wait" and String(combat_session.state.actors.ajie.status) == "downed", "N7 阿杰倒地保留可互动实体并推进剧情")
+	combat_session.story.current_id = "bandit_combat"
+	await combat_session.story.execute_command("startBanditCombat")
+	await combat_session.story.execute_command("waitBanditCombat")
+	for actor_id in [&"buck", &"miro"]:
+		combat_session.current_world.get_story_actor(actor_id).take_damage(999.0, &"n7_integration")
+	await process_frame
+	check(combat_session.story.current_id == "bandit_search" and String(combat_session.state.actors.buck.status) == "downed" and String(combat_session.state.actors.miro.status) == "downed", "N7 两名劫匪倒地后进入一次性搜刮分支")
+	combat_session.queue_free()
+	paused = false
 	await process_frame
 
 
@@ -1121,6 +1343,17 @@ func _write_n4_save(store: SaveStore, slot: int, content: String) -> void:
 	var file := FileAccess.open(store.base_dir.path_join("slot_%d.json" % slot), FileAccess.WRITE)
 	file.store_string(content)
 	file.close()
+
+
+func _find_actor_projectile(world: Node, actor_id: StringName) -> BeanProjectile:
+	for child in world.get_children():
+		if not child is BeanProjectile:
+			continue
+		var metadata: Dictionary = child.payload.get("metadata", {})
+		var child_actor_id := StringName(metadata.get("actor_id", child.payload.get("id", "")))
+		if child_actor_id == actor_id:
+			return child
+	return null
 
 
 func _n3_prison_ring(node_cap: bool) -> Dictionary:

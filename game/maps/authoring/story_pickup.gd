@@ -2,6 +2,7 @@ class_name StoryPickup
 extends Area2D
 
 signal collected(pickup: StoryPickup)
+signal interaction_requested(pickup: StoryPickup)
 
 @export var item_id: StringName
 @export var pickup_id: StringName
@@ -9,6 +10,7 @@ signal collected(pickup: StoryPickup)
 @export var auto_collect := false
 
 var consumed := false
+var _interaction_armed := true
 
 func persistent_id() -> StringName:
 	return pickup_id if not pickup_id.is_empty() else item_id
@@ -17,6 +19,7 @@ func _ready() -> void:
 	collision_layer = 128
 	collision_mask = 4
 	body_entered.connect(_on_body_entered)
+	body_exited.connect(_on_body_exited)
 	queue_redraw()
 
 func consume() -> void:
@@ -32,8 +35,17 @@ func play_event(animation_name: StringName) -> void:
 		animation_player.play(animation_name)
 
 func _on_body_entered(body: Node2D) -> void:
-	if auto_collect and not consumed and body is SnakePlayer:
+	if consumed or body is not SnakePlayer:
+		return
+	if auto_collect:
 		collected.emit(self)
+	elif _interaction_armed:
+		_interaction_armed = false
+		interaction_requested.emit(self)
+
+func _on_body_exited(body: Node2D) -> void:
+	if body is SnakePlayer:
+		_interaction_armed = true
 
 func _draw() -> void:
 	draw_circle(Vector2.ZERO, 9.0, Color("f6bd60"))

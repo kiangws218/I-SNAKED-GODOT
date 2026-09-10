@@ -92,7 +92,7 @@ func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_c
 	current_world = MAP_SCRIPT.new()
 	world_host.add_child(current_world)
 	state.current_map = map_id
-	current_world.setup(map_id, state.flags, entry, state.items)
+	current_world.setup(map_id, state.flags, entry, state.items, state.actors, state.encounters)
 	_restore_player()
 	current_world.exit_reached.connect(_on_exit_reached)
 	current_world.exit_blocked.connect(func(message: String): status_label.text = message)
@@ -191,8 +191,10 @@ func _on_player_died(_reason: String) -> void:
 
 func _capture_player() -> void:
 	if not is_instance_valid(current_world) or not is_instance_valid(current_world.player): return
+	current_world.capture_actor_states()
+	current_world.capture_enemy_states()
 	var v := current_world.player
-	state.player = {"length": v.body_chain.segment_count, "hearts": v.hearts, "max_hearts": v.max_hearts, "node_unlocked": v.node_unlocked, "node_charges": v.node_charges, "inventory": v.inventory.entries.duplicate(true), "selected_index": v.inventory.selected_index}
+	state.player = {"length": v.body_chain.segment_count, "hearts": v.hearts, "max_hearts": v.max_hearts, "node_unlocked": v.node_unlocked, "node_charges": v.node_charges, "inventory": v.inventory.entries.duplicate(true), "selected_index": v.inventory.selected_index, "rider": state.player.get("rider", "")}
 
 func _restore_player() -> void:
 	var v := current_world.player
@@ -203,6 +205,11 @@ func _restore_player() -> void:
 	v.inventory.entries.assign(state.player.get("inventory", []))
 	v.inventory.selected_index = clampi(int(state.player.get("selected_index", 0)), 0, v.inventory.entries.size())
 	v.set_length(int(state.player.get("length", 4)))
+	var rider_id := StringName(state.player.get("rider", ""))
+	if not rider_id.is_empty():
+		var rider := current_world.get_story_actor(rider_id)
+		if is_instance_valid(rider):
+			rider.attach_to_carrier(v, Vector2.ZERO)
 	v.resources_changed.emit()
 	v.health_changed.emit(v.hearts, v.max_hearts)
 
@@ -224,5 +231,5 @@ func _item_name(item_id: StringName) -> String:
 	return {
 		&"keti": "可蒂", &"keti_corpse": "可蒂的尸体", &"iron_sword": "铁剑",
 		&"healing_potion": "治疗药水", &"ajie": "阿杰", &"lisi": "丽丝",
-		&"ajian": "阿见", &"bake": "巴克", &"miluo": "米洛", &"character_bones": "角色遗骨",
+		&"ajian": "阿见", &"buck": "巴克", &"miro": "米洛", &"character_bones": "角色遗骨",
 	}.get(item_id, String(item_id))

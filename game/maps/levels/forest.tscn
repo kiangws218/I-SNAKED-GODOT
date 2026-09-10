@@ -27,21 +27,36 @@ tile_set = ExtResource("1_idjo7")
 [node name="Ajie" parent="Actors" instance=ExtResource("9_npc")]
 position = Vector2(1164, 684)
 npc_id = &"ajie"
+damageable = false
+defeat_mode = "downed"
 initially_active = false
 
 [node name="Lisi" parent="Actors" instance=ExtResource("9_npc")]
 position = Vector2(1212, 780)
 npc_id = &"lisi"
+damageable = false
+defeat_mode = "downed"
+initially_active = false
+
+[node name="Ajian" parent="Actors" instance=ExtResource("9_npc")]
+position = Vector2(1752, 1128)
+npc_id = &"ajian"
+damageable = false
+defeat_mode = "downed"
 initially_active = false
 
 [node name="Buck" parent="Actors" instance=ExtResource("9_npc")]
 position = Vector2(1692, 660)
 npc_id = &"buck"
+damageable = false
+defeat_mode = "downed"
 initially_active = false
 
 [node name="Miro" parent="Actors" instance=ExtResource("9_npc")]
 position = Vector2(1692, 732)
 npc_id = &"miro"
+damageable = false
+defeat_mode = "downed"
 initially_active = false
 
 [node name="Interactables" type="Node2D" parent="."]
@@ -113,6 +128,7 @@ trigger_id = &"bridge_approach"
 position = Vector2(1752, 1104)
 scale = Vector2(2.5, 2.5)
 trigger_id = &"camp_settlement"
+one_shot = false
 
 [node name="SpawnPoints" type="Node2D" parent="."]
 
@@ -127,20 +143,25 @@ facing = Vector2(0, 1)
 [node name="ForestSlime01" parent="SpawnPoints" instance=ExtResource("5_enemy_spawn")]
 position = Vector2(396, 708)
 spawn_id = &"forest_slime_01"
+auto_spawn = true
 
 [node name="ForestSlime02" parent="SpawnPoints" instance=ExtResource("5_enemy_spawn")]
 position = Vector2(516, 828)
 spawn_id = &"forest_slime_02"
+auto_spawn = true
 
 [node name="ForestSlime03" parent="SpawnPoints" instance=ExtResource("5_enemy_spawn")]
 position = Vector2(636, 660)
 spawn_id = &"forest_slime_03"
+auto_spawn = true
 
 [node name="ForestMushroom01" parent="SpawnPoints" instance=ExtResource("5_enemy_spawn")]
 position = Vector2(708, 588)
 spawn_id = &"forest_mushroom_01"
 enemy_kind = "mushroom"
+auto_spawn = true
 
 [node name="ForestSlime04" parent="SpawnPoints" instance=ExtResource("5_enemy_spawn")]
 position = Vector2(948, 756)
 spawn_id = &"forest_slime_04"
+auto_spawn = true

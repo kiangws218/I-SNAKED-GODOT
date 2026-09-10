@@ -11,8 +11,8 @@ const DEFINITIONS := {
 	&"lisi": {"length": 1, "weight": 3, "actor": true, "stackable": false},
 	&"ajian": {"length": 1, "weight": 3, "actor": true, "stackable": false},
 	&"keti": {"length": 2, "weight": 3, "actor": true, "stackable": false},
-	&"bake": {"length": 1, "weight": 3, "actor": true, "stackable": false},
-	&"miluo": {"length": 1, "weight": 3, "actor": true, "stackable": false},
+	&"buck": {"length": 1, "weight": 3, "actor": true, "stackable": false},
+	&"miro": {"length": 1, "weight": 3, "actor": true, "stackable": false},
 	&"character_bones": {"length": 1, "weight": 1, "damage": 2, "stackable": false},
 	&"keti_corpse": {"length": 2, "weight": 3, "stackable": false},
 }
@@ -105,6 +105,20 @@ func count_item(item_id: StringName) -> int:
 		if entry.id == item_id:
 			total += int(entry.count)
 	return total
+
+
+func remove_item(item_id: StringName) -> Dictionary:
+	for index in range(entries.size()):
+		if entries[index].id != item_id:
+			continue
+		var payload: Dictionary = entries[index].duplicate(true)
+		payload.count = 1
+		entries[index].count -= 1
+		if entries[index].count <= 0:
+			entries.remove_at(index)
+			selected_index = mini(selected_index, entries.size())
+		return payload
+	return {}
 
 
 func is_overweight() -> bool:

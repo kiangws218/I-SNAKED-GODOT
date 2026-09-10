@@ -4,6 +4,7 @@ extends Marker2D
 
 @export var spawn_id: StringName
 @export_enum("slime", "mushroom", "goblin") var enemy_kind := "slime"
+@export var auto_spawn := false
 
 func _draw() -> void:
 	if not Engine.is_editor_hint():
