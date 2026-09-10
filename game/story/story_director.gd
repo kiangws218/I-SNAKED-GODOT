@@ -62,14 +62,22 @@ func start(id := "prologue_start") -> void:
 
 func resume() -> void:
 	counters = Dictionary(session.state.story.get("counters", counters)).duplicate(true)
-	var saved := String(session.state.story.get("current_node", "prologue_start"))
-	enter_node(saved if nodes.has(saved) else "prologue_start")
+	var fallback: String = String({
+		&"prologue_tutorial": "prologue_start",
+		&"wilderness": "prologue_complete" if bool(session.state.flags.get("prologue_complete", false)) else "wilderness_keti_wait",
+		&"forest": "chapter1_explore",
+		&"cave": "cave_explore",
+	}.get(session.state.current_map, "prologue_start"))
+	var saved_value: Variant = session.state.story.get("current_node", fallback)
+	var saved: String = fallback if saved_value == null else String(saved_value)
+	enter_node(saved if nodes.has(saved) else fallback)
 
 func bind_world(world: StoryMap) -> void:
 	world.player.bean_collected.connect(func(): notify(&"PLAYER_BEAN_EATEN"))
 	world.player.bean_spit.connect(func(): notify(&"PLAYER_BEAN_SPIT"))
 	world.story_actor_interacted.connect(func(id: StringName): _on_actor_event(id, &"interacted"))
 	world.story_actor_defeated.connect(func(id: StringName): _on_actor_event(id, &"died"))
+	world.story_actor_released.connect(_on_story_actor_released)
 	world.story_enemy_defeated.connect(func(_kind: StringName):
 		enemies_left = maxi(0, enemies_left - 1)
 		if combat_kind == &"goblin": session.state.encounters["cave_goblins_remaining"] = enemies_left
@@ -111,8 +119,10 @@ func notify(event: StringName) -> void:
 		_set_actor_status(&"ajie", "downed")
 		enter_node("chapter1_ajie_downed_wait")
 	elif current_id == "bandit_combat" and combat_kind == &"bandit" and _condition("enemiesCleared"):
-		_set_actor_status(&"buck", "downed")
-		_set_actor_status(&"miro", "downed")
+		if _actor_status(&"buck") != &"swallowed":
+			_set_actor_status(&"buck", "downed")
+		if _actor_status(&"miro") != &"swallowed":
+			_set_actor_status(&"miro", "downed")
 		enter_node("bandit_search")
 	elif current_id == "cave_goblin_combat" and combat_kind == &"goblin" and _condition("enemiesCleared"):
 		session.state.flags["goblinsDefeated"] = true
@@ -136,7 +146,9 @@ func map_exit(target: StringName, entry: StringName) -> bool:
 	if session.state.current_map == &"wilderness" and not bool(session.state.flags.get("prologue_complete", false)):
 		status_changed.emit("出口尚未开放：先完成可蒂事件")
 		return true
-	if session.state.current_map == &"forest" and target == &"cave" and not bool(session.state.flags.get("caveEntered", false)):
+	if session.state.current_map == &"wilderness" and target == &"forest":
+		pending_map_node = "chapter1_explore"
+	elif session.state.current_map == &"forest" and target == &"cave" and not bool(session.state.flags.get("caveEntered", false)):
 		pending_map_node = "cave_intro"
 	elif session.state.current_map == &"forest" and target == &"cave":
 		pending_map_node = "cave_goblin_combat" if bool(session.state.flags.get("goblinFightStarted", false)) and not bool(session.state.flags.get("goblinsDefeated", false)) else "cave_explore"
@@ -296,6 +308,12 @@ func _release_actor(actor_id: StringName) -> Dictionary:
 		return {"ok": false, "error": "ACTOR_NOT_SWALLOWED", "actor": actor_id}
 	if not _spit_item(actor_id):
 		return {"ok": false, "error": "SPIT_FAILED", "actor": actor_id}
+	if actor_id == &"lisi" and is_instance_valid(session.current_world):
+		var ajie := session.current_world.get_story_actor(&"ajie")
+		if is_instance_valid(ajie):
+			await get_tree().create_timer(0.18, true, false, true).timeout
+			if is_instance_valid(ajie) and is_instance_valid(session.current_world.player):
+				ajie.receive_actor_impact(session.current_world.player.global_position, 30.0)
 	_set_actor_status(actor_id, &"unconscious", String(session.state.current_map))
 	return {"ok": true}
 
@@ -552,12 +570,19 @@ func _run_action(action: String, parameters: Dictionary, source_id: String) -> D
 				session.current_world.spawn_enemy_at(&"keti_slime_2")
 			return {"ok": true, "waiting": true}
 		"eatKeti", "eatCorpse":
-			if not bool(session.state.flags.get("keti_eaten", false)):
+			var keti_status := _actor_status(&"keti")
+			var can_eat_keti := not bool(session.state.flags.get("keti_eaten", false)) or keti_status in [&"alive", &"unconscious"] or (action == "eatCorpse" and keti_status == &"dead")
+			if can_eat_keti and not _has_item(&"keti") and not _has_item(&"keti_corpse"):
 				var item_id := &"keti" if action == "eatKeti" else &"keti_corpse"
 				if not session.current_world.player.add_special_item(item_id, {"actor_id": &"keti", "hp": 14.0}):
 					return {"ok": false, "error": "STOMACH_FULL", "action": action}
 				session.state.flags["keti_eaten"] = true
 				if action == "eatCorpse": session.state.flags["keti_dead"] = true
+				session.state.actors["keti"] = {
+					"status": "dead" if action == "eatCorpse" else "swallowed",
+					"location": "stomach", "hp": 0.0 if action == "eatCorpse" else 14.0,
+					"max_hp": 14.0, "met": true,
+				}
 				if is_instance_valid(session.current_world): session.current_world.remove_story_actor(&"keti")
 		"waitForMemoryBlur":
 			_start_memory_timer(source_id)
@@ -587,11 +612,11 @@ func _run_action(action: String, parameters: Dictionary, source_id: String) -> D
 		"swallowAjian": return _swallow_actor(&"ajian")
 		"swallowBuck": return _swallow_actor(&"buck")
 		"swallowMiro": return _swallow_actor(&"miro")
-		"releaseAjie": return _release_actor(&"ajie")
-		"releaseLisi": return _release_actor(&"lisi")
-		"releaseAjian": return _release_actor(&"ajian")
-		"releaseBuck": return _release_actor(&"buck")
-		"releaseMiro": return _release_actor(&"miro")
+		"releaseAjie": return await _release_actor(&"ajie")
+		"releaseLisi": return await _release_actor(&"lisi")
+		"releaseAjian": return await _release_actor(&"ajian")
+		"releaseBuck": return await _release_actor(&"buck")
+		"releaseMiro": return await _release_actor(&"miro")
 		"dropSword": return _drop_sword()
 		"wakeAjianFace": return _wake_actor(&"ajian", &"face")
 		"wakeAjianFoot": return _wake_actor(&"ajian", &"foot")
@@ -641,6 +666,8 @@ func _show_dialogue(id: String, dialogue: Dictionary) -> void:
 		pages.append(page)
 		if int(page.page) + 1 >= int(page.page_count): break
 		page = runner.advance_page()
+	if is_instance_valid(session.current_world):
+		session.current_world.focus_dialogue()
 	panel.show_dialogue(pages)
 	pause_requested.emit(&"dialogue", true)
 
@@ -664,13 +691,31 @@ func _on_name_submitted(player_name: String) -> void:
 	panel.close()
 	pause_requested.emit(&"dialogue", false)
 	_finish_world_interaction()
-	enter_node("chapter1_start")
+	current_id = "prologue_complete"
+	session.state.story.current_node = current_id
+	goal_changed.emit("穿过石门，前往森林")
+	pause_requested.emit(&"cutscene", true)
+	var opened := false
+	if is_instance_valid(session.current_world):
+		opened = await session.current_world.open_story_gate(&"wilderness_forest_gate")
+	pause_requested.emit(&"cutscene", false)
+	if opened:
+		status_changed.emit("石门已升起，前方通往森林")
+		session.remember_checkpoint(&"wilderness")
+	else:
+		status_changed.emit("剧情错误：地图中缺少石门 wilderness_forest_gate")
 
 func _finish_world_interaction() -> void:
 	if is_instance_valid(session.current_world):
 		session.current_world.finish_actor_interaction()
 
 func _on_actor_event(actor_id: StringName, event: StringName) -> void:
+	if actor_id == &"keti" and event == &"interacted" and bool(session.state.flags.get("prologue_complete", false)) and _actor_status(&"keti") == &"alive" and current_id in ["prologue_complete", "free_explore", "chapter1_explore"]:
+		_show_completed_keti_dialogue()
+		return
+	if actor_id == &"keti" and event == &"interacted" and _actor_status(&"keti") == &"unconscious":
+		_show_unconscious_keti_dialogue()
+		return
 	if actor_id == &"keti" and current_id == "wilderness_keti_wait":
 		if event == &"died":
 			session.state.flags["keti_dead"] = true
@@ -690,7 +735,7 @@ func _on_actor_event(actor_id: StringName, event: StringName) -> void:
 			notify(&"ENEMIES_DEFEATED")
 		elif actor_id in [&"buck", &"miro"] and current_id == "bandit_combat":
 			enemies_left = maxi(0, enemies_left - 1)
-			if _actor_status(&"buck") == &"downed" and _actor_status(&"miro") == &"downed":
+			if enemies_left <= 0:
 				enemies_left = 0
 				notify(&"ENEMIES_DEFEATED")
 		return
@@ -743,6 +788,8 @@ func _route_chapter_actor(actor_id: StringName, _event: StringName) -> void:
 	if actor_id == &"buck" or actor_id == &"miro":
 		if bool(session.state.flags.get("banditResolved", false)):
 			enter_node("bandit_resolved_buck" if actor_id == &"buck" else "bandit_resolved_miro")
+		elif _bandit_hostage_held() and _actor_status(actor_id) == &"alive":
+			enter_node("bandit_hostage_return_hostile")
 		elif combat_kind == &"bandit" and _condition("enemiesCleared"):
 			enter_node("bandit_search")
 		else:
@@ -810,6 +857,39 @@ func _enter_camp_settlement() -> void:
 	else:
 		enter_node("chapter1_explore")
 
+
+func _show_unconscious_keti_dialogue() -> void:
+	current_id = "keti_unconscious"
+	session.state.story.current_node = current_id
+	goal_changed.emit("决定可蒂的去向")
+	_show_dialogue(current_id, {
+		"speaker": "可蒂",
+		"sub": "昏迷的可蒂",
+		"pages": ["可蒂陷入了昏迷……"],
+		"choices": [
+			{"id": "eat", "label": "吃掉", "action": "eatKeti", "next": "free_explore", "danger": true},
+			{"id": "leave", "label": "离开", "next": "free_explore"},
+		]
+	})
+
+func _show_completed_keti_dialogue() -> void:
+	current_id = "keti_after_prologue"
+	session.state.story.current_node = current_id
+	goal_changed.emit("继续前进")
+	var player_name := String(session.state.story.get("player_name", ""))
+	if player_name.is_empty():
+		player_name = "大人"
+	else:
+		player_name += "大人"
+	_show_dialogue(current_id, {
+		"speaker": "可蒂",
+		"sub": "前进的指引",
+		"pages": ["%s，请继续前进吧" % player_name],
+		"choices": [
+			{"id": "continue", "label": "继续前进", "next": "free_explore"},
+		]
+	})
+
 func _start_memory_timer(source_id: String) -> void:
 	if memory_timer_started: return
 	memory_timer_started = true
@@ -823,6 +903,8 @@ func _start_exit_timer(source_id: String) -> void:
 
 func _perform_memory_vomit() -> void:
 	var player := session.current_world.player
+	if is_instance_valid(session.current_world):
+		session.current_world.focus_dialogue()
 	pause_requested.emit(&"cutscene", true)
 	var bean_count := player.inventory.bean_ammo(player.body_chain.segment_count, SnakePlayer.MIN_LENGTH)
 	player.inventory.selected_index = 0
@@ -833,12 +915,29 @@ func _perform_memory_vomit() -> void:
 	for item_id in [&"keti", &"keti_corpse"]:
 		for index in range(player.inventory.entries.size()):
 			if player.inventory.entries[index].id == item_id:
+				if item_id == &"keti":
+					_set_actor_status(&"keti", &"unconscious", "wilderness")
 				player.inventory.selected_index = index + 1
 				player.shot_cooldown_left = 0.0
 				player.try_spit(true)
 				break
 	player.inventory.selected_index = 0
 	pause_requested.emit(&"cutscene", false)
+	session.remember_checkpoint(&"wilderness")
+
+func _bandit_hostage_held() -> bool:
+	return _actor_status(&"buck") == &"swallowed" or _actor_status(&"miro") == &"swallowed" or _has_item(&"buck") or _has_item(&"miro")
+
+func _on_story_actor_released(actor_id: StringName) -> void:
+	if actor_id == &"keti":
+		session.remember_checkpoint(&"wilderness")
+		return
+	if actor_id not in [&"buck", &"miro"] or bool(session.state.flags.get("banditResolved", false)):
+		return
+	var other := &"miro" if actor_id == &"buck" else &"buck"
+	if _actor_status(other) == &"alive":
+		_resolve_bandits("released", 0)
+		session.remember_checkpoint(&"forest")
 
 func _tutorial_wall_ready() -> bool:
 	return int(counters.tutorialBeansEaten) >= 5 and bool(session.state.flags.get("tutorial_fragile_gate", false))

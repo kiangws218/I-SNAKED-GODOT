@@ -13,6 +13,19 @@ var _smoothing_before_focus := true
 func focus_on(target: Node2D) -> void:
 	if not is_instance_valid(target) or not get_parent() is Node2D:
 		return
+	focus_on_position(target.global_position, true)
+
+
+func focus_on_player() -> void:
+	if not get_parent() is Node2D:
+		return
+	var parent_2d := get_parent() as Node2D
+	focus_on_position(parent_2d.global_position, false)
+
+
+func focus_on_position(focus_point: Vector2, include_parent := true) -> void:
+	if not get_parent() is Node2D:
+		return
 	_kill_tween()
 	var parent_2d := get_parent() as Node2D
 	if not _focus_active:
@@ -20,7 +33,8 @@ func focus_on(target: Node2D) -> void:
 		_smoothing_before_focus = position_smoothing_enabled
 	position_smoothing_enabled = false
 	# Frame the snake head and the contacted subject as one small left-side shot.
-	var focus_point := parent_2d.global_position.lerp(target.global_position, 0.5)
+	if include_parent:
+		focus_point = parent_2d.global_position.lerp(focus_point, 0.5)
 	var desired_global := _camera_position_for(focus_point)
 	var local_target := parent_2d.to_local(desired_global)
 	_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS).set_parallel(true)

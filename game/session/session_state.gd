@@ -17,6 +17,7 @@ var rewards: Dictionary = {}
 var encounters: Dictionary = {}
 var items: Dictionary = {}
 var actors: Dictionary = {
+	"keti": {"status": "alive", "location": "wilderness", "hp": 14.0, "max_hp": 14.0, "met": false, "damageable": true},
 	"ajie": {"status": "alive", "location": "forest", "hp": 8.0, "max_hp": 8.0, "met": false, "damageable": false},
 	"lisi": {"status": "alive", "location": "forest", "hp": 8.0, "max_hp": 8.0, "met": false, "damageable": false},
 	"ajian": {"status": "bound_unconscious", "location": "cave", "hp": 8.0, "max_hp": 8.0, "met": false, "damageable": false},
@@ -70,3 +71,32 @@ func restore_checkpoint() -> void:
 	body = Dictionary(checkpoint_snapshot.get("body", body)).duplicate(true)
 	actors = Dictionary(checkpoint_snapshot.get("actors", actors)).duplicate(true)
 	gold = int(checkpoint_snapshot.get("gold", gold))
+
+func prepare_released_pair_forest_return() -> bool:
+	if _actor_status(&"ajie") != &"unconscious" or _actor_status(&"lisi") != &"unconscious":
+		return false
+	if _player_inventory_has(&"ajie") or _player_inventory_has(&"lisi"):
+		return false
+	for actor_id in [&"ajie", &"lisi"]:
+		var key := String(actor_id)
+		var actor: Dictionary = Dictionary(actors.get(key, {})).duplicate(true)
+		actor["status"] = "alive"
+		actor["location"] = "forest"
+		actor["hp"] = maxf(1.0, float(actor.get("max_hp", 8.0)))
+		actor["damageable"] = true
+		actor["hostile"] = true
+		actor["spawn_anchor"] = "camp_return_%s" % key
+		actor.erase("position")
+		actors[key] = actor
+	flags["releasedPairReturnedHostile"] = true
+	return true
+
+func _actor_status(actor_id: StringName) -> StringName:
+	return StringName(Dictionary(actors.get(String(actor_id), {})).get("status", ""))
+
+func _player_inventory_has(item_id: StringName) -> bool:
+	for raw_entry in Array(player.get("inventory", [])):
+		var entry := Dictionary(raw_entry)
+		if StringName(entry.get("id", "")) == item_id:
+			return true
+	return false

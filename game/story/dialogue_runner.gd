@@ -51,7 +51,8 @@ func validate_graph(value: Dictionary) -> Dictionary:
 
 func begin(id: String, node_dialogue: Dictionary, variable_store: Dictionary, resolver: Callable) -> Dictionary:
 	node_id = id
-	dialogue = node_dialogue
+	dialogue = node_dialogue.duplicate(true)
+	dialogue["pages"] = _normalise_pages(Array(dialogue.get("pages", [])))
 	variables = variable_store
 	condition_resolver = resolver
 	page_index = 0
@@ -61,11 +62,25 @@ func current_page() -> Dictionary:
 	var pages: Array = dialogue.get("pages", [])
 	if pages.is_empty():
 		return {}
+	var raw_page: Variant = pages[page_index]
+	var speaker := String(dialogue.get("speaker", "旁白"))
+	var sub := String(dialogue.get("sub", ""))
+	var text := ""
+	if raw_page is Dictionary:
+		speaker = String(raw_page.get("speaker", speaker))
+		sub = String(raw_page.get("sub", sub))
+		text = String(raw_page.get("text", ""))
+	else:
+		text = String(raw_page)
+	var prefixed := _parse_speaker_prefix(text)
+	if not prefixed.is_empty():
+		speaker = prefixed.speaker
+		text = prefixed.text
 	return {
 		"line_id": "%s.page.%d" % [node_id, page_index],
-		"speaker": dialogue.get("speaker", "旁白"),
-		"sub": dialogue.get("sub", ""),
-		"text": _substitute(String(pages[page_index])),
+		"speaker": speaker,
+		"sub": sub,
+		"text": _substitute(text),
 		"page": page_index,
 		"page_count": pages.size(),
 		"choices": visible_choices() if page_index == pages.size() - 1 else [],
@@ -106,3 +121,59 @@ func _set_path(path: String, value: Variant) -> void:
 
 func _substitute(text: String) -> String:
 	return text.replace("{fire}", "J / 空格").replace("{interact}", "回车").replace("{node}", "F")
+
+
+func _parse_speaker_prefix(text: String) -> Dictionary:
+	var colon := text.find("：")
+	if colon < 1:
+		colon = text.find(":")
+	if colon < 1 or colon > 8:
+		return {}
+	var candidate := text.substr(0, colon).strip_edges()
+	if candidate not in ["我", "玩家", "阿杰", "丽丝", "巴克", "米罗", "阿见", "可蒂", "旁白"]:
+		return {}
+	if candidate == "玩家":
+		candidate = "我"
+	return {"speaker": candidate, "text": text.substr(colon + 1).strip_edges()}
+
+
+func _normalise_pages(source_pages: Array) -> Array:
+	var result: Array = []
+	for raw_page in source_pages:
+		var speaker := String(dialogue.get("speaker", "旁白"))
+		var sub := String(dialogue.get("sub", ""))
+		var text := ""
+		if raw_page is Dictionary:
+			speaker = String(raw_page.get("speaker", speaker))
+			sub = String(raw_page.get("sub", sub))
+			text = String(raw_page.get("text", ""))
+		else:
+			text = String(raw_page)
+		var prefixed := _parse_speaker_prefix(text)
+		if not prefixed.is_empty():
+			speaker = prefixed.speaker
+			text = prefixed.text
+		var pieces := _split_long_text(text)
+		for piece in pieces:
+			result.append({"speaker": speaker, "sub": sub, "text": piece})
+	return result
+
+
+func _split_long_text(text: String) -> Array[String]:
+	if text.length() <= 42:
+		return [text]
+	var result: Array[String] = []
+	var start := 0
+	for index in range(text.length()):
+		if text[index] not in ["。", "！", "？", "；"]:
+			continue
+		if index - start + 1 < 18 or index + 1 >= text.length():
+			continue
+		result.append(text.substr(start, index - start + 1).strip_edges())
+		start = index + 1
+	if start == 0:
+		return [text]
+	var tail := text.substr(start).strip_edges()
+	if not tail.is_empty():
+		result.append(tail)
+	return result

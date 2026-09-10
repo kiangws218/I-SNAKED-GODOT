@@ -33,6 +33,8 @@ var _world_parent: Node
 var _riding_offset := Vector2.ZERO
 var _contact_armed := true
 var _saved_direction := Vector2.RIGHT
+var _attack_cooldown_left := 0.0
+var _attack_flash_left := 0.0
 
 
 func _ready() -> void:
@@ -72,12 +74,19 @@ func set_actor_active(active: bool) -> void:
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
+	_attack_cooldown_left = maxf(0.0, _attack_cooldown_left - delta)
+	_attack_flash_left = maxf(0.0, _attack_flash_left - delta)
+	if _attack_flash_left > 0.0:
+		queue_redraw()
 	var distance := global_position.distance_to(player.global_position)
 	if hostile and not is_downed and not is_dead:
 		if distance > ENTER_RADIUS:
 			global_position += global_position.direction_to(player.global_position) * combat_speed_tiles * TILE_SIZE * minf(delta, 0.05)
-		elif contact_damage > 0:
-			player.take_damage(contact_damage, &"enemy_contact")
+		elif contact_damage > 0 and _attack_cooldown_left <= 0.0:
+			if player.take_damage(contact_damage, &"enemy_contact"):
+				_attack_flash_left = 0.16
+				_attack_cooldown_left = 0.55
+				queue_redraw()
 		return
 	if distance < ENTER_RADIUS and _contact_armed:
 		_contact_armed = false
@@ -160,13 +169,26 @@ func start_combat(target: SnakePlayer) -> bool:
 	player = target
 	hostile = true
 	damageable = true
+	_attack_cooldown_left = 0.0
 	interaction_open = false
 	set_actor_active(true)
+	queue_redraw()
 	return true
 
 
 func stop_combat() -> void:
 	hostile = false
+	queue_redraw()
+
+
+func receive_actor_impact(source_position: Vector2, distance := 28.0) -> void:
+	var away := source_position.direction_to(global_position)
+	if away.is_zero_approx():
+		away = Vector2.RIGHT
+	var target := global_position + away.normalized() * distance
+	var tween := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.tween_property(self, "global_position", target, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	queue_redraw()
 
 
 func is_prison_target() -> bool:
@@ -264,3 +286,15 @@ func _draw() -> void:
 	draw_line(Vector2(0, 3), Vector2(0, 13), Color("81b29a"), 5.0)
 	if interaction_open:
 		draw_arc(Vector2.ZERO, 16.0, 0.0, TAU, 20, Color("69d2e7"), 2.0)
+	if hostile and not is_dead and not is_downed and is_instance_valid(player):
+		var attack_direction := global_position.direction_to(player.global_position)
+		if attack_direction.is_zero_approx():
+			attack_direction = Vector2.RIGHT
+		draw_arc(Vector2.ZERO, 17.0, attack_direction.angle() - 0.48, attack_direction.angle() + 0.48, 10, Color("ef8354"), 2.0)
+		if _attack_flash_left > 0.0:
+			draw_line(attack_direction * 7.0, attack_direction * 27.0, Color("fff1b6"), 4.0)
+	if damageable or hostile or hp < max_hp:
+		var bar_width := 28.0
+		var ratio := clampf(hp / maxf(max_hp, 0.001), 0.0, 1.0)
+		draw_rect(Rect2(Vector2(-bar_width * 0.5, -28.0), Vector2(bar_width, 4.0)), Color("30323d"))
+		draw_rect(Rect2(Vector2(-bar_width * 0.5, -28.0), Vector2(bar_width * ratio, 4.0)), Color("ef5350"))

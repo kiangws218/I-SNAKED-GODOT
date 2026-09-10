@@ -21,6 +21,7 @@ var body_label: Label
 var choices_box: VBoxContainer
 var name_edit: LineEdit
 var portrait: TextureRect
+var portrait_placeholder: Label
 var interact_audio: AudioStreamPlayer
 var _tween: Tween
 var _shown_position := Vector2.ZERO
@@ -87,8 +88,8 @@ func _build_ui() -> void:
 	panel = PanelContainer.new()
 	panel.name = "DialogueBox"
 	panel.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-	panel.position = Vector2(-382, -185)
-	panel.size = Vector2(360, 370)
+	panel.position = Vector2(-270, -185)
+	panel.size = Vector2(250, 370)
 	panel.add_theme_font_override("font", UI_FONT)
 	add_child(panel)
 	_shown_position = panel.position
@@ -104,12 +105,24 @@ func _build_ui() -> void:
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 10)
 	box.add_child(header)
+	var avatar_slot := Control.new()
+	avatar_slot.custom_minimum_size = Vector2(46, 46)
+	avatar_slot.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	header.add_child(avatar_slot)
 	portrait = TextureRect.new()
-	portrait.custom_minimum_size = Vector2(54, 54)
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	portrait.texture = PLAYER_PORTRAIT
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	header.add_child(portrait)
+	avatar_slot.add_child(portrait)
+	portrait_placeholder = Label.new()
+	portrait_placeholder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait_placeholder.text = "头像"
+	portrait_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	portrait_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	portrait_placeholder.modulate = Color("9cc7d6")
+	portrait_placeholder.add_theme_font_size_override("font_size", 12)
+	avatar_slot.add_child(portrait_placeholder)
 	var names := VBoxContainer.new()
 	header.add_child(names)
 	speaker_label = Label.new()
@@ -120,7 +133,7 @@ func _build_ui() -> void:
 	names.add_child(sub_label)
 	body_label = Label.new()
 	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body_label.custom_minimum_size = Vector2(320, 150)
+	body_label.custom_minimum_size = Vector2(210, 150)
 	body_label.add_theme_font_size_override("font_size", 18)
 	box.add_child(body_label)
 	choices_box = VBoxContainer.new()
@@ -136,6 +149,7 @@ func _render_page() -> void:
 	var page := pages[page_index]
 	speaker_label.text = String(page.get("speaker", "旁白"))
 	portrait.visible = speaker_label.text == "我"
+	portrait_placeholder.visible = not portrait.visible
 	sub_label.text = String(page.get("sub", ""))
 	body_label.text = String(page.get("text", ""))
 	if DisplayServer.get_name() != "headless" and is_instance_valid(interact_audio): interact_audio.play()

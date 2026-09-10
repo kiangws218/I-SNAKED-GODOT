@@ -178,13 +178,34 @@ func _is_actor_payload() -> bool:
 
 func _draw() -> void:
 	var item_id: StringName = payload.get("id", &"bean")
+	if bool(payload.get("actor", false)) or not String(payload.get("metadata", {}).get("actor_id", "")).is_empty():
+		_draw_actor_payload(StringName(payload.get("metadata", {}).get("actor_id", item_id)))
+		return
 	var color := Color("f3d55b")
 	if item_id == &"iron_sword":
 		color = Color("d9e2e8")
 	elif item_id == &"healing_potion":
 		color = Color("f06c9b")
-	elif bool(payload.get("actor", false)):
-		color = Color("69d2e7")
 	draw_circle(Vector2.ZERO, 8.0 if is_landed else 7.5, color)
 	if has_bounced and not is_landed:
 		draw_arc(Vector2.ZERO, 9.5, 0.0, TAU, 12, Color.WHITE, 1.0)
+
+
+func _draw_actor_payload(actor_id: StringName) -> void:
+	var body_color := Color("f4f1de")
+	var skin_color := Color("f2cc8f")
+	var accent_color := Color("81b29a")
+	if actor_id == &"keti":
+		body_color = Color("f6d6e9")
+		skin_color = Color("ffd8c2")
+		accent_color = Color("b96b9c")
+	elif actor_id in [&"ajie", &"lisi"]:
+		body_color = Color("d8e7f2") if actor_id == &"lisi" else Color("d8c3a5")
+		accent_color = Color("5b6ee1") if actor_id == &"lisi" else Color("a84a4a")
+	draw_circle(Vector2.ZERO, 9.0, body_color)
+	draw_circle(Vector2(0, -7), 5.5, skin_color)
+	draw_line(Vector2(-5, 2), Vector2(5, 2), accent_color, 3.0)
+	draw_circle(Vector2(-2, -8), 1.0, Color("30323d"))
+	draw_circle(Vector2(2, -8), 1.0, Color("30323d"))
+	if not is_landed:
+		draw_arc(Vector2.ZERO, 12.0, 0.0, TAU, 16, Color("fff1b6"), 1.0)

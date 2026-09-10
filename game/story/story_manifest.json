@@ -5,6 +5,7 @@
     "bandit_buck_swallowed",
     "bandit_combat",
     "bandit_hostage_threat",
+    "bandit_hostage_return_hostile",
     "bandit_intro",
     "bandit_miro_swallowed",
     "bandit_paid",

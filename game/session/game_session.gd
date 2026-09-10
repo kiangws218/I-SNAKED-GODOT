@@ -83,12 +83,17 @@ func continue_game(slot: int) -> void:
 
 func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_current := true) -> bool:
 	if not StoryMapCatalog.is_valid(map_id) or map_transition_active: return false
+	var source_map := state.current_map
 	map_transition_active = true
 	await screen_transition.fade_out()
 	if capture_current: _capture_player()
+	if map_id == &"forest" and source_map != &"forest":
+		state.prepare_released_pair_forest_return()
 	if is_instance_valid(current_world):
-		current_world.queue_free()
-		await current_world.tree_exited
+		var outgoing_world := current_world
+		current_world = null
+		outgoing_world.queue_free()
+		await outgoing_world.tree_exited
 	current_world = MAP_SCRIPT.new()
 	world_host.add_child(current_world)
 	state.current_map = map_id

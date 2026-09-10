@@ -893,9 +893,9 @@ func _test_n5_n6_contract() -> void:
 	var runner := DialogueRunner.new()
 	var graph_result := runner.load_graph()
 	check(graph_result.ok, "N5 剧情图无悬空跳转")
-	check(graph_result.nodes == 138 and graph_result.actions == 58 and graph_result.conditions == 18, "N5 完整导入网页端 138 节点/58 动作/18 条件")
+	check(graph_result.nodes == 139 and graph_result.actions == 58 and graph_result.conditions == 18, "N7 剧情图包含 139 节点/58 动作/18 条件")
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://game/story/story_manifest.json"))
-	check(manifest.nodes.size() == 138 and manifest.actions.size() == 58 and manifest.conditions.size() == 18 and manifest.flags.size() == 42, "N5 逐 ID 清单包含 138 节点/58 动作/18 条件/42 flag")
+	check(manifest.nodes.size() == 139 and manifest.actions.size() == 58 and manifest.conditions.size() == 18 and manifest.flags.size() == 42, "N7 逐 ID 清单包含 139 节点/58 动作/18 条件/42 flag")
 	var variables := {"flags": {}}
 	var first := runner.begin("dialogue_1", runner.nodes.dialogue_1.dialogue, variables, func(_name): return true)
 	check(first.line_id == "dialogue_1.page.0" and first.page_count == 3, "N5 对话稳定行 ID 与分页")
@@ -978,10 +978,30 @@ func _test_n5_n6_contract() -> void:
 	await process_frame
 	check(session.story.current_id == "input_player_name" and session.dialogue.name_edit.visible, "N6 序章结尾进入姓名输入")
 	session.dialogue._finish_enter()
-	session.story._on_name_submitted("测试蛇")
+	var story_gate: StoryGate = session.current_world.get_story_gate(&"wilderness_forest_gate")
+	check(story_gate != null and not story_gate.is_open, "N7 序章完成前荒野出口有可编辑实体石门阻挡")
+	story_gate.animation_player.speed_scale = 100.0
+	session.current_world.camera.focus_seconds = 0.0
+	session.current_world.camera.restore_seconds = 0.0
+	await session.story._on_name_submitted("测试蛇")
+	check(session.current_world.map_id == &"wilderness" and session.story.current_id == "prologue_complete" and story_gate.is_open, "N7 命名后聚焦石门并升起，保留玩家手动通过")
+	session.current_world.story_actor_interacted.emit(&"keti")
 	await process_frame
+	check(session.story.current_id == "keti_after_prologue" and "测试蛇" in session.dialogue.body_label.text, "N7 序章完成后可蒂会用玩家姓名继续对话")
+	session.dialogue._finish_enter()
+	session.story._on_choice("continue")
 	await process_frame
-	check(session.current_world.map_id == &"forest" and session.story.current_id == "chapter1_explore", "N6 命名后进入森林并停在 N7 起点")
+	check(session.story.current_id == "free_explore", "N7 可蒂指引对话结束后进入可重复互动的探索态")
+	session.current_world.story_actor_interacted.emit(&"keti")
+	await process_frame
+	check(session.story.current_id == "keti_after_prologue" and "测试蛇" in session.dialogue.body_label.text, "N7 free_explore 中再次接触可蒂仍展示含玩家姓名的对话")
+	session.dialogue._finish_enter()
+	session.story._on_choice("continue")
+	await process_frame
+	await session._on_exit_reached(&"forest", &"forest_from_wilderness")
+	check(session.current_world.map_id == &"forest" and session.story.current_id == "chapter1_explore", "N7 穿过出口渐隐进入森林并停在第一章起点")
+	await session._on_exit_reached(&"wilderness", &"wilderness_from_forest")
+	check(session.current_world.map_id == &"wilderness", "N7 森林保留可编辑回程出口并能返回荒野")
 	check(session.state.story.get("player_name", "") == "测试蛇", "N6 玩家姓名写入可序列化剧情状态")
 	await session.load_map(&"wilderness")
 	session.current_world.player.play_sfx = false
@@ -1005,10 +1025,14 @@ func _test_n5_n6_contract() -> void:
 	await process_frame
 	var restored_keti: NpcActor = session.current_world.get_node("MapLayout/Actors/Keti")
 	check(restored_keti.visible and is_equal_approx(restored_keti.hp, 14.0), "吐出的可蒂恢复原 NPC 外形和生命而非蓝球")
+	await session.retry_checkpoint()
+	restored_keti = session.current_world.get_node("MapLayout/Actors/Keti")
+	check(restored_keti.visible and String(session.state.actors.keti.status) == "unconscious", "N7 可蒂吞吐结果进入检查点，重建地图后仍为可互动 NPC")
 	session.current_world.player.global_position = restored_keti.global_position
 	await physics_frame
 	await physics_frame
 	check(session.current_world.active_npc == restored_keti, "吐出的可蒂恢复真实 NPC 接触互动")
+	check(session.story.current_id == "keti_unconscious", "N7 可蒂在重载后仍能进入昏迷互动分支")
 	session.current_world.finish_actor_interaction()
 	session.dialogue.interact_audio.stop()
 	session.queue_free()
@@ -1094,11 +1118,7 @@ func _test_n7_chapter_one_contract() -> void:
 	await process_frame
 
 
-	check(world.active_npc == keti and world.camera.position != Vector2.ZERO and world.camera.zoom.x > 1.0, "N7 互动镜头平滑聚焦蛇头与目标")
-	var focus_point := world.player.global_position.lerp(keti.global_position, 0.5)
-	var screen_position := (focus_point - world.camera.global_position) * world.camera.zoom + world.camera.get_viewport_rect().size * 0.5
-	var expected_anchor := world.camera.get_viewport_rect().size * world.camera.focus_screen_anchor
-	check(screen_position.distance_to(expected_anchor) < 1.0, "N7 互动主体构图到右侧对白框外的左侧中央")
+	check(world.active_npc == keti and world.camera.position.is_zero_approx() and world.camera.zoom.is_equal_approx(Vector2.ONE), "N7 无剧情对白的直接 NPC 接触不触发镜头放大")
 	world.finish_actor_interaction()
 	await process_frame
 	check(world.active_npc == null and world.camera.position.is_zero_approx() and world.camera.zoom.is_equal_approx(Vector2.ONE), "N7 互动结束镜头平滑恢复")
@@ -1239,7 +1259,37 @@ func _test_n7_chapter_one_contract() -> void:
 	check(release_ajie.ok and release_lisi.ok and ajie_projectile != null and lisi_projectile != null, "N7 角色吐出生成可追踪载荷")
 	if ajie_projectile != null and lisi_projectile != null:
 		check(StringName(ajie_projectile.payload.metadata.actor_id) == &"ajie" and StringName(lisi_projectile.payload.metadata.actor_id) == &"lisi", "N7 角色吐出不串用身份")
+		ajie_projectile.land()
+		lisi_projectile.land()
+		await process_frame
+		check(String(forest_session.state.actors.ajie.status) == "unconscious" and String(forest_session.state.actors.lisi.status) == "unconscious", "N7 阿杰与丽丝吐出后保留两个唯一昏迷状态")
+		await forest_session.load_map(&"cave", &"", true)
+		await forest_session.load_map(&"forest", &"forest_cave_return", true)
+		var returned_ajie := forest_session.current_world.get_story_actor(&"ajie")
+		var returned_lisi := forest_session.current_world.get_story_actor(&"lisi")
+		var ajie_camp: MapEntry = forest_session.current_world.get_node("MapLayout/SpawnPoints/AjieCampReturn")
+		var lisi_camp: MapEntry = forest_session.current_world.get_node("MapLayout/SpawnPoints/LisiCampReturn")
+		check(is_instance_valid(returned_ajie) and is_instance_valid(returned_lisi) and returned_ajie.hostile and returned_lisi.hostile and not returned_ajie.is_downed and not returned_lisi.is_downed, "N7 两人都吐出后离图再返回，在森林恢复为清醒敌对 NPC")
+		check(returned_ajie.global_position.distance_to(ajie_camp.global_position) < StoryMap.TILE_SIZE and returned_lisi.global_position.distance_to(lisi_camp.global_position) < StoryMap.TILE_SIZE, "N7 回营地坐标由 forest.tscn 可编辑定位点决定")
+		var returned_player := forest_session.current_world.player
+		check(returned_player.inventory.count_item(&"ajie") == 0 and returned_player.inventory.count_item(&"lisi") == 0 and String(forest_session.state.actors.ajie.status) == "alive" and String(forest_session.state.actors.lisi.status) == "alive", "N7 回营地迁移不复制实体、不残留胃袋载荷且不误写死亡")
+		await forest_session.retry_checkpoint()
+		var pair_counts := {&"ajie": 0, &"lisi": 0}
+		for npc in forest_session.get_tree().get_nodes_in_group(&"npc"):
+			if forest_session.current_world.is_ancestor_of(npc) and npc is NpcActor and pair_counts.has(npc.npc_id):
+				pair_counts[npc.npc_id] += 1
+		returned_ajie = forest_session.current_world.get_story_actor(&"ajie")
+		returned_lisi = forest_session.current_world.get_story_actor(&"lisi")
+		check(pair_counts[&"ajie"] == 1 and pair_counts[&"lisi"] == 1 and returned_ajie.hostile and returned_lisi.hostile, "N7 检查点重建仍只有两个唯一敌对 NPC")
+		var pair_roundtrip := SessionState.new()
+		check(pair_roundtrip.load_dictionary(forest_session.state.to_dictionary()).ok and bool(pair_roundtrip.actors.ajie.hostile) and bool(pair_roundtrip.actors.lisi.hostile), "N7 双人清醒敌对状态可序列化并读档")
 
+	var partial_pair := SessionState.new()
+	partial_pair.actors.ajie.status = "unconscious"
+	partial_pair.actors.lisi.status = "alive"
+	check(not partial_pair.prepare_released_pair_forest_return() and String(partial_pair.actors.ajie.status) == "unconscious", "N7 只吐出一人时不提前触发双人回营迁移")
+
+	chapter_player = forest_session.current_world.player
 	var ajian := forest_session.current_world.get_story_actor(&"ajian")
 	chapter_player.add_special_item(&"ajian", {"actor_id": &"ajian"})
 	var mount_result := await forest_session.story.execute_command("mountAjian")
@@ -1334,6 +1384,36 @@ func _test_n7_integrated_story_paths() -> void:
 	await process_frame
 	check(combat_session.story.current_id == "bandit_search" and String(combat_session.state.actors.buck.status) == "downed" and String(combat_session.state.actors.miro.status) == "downed", "N7 两名劫匪倒地后进入一次性搜刮分支")
 	combat_session.queue_free()
+	paused = false
+	await process_frame
+
+	var hostage_session: GameSession = load("res://game/main.tscn").instantiate()
+	root.add_child(hostage_session)
+	await process_frame
+	hostage_session.state.story["chapter"] = "第一章"
+	await hostage_session.load_map(&"forest", &"forest_from_wilderness", true)
+	hostage_session.current_world.player.set_length(8)
+	var swallowed := await hostage_session.story.execute_command("swallowBuck")
+	hostage_session.story.current_id = "chapter1_explore"
+	hostage_session._capture_player()
+	var persisted_hostage_state := SessionState.new()
+	var persisted_result := persisted_hostage_state.load_dictionary(hostage_session.state.to_dictionary())
+	check(persisted_result.ok and String(persisted_hostage_state.actors.buck.status) == "swallowed" and Array(persisted_hostage_state.player.inventory).any(func(entry): return StringName(entry.get("id", "")) == &"buck"), "N7 劫匪人质状态与胃袋载荷可完整序列化读档")
+	await hostage_session.load_map(&"wilderness", &"wilderness_from_forest", true)
+	await hostage_session.load_map(&"forest", &"forest_from_wilderness", true)
+	hostage_session.story.current_id = "chapter1_explore"
+	hostage_session.current_world.story_actor_interacted.emit(&"miro")
+	await process_frame
+	check(swallowed.ok and String(hostage_session.state.actors.buck.status) == "swallowed" and hostage_session.story.current_id == "bandit_hostage_return_hostile", "N7 吞掉一名劫匪后离图再返回，剩余 NPC 触发拼命对话")
+	hostage_session.dialogue._finish_enter()
+	hostage_session.story._on_choice("fight")
+	await process_frame
+	var miro := hostage_session.current_world.get_story_actor(&"miro")
+	check(hostage_session.story.current_id == "bandit_combat" and hostage_session.story.enemies_left == 1 and miro.hostile, "N7 人质状态下对话后只激活剩余劫匪战斗")
+	miro.take_damage(999.0, &"n7_hostage")
+	await process_frame
+	check(hostage_session.story.current_id == "bandit_search" and String(hostage_session.state.actors.buck.status) == "swallowed", "N7 剩余劫匪倒地后推进剧情且不覆盖胃袋人质状态")
+	hostage_session.queue_free()
 	paused = false
 	await process_frame
 

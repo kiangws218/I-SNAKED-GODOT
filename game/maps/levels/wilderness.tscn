@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://game/maps/authoring/item_spawn_point.tscn" id="4_item"]
 [ext_resource type="PackedScene" path="res://game/maps/authoring/enemy_spawn_point.tscn" id="5_enemy_spawn"]
 [ext_resource type="PackedScene" path="res://game/actors/npc_actor.tscn" id="6_npc"]
+[ext_resource type="PackedScene" path="res://game/maps/authoring/story_gate.tscn" id="7_story_gate"]
 
 [node name="MapLayout" type="Node2D" unique_id=504052859]
 
@@ -26,6 +27,11 @@ position = Vector2(1020, 588)
 npc_id = &"keti"
 
 [node name="Interactables" type="Node2D" parent="."]
+
+[node name="ForestStoneGate" parent="Interactables" instance=ExtResource("7_story_gate")]
+position = Vector2(1548, 588)
+gate_id = &"wilderness_forest_gate"
+opened_flag = &"prologue_complete"
 
 [node name="Pickups" type="Node2D" parent="."]
 
@@ -67,6 +73,7 @@ spawn_id = &"wilderness:bean:52:24"
 position = Vector2(1524, 588)
 scale = Vector2(1, 1.666667)
 target_map = &"forest"
+target_entry = &"forest_from_wilderness"
 required_flag = &"prologue_complete"
 locked_message = "出口尚未开放：先完成可蒂事件"
 
@@ -74,6 +81,11 @@ locked_message = "出口尚未开放：先完成可蒂事件"
 
 [node name="Default" parent="SpawnPoints" instance=ExtResource("2_entry")]
 position = Vector2(180, 588)
+
+[node name="FromForest" parent="SpawnPoints" instance=ExtResource("2_entry")]
+position = Vector2(1428, 588)
+entry_id = &"wilderness_from_forest"
+facing = Vector2(-1, 0)
 
 [node name="KetiSlime1" parent="SpawnPoints" instance=ExtResource("5_enemy_spawn")]
 position = Vector2(1152, 504)
