@@ -16,6 +16,7 @@ var state: StringName = &"hidden"
 var pages: Array[Dictionary] = []
 var page_index := 0
 var choices: Array[Dictionary] = []
+var selected_choice_index := 0
 var panel: PanelContainer
 var speaker_label: Label
 var sub_label: Label
@@ -41,6 +42,7 @@ func _ready() -> void:
 func show_dialogue(dialogue_pages: Array[Dictionary]) -> void:
 	pages = dialogue_pages
 	page_index = 0
+	selected_choice_index = 0
 	name_edit.visible = false
 	_render_page()
 	_enter()
@@ -79,13 +81,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		if page_index + 1 < pages.size():
 			page_index += 1
 			_render_page()
-		elif choices.size() == 1:
-			choice_selected.emit(String(choices[0].id))
+		elif not choices.is_empty():
+			choice_selected.emit(String(choices[selected_choice_index].id))
+	elif state == &"active" and not name_edit.visible and not choices.is_empty() and event.is_action_pressed("move_up"):
+		get_viewport().set_input_as_handled()
+		_set_choice_index(selected_choice_index - 1)
+	elif state == &"active" and not name_edit.visible and not choices.is_empty() and event.is_action_pressed("move_down"):
+		get_viewport().set_input_as_handled()
+		_set_choice_index(selected_choice_index + 1)
 	elif event is InputEventKey and event.physical_keycode >= KEY_1 and event.physical_keycode <= KEY_9:
 		var index := int(event.physical_keycode - KEY_1)
 		if state == &"active" and index < choices.size():
 			get_viewport().set_input_as_handled()
-			choice_selected.emit(String(choices[index].id))
+			_set_choice_index(index)
 
 func _build_ui() -> void:
 	panel = PanelContainer.new()
@@ -170,14 +178,21 @@ func _render_page() -> void:
 	body_label.text = String(page.get("text", ""))
 	if DisplayServer.get_name() != "headless" and is_instance_valid(interact_audio): interact_audio.play()
 	choices.assign(page.get("choices", []))
+	selected_choice_index = 0
 	for child in choices_box.get_children():
 		child.queue_free()
 	for index in range(choices.size()):
 		var choice := choices[index]
 		var button := Button.new()
 		button.text = "%d. %s" % [index + 1, choice.get("label", "继续")]
-		button.pressed.connect(func(id = String(choice.id)): choice_selected.emit(id))
+		button.focus_mode = Control.FOCUS_ALL
+		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		button.focus_entered.connect(func(i = index): _set_choice_index(i, false))
+		button.mouse_entered.connect(func(i = index): _set_choice_index(i, true))
+		button.pressed.connect(func(i = index): choice_selected.emit(String(choices[i].id)))
 		choices_box.add_child(button)
+	if not choices.is_empty() and state == &"active":
+		_set_choice_index(0)
 
 func _enter() -> void:
 	_kill_tween()
@@ -201,6 +216,20 @@ func _finish_enter() -> void:
 	panel.modulate.a = 1.0
 	panel.scale = Vector2.ONE
 	state = &"active"
+	if not choices.is_empty():
+		_set_choice_index(selected_choice_index)
+
+func _set_choice_index(index: int, grab_focus := true) -> void:
+	if choices.is_empty():
+		selected_choice_index = 0
+		return
+	selected_choice_index = posmod(index, choices.size())
+	var buttons := choices_box.get_children()
+	if selected_choice_index >= buttons.size():
+		return
+	var button := buttons[selected_choice_index] as Button
+	if grab_focus and is_instance_valid(button):
+		button.grab_focus()
 
 func _finish_exit() -> void:
 	panel.visible = false

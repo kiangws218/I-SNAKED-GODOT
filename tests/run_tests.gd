@@ -1501,9 +1501,10 @@ func _test_ui_hud_contract() -> void:
 	check(not hud.quest_display.visible, "HUD 可在任务未接取或完成后隐藏任务")
 	var inventory_entries: Array = [{"id": &"iron_sword", "count": 1, "weight": 2}]
 	hud.set_inventory(inventory_entries, 0, 4, 2, 6)
-	check(hud.inventory_carousel.center_slot.get_node("Name").text == "豆子" and not hud.inventory_carousel.center_slot.get_node("Name").visible and hud.inventory_carousel.left_slot.visible, "HUD 背包默认以豆子为主位且只呈现必要图标和主位数量")
+	check(hud.inventory_carousel.center_slot.get_node("Name").text == "豆子" and hud.inventory_carousel.center_slot.get_node("Name").visible and hud.inventory_carousel.left_slot.visible, "HUD 背包默认以豆子为主位并显示主位名称")
+	check(hud.inventory_carousel.left_slot.position.x > 0.0 and hud.inventory_carousel.right_slot.position.x < 220.0, "HUD 背包左右待选位向主位收拢")
 	hud.set_inventory(inventory_entries, 1, 4, 2, 6)
-	check(hud.inventory_carousel.center_slot.get_node("Name").text == "铁剑" and hud.inventory_carousel._slide_tween != null, "HUD Q/E 索引变化触发可打断横移动画")
+	check(hud.inventory_carousel.center_slot.get_node("Name").text == "铁剑" and hud.inventory_carousel.center_slot.get_node("Name").visible and hud.inventory_carousel._slide_tween != null, "HUD Q/E 索引变化触发可打断横移动画并显示主位名称")
 	hud.queue_free()
 	await process_frame
 
@@ -1511,6 +1512,13 @@ func _test_ui_hud_contract() -> void:
 	root.add_child(dialogue_ui)
 	await process_frame
 	check(dialogue_ui.panel.theme == load("res://game/ui/dialogue_theme.tres") and dialogue_ui.panel.find_child("DividerFade", true, false) is TextureRect and not dialogue_ui.sub_label.visible, "UI 对话框采用透明边框与淡化分隔线且隐藏内部副标题")
+	dialogue_ui.show_dialogue([{"speaker": "旁白", "text": "选择一个", "choices": [{"id": "a", "label": "选项 A"}, {"id": "b", "label": "选项 B"}, {"id": "c", "label": "选项 C"}]}])
+	await process_frame
+	dialogue_ui._finish_enter()
+	dialogue_ui._set_choice_index(1)
+	check(dialogue_ui.selected_choice_index == 1 and dialogue_ui.choices_box.get_child(1).has_focus(), "UI 对话选项支持索引高亮")
+	dialogue_ui._set_choice_index(2)
+	check(dialogue_ui.selected_choice_index == 2 and dialogue_ui.choices_box.get_child(2).has_focus(), "UI 对话选项支持键盘导航后的焦点高亮")
 	dialogue_ui.queue_free()
 	await process_frame
 

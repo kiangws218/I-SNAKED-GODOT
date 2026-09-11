@@ -33,25 +33,25 @@ defeat_mode = "downed"
 
 [node name="Interactables" type="Node2D" parent="." unique_id=827934457]
 
-[node name="Decorations" type="Node2D" parent="."]
+[node name="Decorations" type="Node2D" parent="." unique_id=695054616]
 
-[node name="YellowWand01" parent="Decorations" instance=ExtResource("9_wand")]
+[node name="YellowWand01" parent="Decorations" unique_id=1097602286 instance=ExtResource("9_wand")]
 position = Vector2(300, 348)
 rotation = -0.349066
 
-[node name="YellowWand02" parent="Decorations" instance=ExtResource("9_wand")]
-position = Vector2(612, 468)
+[node name="YellowWand02" parent="Decorations" unique_id=1985063587 instance=ExtResource("9_wand")]
+position = Vector2(304.99997, 472)
 rotation = 0.261799
 
-[node name="YellowWand03" parent="Decorations" instance=ExtResource("9_wand")]
+[node name="YellowWand03" parent="Decorations" unique_id=1632407106 instance=ExtResource("9_wand")]
 position = Vector2(876, 324)
 rotation = -0.174533
 
-[node name="YellowWand04" parent="Decorations" instance=ExtResource("9_wand")]
+[node name="YellowWand04" parent="Decorations" unique_id=1387761466 instance=ExtResource("9_wand")]
 position = Vector2(1116, 492)
 rotation = 0.436332
 
-[node name="YellowWand05" parent="Decorations" instance=ExtResource("9_wand")]
+[node name="YellowWand05" parent="Decorations" unique_id=209930833 instance=ExtResource("9_wand")]
 position = Vector2(1320, 324)
 rotation = -0.261799
 

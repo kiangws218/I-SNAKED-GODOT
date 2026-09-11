@@ -1,55 +1,55 @@
-[gd_resource type="Theme" load_steps=7 format=3]
+[gd_resource type="Theme" format=3 uid="uid://2vetdku4orhn"]
 
-[ext_resource type="Texture2D" path="res://assets/ui/fantasy/dialogue/transparent_border.png" id="1_border"]
-[ext_resource type="Texture2D" path="res://assets/ui/fantasy/button.png" id="2_button"]
-[ext_resource type="Texture2D" path="res://assets/ui/fantasy/button_focus.png" id="3_focus"]
-[ext_resource type="FontFile" path="res://assets/fonts/fusion-pixel-10px-monospaced-zh_hans.ttf" id="4_font"]
+[ext_resource type="Texture2D" uid="uid://ck8sek0ht0n77" path="res://assets/ui/fantasy/dialogue/transparent_border.png" id="1_border"]
+[ext_resource type="Texture2D" uid="uid://b3qfyqak0vxhm" path="res://assets/ui/fantasy/button.png" id="2_button"]
+[ext_resource type="Texture2D" uid="uid://6qysysl6nip3" path="res://assets/ui/fantasy/button_focus.png" id="3_focus"]
+[ext_resource type="FontFile" uid="uid://d34en4iya717f" path="res://assets/fonts/fusion-pixel-10px-monospaced-zh_hans.ttf" id="4_font"]
 
-[sub_resource type="StyleBoxTexture" id="StyleDialogue"]
-texture = ExtResource("1_border")
-texture_margin_left = 12.0
-texture_margin_top = 12.0
-texture_margin_right = 12.0
-texture_margin_bottom = 12.0
-content_margin_left = 16.0
-content_margin_top = 16.0
-content_margin_right = 16.0
-content_margin_bottom = 16.0
-modulate_color = Color(0.035, 0.14, 0.07, 0.82)
-
-[sub_resource type="StyleBoxTexture" id="StyleButton"]
-texture = ExtResource("2_button")
-texture_margin_left = 14.0
-texture_margin_top = 14.0
-texture_margin_right = 14.0
-texture_margin_bottom = 14.0
+[sub_resource type="StyleBoxTexture" id="StyleButtonFocus"]
 content_margin_left = 14.0
 content_margin_top = 7.0
 content_margin_right = 14.0
 content_margin_bottom = 7.0
-modulate_color = Color(0.12, 0.30, 0.20, 0.86)
-
-[sub_resource type="StyleBoxTexture" id="StyleButtonFocus"]
 texture = ExtResource("3_focus")
 texture_margin_left = 14.0
 texture_margin_top = 14.0
 texture_margin_right = 14.0
 texture_margin_bottom = 14.0
+modulate_color = Color(0.24, 0.53, 0.29, 0.96)
+
+[sub_resource type="StyleBoxTexture" id="StyleButton"]
 content_margin_left = 14.0
 content_margin_top = 7.0
 content_margin_right = 14.0
 content_margin_bottom = 7.0
-modulate_color = Color(0.24, 0.53, 0.29, 0.96)
+texture = ExtResource("2_button")
+texture_margin_left = 14.0
+texture_margin_top = 14.0
+texture_margin_right = 14.0
+texture_margin_bottom = 14.0
+modulate_color = Color(0.12, 0.3, 0.2, 0.86)
+
+[sub_resource type="StyleBoxTexture" id="StyleDialogue"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+texture = ExtResource("1_border")
+texture_margin_left = 12.0
+texture_margin_top = 12.0
+texture_margin_right = 12.0
+texture_margin_bottom = 12.0
+modulate_color = Color(0.05882353, 0.19215687, 0.20784314, 0.8509804)
 
 [resource]
 default_font = ExtResource("4_font")
 default_font_size = 18
 Button/colors/font_color = Color(0.91, 1, 0.88, 1)
 Button/colors/font_hover_color = Color(1, 1, 0.78, 1)
-Button/styles/normal = SubResource("StyleButton")
-Button/styles/hover = SubResource("StyleButtonFocus")
-Button/styles/pressed = SubResource("StyleButtonFocus")
 Button/styles/focus = SubResource("StyleButtonFocus")
+Button/styles/hover = SubResource("StyleButtonFocus")
+Button/styles/normal = SubResource("StyleButton")
+Button/styles/pressed = SubResource("StyleButtonFocus")
 Label/colors/font_color = Color(0.91, 1, 0.88, 1)
 LineEdit/colors/font_color = Color(0.91, 1, 0.88, 1)
 LineEdit/colors/placeholder_color = Color(0.64, 0.76, 0.65, 0.78)
