@@ -3,7 +3,7 @@ extends HBoxContainer
 
 const HEART_TEXTURE := preload("res://assets/ui/heart.png")
 
-@export_range(12, 64, 1) var icon_size := 28
+@export_range(12, 64, 1) var icon_size := 24
 @export var empty_tint := Color(0.18, 0.28, 0.22, 0.55)
 
 var current_health := 0
@@ -11,7 +11,7 @@ var maximum_health := 0
 
 
 func _ready() -> void:
-	add_theme_constant_override("separation", 4)
+	add_theme_constant_override("separation", 2)
 	if maximum_health == 0:
 		set_health(3, 3)
 

@@ -34,7 +34,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel" type="PanelContainer" parent="Center"]
-custom_minimum_size = Vector2(540, 340)
+custom_minimum_size = Vector2(600, 430)
 layout_mode = 2
 
 [node name="Margin" type="MarginContainer" parent="Center/Panel"]
@@ -46,7 +46,7 @@ theme_override_constants/margin_bottom = 22
 
 [node name="VBox" type="VBoxContainer" parent="Center/Panel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 12
 
 [node name="Title" type="Label" parent="Center/Panel/Margin/VBox"]
 layout_mode = 2
@@ -54,16 +54,21 @@ theme_override_font_sizes/font_size = 32
 text = "设置"
 horizontal_alignment = 1
 
-[node name="MusicRow" type="HBoxContainer" parent="Center/Panel/Margin/VBox"]
+[node name="AudioContent" type="VBoxContainer" parent="Center/Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="MusicRow" type="HBoxContainer" parent="Center/Panel/Margin/VBox/AudioContent"]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="MusicLabel" type="Label" parent="Center/Panel/Margin/VBox/MusicRow"]
+[node name="MusicLabel" type="Label" parent="Center/Panel/Margin/VBox/AudioContent/MusicRow"]
 custom_minimum_size = Vector2(96, 0)
 layout_mode = 2
 text = "音乐"
 
-[node name="MusicSlider" type="HSlider" parent="Center/Panel/Margin/VBox/MusicRow"]
+[node name="MusicSlider" type="HSlider" parent="Center/Panel/Margin/VBox/AudioContent/MusicRow"]
 custom_minimum_size = Vector2(300, 34)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -71,22 +76,22 @@ max_value = 100.0
 step = 1.0
 value = 100.0
 
-[node name="MusicValue" type="Label" parent="Center/Panel/Margin/VBox/MusicRow"]
+[node name="MusicValue" type="Label" parent="Center/Panel/Margin/VBox/AudioContent/MusicRow"]
 custom_minimum_size = Vector2(64, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
 
-[node name="SfxRow" type="HBoxContainer" parent="Center/Panel/Margin/VBox"]
+[node name="SfxRow" type="HBoxContainer" parent="Center/Panel/Margin/VBox/AudioContent"]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="SfxLabel" type="Label" parent="Center/Panel/Margin/VBox/SfxRow"]
+[node name="SfxLabel" type="Label" parent="Center/Panel/Margin/VBox/AudioContent/SfxRow"]
 custom_minimum_size = Vector2(96, 0)
 layout_mode = 2
 text = "音效"
 
-[node name="SfxSlider" type="HSlider" parent="Center/Panel/Margin/VBox/SfxRow"]
+[node name="SfxSlider" type="HSlider" parent="Center/Panel/Margin/VBox/AudioContent/SfxRow"]
 custom_minimum_size = Vector2(300, 34)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -94,15 +99,95 @@ max_value = 100.0
 step = 1.0
 value = 100.0
 
-[node name="SfxValue" type="Label" parent="Center/Panel/Margin/VBox/SfxRow"]
+[node name="SfxValue" type="Label" parent="Center/Panel/Margin/VBox/AudioContent/SfxRow"]
 custom_minimum_size = Vector2(64, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
 
-[node name="Spacer" type="Control" parent="Center/Panel/Margin/VBox"]
+[node name="AudioSpacer" type="Control" parent="Center/Panel/Margin/VBox/AudioContent"]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="ViewControls" type="Button" parent="Center/Panel/Margin/VBox/AudioContent"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "查看键位"
+
+[node name="ControlsContent" type="VBoxContainer" parent="Center/Panel/Margin/VBox"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="Hint" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.67, 0.82, 0.67, 1)
+theme_override_font_sizes/font_size = 14
+text = "当前版本仅供查看，暂不支持修改"
+horizontal_alignment = 1
+
+[node name="ControlsGrid" type="GridContainer" parent="Center/Panel/Margin/VBox/ControlsContent"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 40
+theme_override_constants/v_separation = 3
+columns = 2
+
+[node name="MoveLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "移动"
+[node name="MoveKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "—"
+[node name="SpitLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "吐出 / 使用"
+[node name="SpitKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "—"
+[node name="PlaceLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "放置环形节点"
+[node name="PlaceKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "—"
+[node name="TailLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "断尾 / 回收节点"
+[node name="TailKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "—"
+[node name="PreviousLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "上一件物品"
+[node name="PreviousKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "—"
+[node name="NextLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "下一件物品"
+[node name="NextKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "—"
+[node name="InteractLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "互动 / 继续对话"
+[node name="InteractKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "—"
+[node name="ChoiceLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "选择对话选项"
+[node name="ChoiceKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "数字键 1–9"
+[node name="PauseLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "暂停 / 返回"
+[node name="PauseKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "—"
 
 [node name="Back" type="Button" parent="Center/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 44)

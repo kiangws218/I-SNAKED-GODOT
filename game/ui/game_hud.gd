@@ -1,7 +1,7 @@
 class_name GameHud
 extends CanvasLayer
 
-@onready var health_display: HealthDisplay = $SafeArea/TopLeft/HealthPanel/Margin/Health
+@onready var health_display: HealthDisplay = $SafeArea/TopLeft/Health
 @onready var quest_display: QuestDisplay = $SafeArea/TopLeft/Quest
 @onready var inventory_carousel: InventoryCarousel = $SafeArea/Inventory
 @onready var status_label: Label = $SafeArea/Status
@@ -26,5 +26,4 @@ func set_status(text: String) -> void:
 
 func set_map_debug(text: String) -> void:
 	map_label.text = text
-	map_label.visible = OS.is_debug_build()
-
+	map_label.visible = false

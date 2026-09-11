@@ -9,6 +9,8 @@ const EXIT_SECONDS := 0.12
 const UI_FONT := preload("res://assets/fonts/fusion-pixel-10px-monospaced-zh_hans.ttf")
 const PLAYER_PORTRAIT := preload("res://assets/portraits/player_snake.png")
 const INTERACT_AUDIO := preload("res://assets/audio/interact.wav")
+const DIALOGUE_THEME := preload("res://game/ui/dialogue_theme.tres")
+const DIVIDER_TEXTURE := preload("res://assets/ui/fantasy/dialogue/divider_fade.png")
 
 var state: StringName = &"hidden"
 var pages: Array[Dictionary] = []
@@ -91,6 +93,7 @@ func _build_ui() -> void:
 	panel.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
 	panel.position = Vector2(-270, -185)
 	panel.size = Vector2(250, 370)
+	panel.theme = DIALOGUE_THEME
 	panel.add_theme_font_override("font", UI_FONT)
 	add_child(panel)
 	_shown_position = panel.position
@@ -130,8 +133,19 @@ func _build_ui() -> void:
 	speaker_label.add_theme_font_size_override("font_size", 24)
 	names.add_child(speaker_label)
 	sub_label = Label.new()
+	sub_label.visible = false
 	sub_label.modulate = Color("9cc7d6")
 	names.add_child(sub_label)
+	var divider := TextureRect.new()
+	divider.name = "DividerFade"
+	divider.custom_minimum_size = Vector2(0, 10)
+	divider.texture = DIVIDER_TEXTURE
+	divider.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	divider.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	divider.stretch_mode = TextureRect.STRETCH_SCALE
+	divider.modulate = Color(0.68, 0.94, 0.66, 0.82)
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(divider)
 	body_label = Label.new()
 	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body_label.custom_minimum_size = Vector2(210, 150)
@@ -152,6 +166,7 @@ func _render_page() -> void:
 	portrait.visible = speaker_label.text == "我"
 	portrait_placeholder.visible = not portrait.visible
 	sub_label.text = String(page.get("sub", ""))
+	sub_label.visible = false
 	body_label.text = String(page.get("text", ""))
 	if DisplayServer.get_name() != "headless" and is_instance_valid(interact_audio): interact_audio.play()
 	choices.assign(page.get("choices", []))

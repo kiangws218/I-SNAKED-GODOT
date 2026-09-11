@@ -1,5 +1,5 @@
 class_name InventoryCarousel
-extends PanelContainer
+extends Control
 
 const ICONS := {
 	&"bean": preload("res://assets/items/bean.svg"),
@@ -21,17 +21,16 @@ const NAMES := {
 	&"ajian": "阿见", &"buck": "巴克", &"miro": "米洛", &"character_bones": "遗骨",
 }
 
-@onready var weight_label: Label = $Margin/VBox/Header/Weight
-@onready var track: Control = $Margin/VBox/Track
-@onready var left_slot: VBoxContainer = $Margin/VBox/Track/Left
-@onready var center_slot: VBoxContainer = $Margin/VBox/Track/Center
-@onready var right_slot: VBoxContainer = $Margin/VBox/Track/Right
+@onready var track: Control = $Track
+@onready var left_slot: VBoxContainer = $Track/Left
+@onready var center_slot: VBoxContainer = $Track/Center
+@onready var right_slot: VBoxContainer = $Track/Right
 
 var _selected_index := -1
 var _slide_tween: Tween
 
 
-func set_inventory(entries: Array, selected_index: int, bean_ammo: int, current_weight: int, maximum_weight: int) -> void:
+func set_inventory(entries: Array, selected_index: int, bean_ammo: int, _current_weight: int, _maximum_weight: int) -> void:
 	var slots: Array[Dictionary] = [{"id": &"bean", "count": bean_ammo}]
 	for raw_entry in entries:
 		var entry: Dictionary = raw_entry
@@ -42,7 +41,6 @@ func set_inventory(entries: Array, selected_index: int, bean_ammo: int, current_
 		var forward := posmod(safe_index - _selected_index, slots.size())
 		direction = 1 if forward == 1 else -1
 	_selected_index = safe_index
-	weight_label.text = "%d/%d" % [current_weight, maximum_weight]
 	_set_slot(center_slot, slots[safe_index], true)
 	if slots.size() == 1:
 		left_slot.visible = false
@@ -69,6 +67,7 @@ func _set_slot(slot: VBoxContainer, data: Dictionary, primary: bool) -> void:
 	icon.modulate = Color.WHITE if icon.texture else Color(0.4, 0.8, 0.5, 0.5)
 	label.text = NAMES.get(item_id, String(item_id))
 	count.text = "×%d" % int(data.get("count", 1))
+	count.visible = primary
 	slot.modulate.a = 1.0 if primary else 0.72
 
 

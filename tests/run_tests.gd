@@ -1471,6 +1471,14 @@ func _test_ui_hud_contract() -> void:
 	await process_frame
 	check(menu.settings_panel.visible and is_equal_approx(menu.settings_panel.music_slider.max_value, 100.0) and is_zero_approx(menu.settings_panel.music_slider.min_value), "UI 设置滑杆覆盖 0% 到 100%")
 	check(viewport_bounds.encloses(menu.settings_panel.get_node("Center/Panel").get_global_rect()), "UI 设置界面适配 768×480 原生视口")
+	check(menu.settings_panel.view_controls_button is Button, "UI 设置页提供查看键位入口")
+	menu.settings_panel.show_controls()
+	check(menu.settings_panel.controls_content.visible and not menu.settings_panel.audio_content.visible, "UI 键位说明为独立只读子页")
+	var controls_text := ""
+	for label in menu.settings_panel.get_node("Center/Panel/Margin/VBox/ControlsContent/ControlsGrid").get_children():
+		controls_text += label.text if label is Label else ""
+	check("W / ↑" in controls_text and "A / ←" in controls_text and "J / 空格" in controls_text and "P / Esc" in controls_text, "UI 键位页覆盖移动、吐出和暂停等核心操作")
+	check(menu.settings_panel.handle_back() and menu.settings_panel.audio_content.visible, "UI 键位页返回设置页而非直接关闭设置")
 	menu.main_menu.visible = false
 	menu.show_pause()
 	await process_frame
@@ -1483,18 +1491,27 @@ func _test_ui_hud_contract() -> void:
 	var hud: GameHud = load("res://game/ui/game_hud.tscn").instantiate()
 	root.add_child(hud)
 	await process_frame
+	check(hud.get_node_or_null("SafeArea/TopLeft/HealthPanel") == null and hud.inventory_carousel.get_class() == "Control", "HUD 生命与背包取消厚重底框")
+	check(not hud.status_label.visible and not hud.map_label.visible, "HUD 不显示章节、对话 ID 或地图调试文字")
 	hud.set_health(2, 4)
 	check(hud.health_display.get_child_count() == 4 and hud.health_display.get_child(2).modulate == hud.health_display.empty_tint, "HUD 心形数量与失血状态同步")
 	hud.set_find_ajian_quest(true)
-	check(hud.quest_display.visible and "寻找阿见" in hud.quest_display.quest_label.text, "HUD 只提供寻找阿见任务入口")
+	check(hud.quest_display.visible and hud.quest_display.quest_label.text == "寻找阿见", "HUD 任务只显示寻找阿见，不附加冗余标题")
 	hud.set_find_ajian_quest(false)
 	check(not hud.quest_display.visible, "HUD 可在任务未接取或完成后隐藏任务")
 	var inventory_entries: Array = [{"id": &"iron_sword", "count": 1, "weight": 2}]
 	hud.set_inventory(inventory_entries, 0, 4, 2, 6)
-	check(hud.inventory_carousel.center_slot.get_node("Name").text == "豆子" and hud.inventory_carousel.left_slot.visible, "HUD 胃袋默认以豆子为主位并显示相邻物品")
+	check(hud.inventory_carousel.center_slot.get_node("Name").text == "豆子" and not hud.inventory_carousel.center_slot.get_node("Name").visible and hud.inventory_carousel.left_slot.visible, "HUD 背包默认以豆子为主位且只呈现必要图标和主位数量")
 	hud.set_inventory(inventory_entries, 1, 4, 2, 6)
 	check(hud.inventory_carousel.center_slot.get_node("Name").text == "铁剑" and hud.inventory_carousel._slide_tween != null, "HUD Q/E 索引变化触发可打断横移动画")
 	hud.queue_free()
+	await process_frame
+
+	var dialogue_ui: DialoguePanel = load("res://game/ui/dialogue_panel.gd").new()
+	root.add_child(dialogue_ui)
+	await process_frame
+	check(dialogue_ui.panel.theme == load("res://game/ui/dialogue_theme.tres") and dialogue_ui.panel.find_child("DividerFade", true, false) is TextureRect and not dialogue_ui.sub_label.visible, "UI 对话框采用透明边框与淡化分隔线且隐藏内部副标题")
+	dialogue_ui.queue_free()
 	await process_frame
 
 	var player_scene: SnakePlayer = load("res://game/player/snake_player.tscn").instantiate()

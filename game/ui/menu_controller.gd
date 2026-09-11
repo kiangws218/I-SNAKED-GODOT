@@ -75,7 +75,11 @@ func is_blocking() -> bool:
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("pause") or event.is_echo():
 		return
-	if settings_panel.visible or slot_panel.visible:
+	if settings_panel.visible:
+		if not settings_panel.handle_back():
+			_close_overlay()
+		get_viewport().set_input_as_handled()
+	elif slot_panel.visible:
 		_close_overlay()
 		get_viewport().set_input_as_handled()
 	elif pause_menu.visible:

@@ -1,6 +1,6 @@
 # I SNAKED-GODOT 内容资产交接清单
 
-更新时间：2026-09-10（UI/HUD 视觉基线）
+更新时间：2026-09-11（轻量 UI/HUD 视觉基线）
 
 本清单回答三件事：仓库里已经选用了什么、当前哪些视觉仍是占位、后续剧情还需要补什么。它是制作状态清单，不是素材候选库；本个人学习项目不维护素材许可证清单，也不设置发布阻断规则。资产目录可以保留最小来源说明，便于交接者理解临时映射。
 
@@ -22,6 +22,7 @@
 | `portrait.player_snake` | `assets/portraits/player_snake.png`（1254×1254） | 对话框玩家头像 | 已选用；N8 检查与其他正式头像的一致性 |
 | `font.ui.zh_hans` | `assets/fonts/fusion-pixel-10px-monospaced-zh_hans.ttf` | 主菜单、暂停菜单和对话 UI | 已选用 |
 | `ui.fantasy.frame` | `assets/ui/fantasy/panel.png`、`button.png`、`button_focus.png` | `fantasy_ui_theme.tres` 的面板和按钮九宫格 | 已选用；控件只引用 Theme，后续可集中替换 |
+| `ui.dialogue.light_frame` | `assets/ui/fantasy/dialogue/transparent_border.png`、`divider_fade.png` | 对话框透明九宫格边框与头像/正文淡化分隔线 | 已选用；由 `dialogue_theme.tres` 集中着色和控制边距 |
 | `hud.heart` | `assets/ui/heart.png` | 左上生命值 | 已选用；空心状态通过同贴图着色表现 |
 | `item.healing_potion` | `assets/items/green_potion.png` | 洞穴拾取物和药水投射物 | 已选用 |
 | `item.bean` | `assets/items/bean.svg` | 豆投射物 | 已选用；16×16 绿色像素造型，左上四点浅绿高光 |

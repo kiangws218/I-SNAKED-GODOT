@@ -143,6 +143,8 @@ N7 已完成第一章状态与剧情接入：第一章 action 白名单可执行
 - `AudioSettingsStore` 只保存音乐/音效百分比并映射 `Music` / `SFX` 总线，不进入剧情存档。
 - `GameHud` 组合 `HealthDisplay`、`QuestDisplay` 与 `InventoryCarousel`；剧情任务只读取既有 `quests.findAjian` 和稳定 flag，不另建任务事实源。
 - 胃袋动画只表现 `StomachInventory.selected_index` 的变化，不能反向拥有或修改库存。
+- HUD 的生产节点无装饰底框，内部兼容/调试标签保持隐藏；设置键位页只读 InputMap，不另存一份容易失效的按键表。
+- 对话数据与表现状态机不变；透明边框、淡化分隔线和颜色集中在 `dialogue_theme.tres`，不侵入剧情解释器。
 - UI 继续位于地图之外并使用暂停可处理模式；没有新增 EventBus、Service Locator 或全局演出管理器。
 
 出口：场景化菜单、三槽存读档、音量持久化、正式 HUD 和 768×480 原生视口门禁完成，等待制作人试玩审阅。

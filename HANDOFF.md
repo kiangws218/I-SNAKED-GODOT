@@ -62,9 +62,10 @@
 
 ## 本次 UI 视觉交接摘要
 
-- UI 风格入口：`game/ui/fantasy_ui_theme.tres`。面板与按钮使用九宫格，不要把边框复制进各个页面。
+- 菜单风格入口：`game/ui/fantasy_ui_theme.tres`；对话框入口：`game/ui/dialogue_theme.tres`。HUD 心形、任务和背包不使用底框，章节/对话/地图调试文字保持隐藏。
 - 生命组件：`game/ui/health_display.tscn`；正式 HUD 由 `game/ui/game_hud.tscn` 组合。
 - 洞穴 Yellow Wand 位于 `game/maps/levels/cave.tscn/Decorations`，每根都是可人工移动的 `yellow_wand_decoration.tscn` 实例。
 - 豆、Green Potion、Heart 和 Yellow Wand 的仓库源文件、Godot `.import` 设置与使用状态见 `ASSET_MANIFEST.md`。
 - 标题、暂停、槽位与设置均已拆成可编辑 `.tscn`；`menu_controller.gd` 只负责信号和页面切换。
+- 设置内的键位子页只读 InputMap；对话框使用 Transparent border 与 Divider Fade，仍沿用原有暂停可运行的弹入/弹出状态机。
 - 音量设置保存到 `user://settings.cfg`，剧情存档仍由 `SaveStore` 独立管理；两者不能混写。

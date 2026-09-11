@@ -1,10 +1,9 @@
 class_name QuestDisplay
-extends PanelContainer
+extends Control
 
-@onready var quest_label: Label = $Margin/Quest
+@onready var quest_label: Label = $Quest
 
 
 func set_quest(title: String, active: bool) -> void:
 	visible = active
-	quest_label.text = "当前任务\n" + title
-
+	quest_label.text = title
