@@ -20,7 +20,8 @@ func set_health(current: int, maximum: int) -> void:
 	current_health = maxi(0, current)
 	maximum_health = maxi(0, maximum)
 	for child in get_children():
-		child.queue_free()
+		remove_child(child)
+		child.free()
 	for index in range(maximum_health):
 		var heart := TextureRect.new()
 		heart.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -31,4 +32,3 @@ func set_health(current: int, maximum: int) -> void:
 		heart.modulate = Color.WHITE if index < current_health else empty_tint
 		heart.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(heart)
-

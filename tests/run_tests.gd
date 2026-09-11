@@ -22,8 +22,9 @@ func _run() -> void:
 	await _test_n5_n6_contract()
 	await _test_n7_chapter_one_contract()
 	await _test_n7_integrated_story_paths()
+	await _test_ui_hud_contract()
 	if failures.is_empty():
-		print("N7 TESTS PASSED (INCLUDING N1-N6 REGRESSION)")
+		print("UI/HUD TESTS PASSED (INCLUDING N1-N7 REGRESSION)")
 		quit(0)
 	else:
 		for failure in failures:
@@ -1429,6 +1430,78 @@ func _write_n4_save(store: SaveStore, slot: int, content: String) -> void:
 	var file := FileAccess.open(store.base_dir.path_join("slot_%d.json" % slot), FileAccess.WRITE)
 	file.store_string(content)
 	file.close()
+
+
+func _test_ui_hud_contract() -> void:
+	check(AudioServer.get_bus_index(&"Music") >= 0 and AudioServer.get_bus_index(&"SFX") >= 0, "UI 音乐与音效使用独立音频总线")
+	var settings_path := "res://.godot/ui_hud_tests/settings.cfg"
+	var settings := AudioSettingsStore.new(settings_path)
+	settings.music_percent = 100.0
+	settings.sfx_percent = 100.0
+	var saved := settings.set_levels(0.0, 42.0)
+	check(saved.ok, "UI 音量设置可持久化")
+	var restored := AudioSettingsStore.new(settings_path)
+	var loaded := restored.load_settings()
+	check(loaded.ok and is_zero_approx(restored.music_percent) and is_equal_approx(restored.sfx_percent, 42.0), "UI 音乐与音效音量可独立恢复")
+	var music_bus := AudioServer.get_bus_index(&"Music")
+	var sfx_bus := AudioServer.get_bus_index(&"SFX")
+	check(AudioServer.is_bus_mute(music_bus) and not AudioServer.is_bus_mute(sfx_bus), "UI 0% 静音边界只影响对应总线")
+	settings.set_levels(100.0, 100.0, false)
+
+	var menu: MenuController = load("res://game/ui/menu_controller.tscn").instantiate()
+	root.add_child(menu)
+	await process_frame
+	var slots: Array[Dictionary] = [
+		{"slot": 1, "exists": false},
+		{"slot": 2, "exists": true, "player_name": "测试蛇", "chapter": "第一章", "updated_at": "刚刚"},
+		{"slot": 3, "exists": true, "corrupted": true},
+	]
+	menu.show_main(slots)
+	check(menu.main_menu.visible and menu.slots_box.get_child_count() == 3, "UI 开始菜单与三槽场景化入口可用")
+	await process_frame
+	var viewport_bounds := Rect2(Vector2.ZERO, root.get_visible_rect().size)
+	check(viewport_bounds.encloses(menu.main_menu.get_node("Center/Panel").get_global_rect()), "UI 开始菜单适配 768×480 原生视口")
+	for button_name in ["Start", "Load", "Settings", "Exit"]:
+		check(menu.main_menu.get_node_or_null("Center/Panel/Margin/VBox/%s" % button_name) is Button, "UI 开始菜单按钮：%s" % button_name)
+	menu._open_slots(&"load", &"main")
+	await process_frame
+	check(menu.slot_panel.visible and menu.slot_panel.mode == &"load", "UI 加载游戏打开槽位子界面")
+	check(viewport_bounds.encloses(menu.slot_panel.get_node("Center/Panel").get_global_rect()), "UI 三槽界面适配 768×480 原生视口")
+	menu._open_settings(&"main")
+	await process_frame
+	check(menu.settings_panel.visible and is_equal_approx(menu.settings_panel.music_slider.max_value, 100.0) and is_zero_approx(menu.settings_panel.music_slider.min_value), "UI 设置滑杆覆盖 0% 到 100%")
+	check(viewport_bounds.encloses(menu.settings_panel.get_node("Center/Panel").get_global_rect()), "UI 设置界面适配 768×480 原生视口")
+	menu.main_menu.visible = false
+	menu.show_pause()
+	await process_frame
+	check(viewport_bounds.encloses(menu.pause_menu.get_node("Center/Panel").get_global_rect()), "UI 暂停菜单适配 768×480 原生视口")
+	for button_name in ["Resume", "Save", "Load", "Settings", "Home", "Exit"]:
+		check(menu.pause_menu.get_node_or_null("Center/Panel/Margin/VBox/%s" % button_name) is Button, "UI 暂停菜单按钮：%s" % button_name)
+	menu.queue_free()
+	await process_frame
+
+	var hud: GameHud = load("res://game/ui/game_hud.tscn").instantiate()
+	root.add_child(hud)
+	await process_frame
+	hud.set_health(2, 4)
+	check(hud.health_display.get_child_count() == 4 and hud.health_display.get_child(2).modulate == hud.health_display.empty_tint, "HUD 心形数量与失血状态同步")
+	hud.set_find_ajian_quest(true)
+	check(hud.quest_display.visible and "寻找阿见" in hud.quest_display.quest_label.text, "HUD 只提供寻找阿见任务入口")
+	hud.set_find_ajian_quest(false)
+	check(not hud.quest_display.visible, "HUD 可在任务未接取或完成后隐藏任务")
+	var inventory_entries: Array = [{"id": &"iron_sword", "count": 1, "weight": 2}]
+	hud.set_inventory(inventory_entries, 0, 4, 2, 6)
+	check(hud.inventory_carousel.center_slot.get_node("Name").text == "豆子" and hud.inventory_carousel.left_slot.visible, "HUD 胃袋默认以豆子为主位并显示相邻物品")
+	hud.set_inventory(inventory_entries, 1, 4, 2, 6)
+	check(hud.inventory_carousel.center_slot.get_node("Name").text == "铁剑" and hud.inventory_carousel._slide_tween != null, "HUD Q/E 索引变化触发可打断横移动画")
+	hud.queue_free()
+	await process_frame
+
+	var player_scene: SnakePlayer = load("res://game/player/snake_player.tscn").instantiate()
+	check(player_scene.get_node("SpitAudio").bus == &"SFX" and player_scene.get_node("HurtAudio").bus == &"SFX", "HUD 音效节点统一路由到 SFX")
+	player_scene.free()
+	if FileAccess.file_exists(settings_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(settings_path))
 
 
 func _find_actor_projectile(world: Node, actor_id: StringName) -> BeanProjectile:

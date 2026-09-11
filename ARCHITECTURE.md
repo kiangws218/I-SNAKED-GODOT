@@ -137,6 +137,16 @@ N7 已完成第一章状态与剧情接入：第一章 action 白名单可执行
 
 出口：第一章主要分支、存档和重放已通过 N1–N7 自动回归，等待制作人试玩确认；正式美术、音效和整体打磨留在 N8。
 
+### UI/HUD：场景化界面完成阶段
+
+- `MenuController` 只协调页面和信号；开始、暂停、槽位、设置均由独立 `.tscn` 持有锚点、尺寸、间距与控件。
+- `AudioSettingsStore` 只保存音乐/音效百分比并映射 `Music` / `SFX` 总线，不进入剧情存档。
+- `GameHud` 组合 `HealthDisplay`、`QuestDisplay` 与 `InventoryCarousel`；剧情任务只读取既有 `quests.findAjian` 和稳定 flag，不另建任务事实源。
+- 胃袋动画只表现 `StomachInventory.selected_index` 的变化，不能反向拥有或修改库存。
+- UI 继续位于地图之外并使用暂停可处理模式；没有新增 EventBus、Service Locator 或全局演出管理器。
+
+出口：场景化菜单、三槽存读档、音量持久化、正式 HUD 和 768×480 原生视口门禁完成，等待制作人试玩审阅。
+
 ### N8：整体打磨与学习构建
 
 - 全流程难度、镜头、UI 动效、音效、像素一致性和无障碍提示收尾。

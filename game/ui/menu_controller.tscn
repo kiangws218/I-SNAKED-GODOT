@@ -1,0 +1,21 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://game/ui/menu_controller.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://game/ui/main_menu_screen.tscn" id="2_main"]
+[ext_resource type="PackedScene" path="res://game/ui/pause_menu_screen.tscn" id="3_pause"]
+[ext_resource type="PackedScene" path="res://game/ui/save_slot_panel.tscn" id="4_slots"]
+[ext_resource type="PackedScene" path="res://game/ui/settings_panel.tscn" id="5_settings"]
+
+[node name="MenuController" type="CanvasLayer"]
+layer = 30
+process_mode = 3
+script = ExtResource("1_script")
+
+[node name="MainMenu" parent="." instance=ExtResource("2_main")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("3_pause")]
+
+[node name="SaveSlotPanel" parent="." instance=ExtResource("4_slots")]
+
+[node name="SettingsPanel" parent="." instance=ExtResource("5_settings")]
+

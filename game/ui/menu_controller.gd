@@ -1,131 +1,131 @@
 class_name MenuController
 extends CanvasLayer
 
-const UI_FONT := preload("res://assets/fonts/fusion-pixel-10px-monospaced-zh_hans.ttf")
-const UI_THEME := preload("res://game/ui/fantasy_ui_theme.tres")
-
 signal new_game(slot: int)
 signal continue_game(slot: int)
 signal delete_slot(slot: int)
 signal resume_requested
 signal reload_requested
+signal save_requested
 signal home_requested
+signal exit_requested
 
-var main_menu: ColorRect
-var pause_menu: ColorRect
-var slots_box: VBoxContainer
+@onready var main_menu: ColorRect = $MainMenu
+@onready var pause_menu: ColorRect = $PauseMenu
+@onready var slot_panel: SaveSlotPanel = $SaveSlotPanel
+@onready var settings_panel: SettingsPanel = $SettingsPanel
+@onready var slots_box: VBoxContainer = $SaveSlotPanel/Center/Panel/Margin/VBox/Slots
+
+var settings_store := AudioSettingsStore.new()
 var _slots: Array[Dictionary] = []
+var _overlay_origin: StringName = &"main"
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 30
-	main_menu = _make_screen(Color("10162bdf"))
-	pause_menu = _make_screen(Color("090d18cc"))
-	main_menu.theme = UI_THEME
-	pause_menu.theme = UI_THEME
-	main_menu.add_theme_font_override("font", UI_FONT)
-	pause_menu.add_theme_font_override("font", UI_FONT)
-	_build_main()
-	_build_pause()
+	settings_store.load_settings()
+	settings_panel.configure(settings_store.music_percent, settings_store.sfx_percent)
+	_connect_buttons()
 	pause_menu.visible = false
+	slot_panel.visible = false
+	settings_panel.visible = false
+
 
 func show_main(slots: Array[Dictionary]) -> void:
-	_slots = slots
+	update_slots(slots)
 	main_menu.visible = true
 	pause_menu.visible = false
-	_render_slots()
+	slot_panel.visible = false
+	settings_panel.visible = false
+	_focus_later($MainMenu/Center/Panel/Margin/VBox/Start)
+
+
+func update_slots(slots: Array[Dictionary]) -> void:
+	_slots = slots
+	slot_panel.configure(_slots, slot_panel.mode)
+
 
 func hide_all() -> void:
 	main_menu.visible = false
 	pause_menu.visible = false
+	slot_panel.visible = false
+	settings_panel.visible = false
+
 
 func show_pause() -> void:
 	if main_menu.visible:
 		return
 	pause_menu.visible = true
+	slot_panel.visible = false
+	settings_panel.visible = false
+	_focus_later($PauseMenu/Center/Panel/Margin/VBox/Resume)
+
 
 func hide_pause() -> void:
 	pause_menu.visible = false
+	slot_panel.visible = false
+	settings_panel.visible = false
+
 
 func is_blocking() -> bool:
-	return main_menu.visible or pause_menu.visible
+	return main_menu.visible or pause_menu.visible or slot_panel.visible or settings_panel.visible
 
-func _make_screen(color: Color) -> ColorRect:
-	var screen := ColorRect.new()
-	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	screen.color = color
-	add_child(screen)
-	return screen
 
-func _build_main() -> void:
-	var box := VBoxContainer.new()
-	box.set_anchors_preset(Control.PRESET_CENTER)
-	box.position = Vector2(-270, -195)
-	box.size = Vector2(540, 390)
-	box.add_theme_constant_override("separation", 12)
-	main_menu.add_child(box)
-	var title := Label.new()
-	title.text = "I SNAKED"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 38)
-	box.add_child(title)
-	var subtitle := Label.new()
-	subtitle.text = "剧情模式 · 选择存档槽"
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(subtitle)
-	slots_box = VBoxContainer.new()
-	slots_box.add_theme_constant_override("separation", 10)
-	box.add_child(slots_box)
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("pause") or event.is_echo():
+		return
+	if settings_panel.visible or slot_panel.visible:
+		_close_overlay()
+		get_viewport().set_input_as_handled()
+	elif pause_menu.visible:
+		resume_requested.emit()
+		get_viewport().set_input_as_handled()
 
-func _render_slots() -> void:
-	for child in slots_box.get_children():
-		child.queue_free()
-	for slot in _slots:
-		var id := int(slot.slot)
-		var row := HBoxContainer.new()
-		row.custom_minimum_size.y = 62
-		var info := Label.new()
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		if bool(slot.get("corrupted", false)):
-			info.text = "槽位 %d\n存档损坏（可删除重建）" % id
-		elif bool(slot.get("exists", false)):
-			info.text = "槽位 %d · %s\n%s  %s" % [id, slot.get("player_name", "未命名"), slot.get("chapter", "序章"), slot.get("updated_at", "")]
-		else:
-			info.text = "槽位 %d\n空" % id
-		row.add_child(info)
-		var primary := Button.new()
-		primary.text = "继续" if bool(slot.get("exists", false)) and not bool(slot.get("corrupted", false)) else "新游戏"
-		primary.pressed.connect(func():
-			if bool(slot.get("exists", false)) and not bool(slot.get("corrupted", false)): continue_game.emit(id)
-			else: new_game.emit(id))
-		row.add_child(primary)
-		var erase := Button.new()
-		erase.text = "删除"
-		erase.disabled = not bool(slot.get("exists", false))
-		erase.pressed.connect(func(): delete_slot.emit(id))
-		row.add_child(erase)
-		slots_box.add_child(row)
 
-func _build_pause() -> void:
-	var box := VBoxContainer.new()
-	box.set_anchors_preset(Control.PRESET_CENTER)
-	box.position = Vector2(-130, -150)
-	box.size = Vector2(260, 300)
-	box.add_theme_constant_override("separation", 12)
-	pause_menu.add_child(box)
-	var title := Label.new()
-	title.text = "暂停"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 32)
-	box.add_child(title)
-	_add_button(box, "继续", func(): resume_requested.emit())
-	_add_button(box, "读取检查点", func(): reload_requested.emit())
-	_add_button(box, "设置（后续完善）", func(): pass)
-	_add_button(box, "返回标题", func(): home_requested.emit())
+func _connect_buttons() -> void:
+	$MainMenu/Center/Panel/Margin/VBox/Start.pressed.connect(func(): _open_slots(&"new", &"main"))
+	$MainMenu/Center/Panel/Margin/VBox/Load.pressed.connect(func(): _open_slots(&"load", &"main"))
+	$MainMenu/Center/Panel/Margin/VBox/Settings.pressed.connect(func(): _open_settings(&"main"))
+	$MainMenu/Center/Panel/Margin/VBox/Exit.pressed.connect(func(): exit_requested.emit())
+	$PauseMenu/Center/Panel/Margin/VBox/Resume.pressed.connect(func(): resume_requested.emit())
+	$PauseMenu/Center/Panel/Margin/VBox/Save.pressed.connect(func(): save_requested.emit())
+	$PauseMenu/Center/Panel/Margin/VBox/Load.pressed.connect(func(): _open_slots(&"load", &"pause"))
+	$PauseMenu/Center/Panel/Margin/VBox/Settings.pressed.connect(func(): _open_settings(&"pause"))
+	$PauseMenu/Center/Panel/Margin/VBox/Home.pressed.connect(func(): home_requested.emit())
+	$PauseMenu/Center/Panel/Margin/VBox/Exit.pressed.connect(func(): exit_requested.emit())
+	slot_panel.new_game_requested.connect(func(slot: int): new_game.emit(slot))
+	slot_panel.load_game_requested.connect(func(slot: int): continue_game.emit(slot))
+	slot_panel.delete_requested.connect(func(slot: int): delete_slot.emit(slot))
+	slot_panel.back_requested.connect(_close_overlay)
+	settings_panel.levels_changed.connect(func(music: float, sfx: float): settings_store.set_levels(music, sfx))
+	settings_panel.back_requested.connect(_close_overlay)
 
-func _add_button(parent: VBoxContainer, label: String, action: Callable) -> void:
-	var button := Button.new()
-	button.text = label
-	button.custom_minimum_size.y = 42
-	button.pressed.connect(action)
-	parent.add_child(button)
+
+func _open_slots(mode: StringName, origin: StringName) -> void:
+	_overlay_origin = origin
+	slot_panel.configure(_slots, mode)
+	slot_panel.visible = true
+	settings_panel.visible = false
+	slot_panel.call_deferred("focus_first")
+
+
+func _open_settings(origin: StringName) -> void:
+	_overlay_origin = origin
+	settings_panel.configure(settings_store.music_percent, settings_store.sfx_percent)
+	settings_panel.visible = true
+	slot_panel.visible = false
+	settings_panel.call_deferred("focus_first")
+
+
+func _close_overlay() -> void:
+	slot_panel.visible = false
+	settings_panel.visible = false
+	if _overlay_origin == &"pause":
+		_focus_later($PauseMenu/Center/Panel/Margin/VBox/Resume)
+	else:
+		_focus_later($MainMenu/Center/Panel/Margin/VBox/Start)
+
+
+func _focus_later(control: Control) -> void:
+	control.call_deferred("grab_focus")

@@ -3,18 +3,16 @@ extends Node
 
 const MAP_SCRIPT := preload("res://game/maps/story_map.gd")
 const DIALOGUE_SCRIPT := preload("res://game/ui/dialogue_panel.gd")
-const MENU_SCRIPT := preload("res://game/ui/menu_controller.gd")
+const MENU_SCENE := preload("res://game/ui/menu_controller.tscn")
 const STORY_SCRIPT := preload("res://game/story/story_director.gd")
 
 @onready var world_host: Node2D = $WorldHost
 @onready var screen_transition: ScreenTransition = $ScreenTransition
-@onready var hud: CanvasLayer = $HUD
-@onready var map_label: Label = $HUD/Panel/VBox/Map
-@onready var health_display = $HUD/Panel/VBox/Health
-@onready var status_label: Label = $HUD/Panel/VBox/Status
-@onready var hint_label: Label = $HUD/Panel/VBox/Hint
-@onready var inventory_title: Label = $HUD/InventoryPanel/VBox/Title
-@onready var inventory_slots: Label = $HUD/InventoryPanel/VBox/Slots
+@onready var hud = $HUD
+@onready var map_label: Label = $HUD/SafeArea/DebugMap
+@onready var status_label: Label = $HUD/SafeArea/Status
+@onready var hint_label: Label = $HUD/SafeArea/LegacyGoalText
+@onready var inventory_slots: Label = $HUD/SafeArea/LegacyInventoryText
 var state := SessionState.new()
 var store := SaveStore.new()
 var current_world: StoryMap
@@ -28,21 +26,23 @@ var map_transition_active := false
 func _ready() -> void:
 	dialogue = DIALOGUE_SCRIPT.new()
 	add_child(dialogue)
-	menus = MENU_SCRIPT.new()
+	menus = MENU_SCENE.instantiate()
 	add_child(menus)
 	story = STORY_SCRIPT.new()
 	add_child(story)
 	var graph_result := story.setup(self, dialogue)
 	if not graph_result.ok: status_label.text = "剧情图载入失败"
 	story.pause_requested.connect(set_pause_reason)
-	story.goal_changed.connect(func(text: String): hint_label.text = "目标：" + text)
+	story.goal_changed.connect(_on_story_goal_changed)
 	story.status_changed.connect(func(text: String): status_label.text = text)
 	menus.new_game.connect(start_new_game)
 	menus.continue_game.connect(continue_game)
 	menus.delete_slot.connect(_delete_and_refresh)
 	menus.resume_requested.connect(toggle_pause)
 	menus.reload_requested.connect(_reload_from_menu)
+	menus.save_requested.connect(_save_from_menu)
 	menus.home_requested.connect(return_to_title)
+	menus.exit_requested.connect(func(): get_tree().quit())
 	hud.visible = false
 	menus.show_main(store.list_slots())
 
@@ -74,12 +74,21 @@ func start_new_game(slot: int) -> void:
 
 func continue_game(slot: int) -> void:
 	active_slot = clampi(slot, 1, SaveStore.SLOT_COUNT)
+	var was_paused := pause_reasons.has(&"menu")
+	if was_paused:
+		set_pause_reason(&"menu", false)
 	var loaded := await load_active_slot()
 	if not loaded.ok or loaded.get("empty", false):
-		menus.show_main(store.list_slots())
+		if is_instance_valid(current_world):
+			set_pause_reason(&"menu", true)
+			menus.show_pause()
+		else:
+			menus.show_main(store.list_slots())
 		return
 	menus.hide_all()
 	hud.visible = true
+	pause_reasons.clear()
+	get_tree().paused = false
 	story.resume()
 
 func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_current := true) -> bool:
@@ -108,7 +117,7 @@ func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_c
 	current_world.player.health_changed.connect(func(_current: int, _maximum: int): _refresh_hud())
 	story.bind_world(current_world)
 	remember_checkpoint(map_id, entry)
-	map_label.text = "%s  [%s]" % [current_world.data.title, map_id]
+	hud.set_map_debug("%s  [%s]" % [current_world.data.title, map_id])
 	status_label.text = "开发跨图" if debug_bypass else "检查点已记录"
 	_refresh_hud()
 	await screen_transition.fade_in()
@@ -173,7 +182,11 @@ func return_to_title() -> void:
 
 func _delete_and_refresh(slot: int) -> void:
 	delete_slot(slot)
-	menus.show_main(store.list_slots())
+	menus.update_slots(store.list_slots())
+
+func _save_from_menu() -> void:
+	save_active_slot()
+	menus.update_slots(store.list_slots())
 
 func _reload_from_menu() -> void:
 	set_pause_reason(&"menu", false)
@@ -223,9 +236,8 @@ func _refresh_hud() -> void:
 	if not is_instance_valid(current_world) or not is_instance_valid(current_world.player): return
 	var v := current_world.player
 	var bean_ammo := v.inventory.bean_ammo(v.body_chain.segment_count, SnakePlayer.MIN_LENGTH)
-	health_display.set_health(v.hearts, v.max_hearts)
-	status_label.text = "生命 %d/%d · 长度 %d · 豆 %d · 节点 %d" % [v.hearts, v.max_hearts, v.body_chain.segment_count, bean_ammo, v.node_charges]
-	inventory_title.text = "胃袋  %d/%d  [Q/E 切换]" % [v.inventory.current_weight(), StomachInventory.MAX_WEIGHT]
+	hud.set_health(v.hearts, v.max_hearts)
+	hud.set_inventory(v.inventory.entries, v.inventory.selected_index, bean_ammo, v.inventory.current_weight(), StomachInventory.MAX_WEIGHT)
 	var lines: Array[String] = []
 	lines.append(("▶ " if v.inventory.selected_index == 0 else "　") + "豆子 ×%d" % bean_ammo)
 	for index in range(v.inventory.entries.size()):
@@ -233,6 +245,19 @@ func _refresh_hud() -> void:
 		var marker := "▶ " if v.inventory.selected_index == index + 1 else "　"
 		lines.append("%s%s ×%d（重%d）" % [marker, _item_name(entry.id), entry.count, int(entry.weight) * int(entry.count)])
 	inventory_slots.text = "\n".join(lines)
+	_refresh_quest_hud()
+
+func _on_story_goal_changed(text: String) -> void:
+	hint_label.text = text
+	call_deferred("_refresh_quest_hud")
+
+func _refresh_quest_hud() -> void:
+	var quests: Dictionary = state.story.get("quests", {})
+	var quest: Dictionary = quests.get("findAjian", {})
+	var accepted := bool(state.flags.get("findAjianAccepted", false)) or not quest.is_empty()
+	var active := accepted and String(quest.get("status", "active")) == "active"
+	active = active and not bool(state.flags.get("ajianFound", false)) and not bool(state.flags.get("storyCompleted", false))
+	hud.set_find_ajian_quest(active)
 
 func _item_name(item_id: StringName) -> String:
 	return {

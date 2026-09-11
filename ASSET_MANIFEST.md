@@ -25,6 +25,7 @@
 | `hud.heart` | `assets/ui/heart.png` | 左上生命值 | 已选用；空心状态通过同贴图着色表现 |
 | `item.healing_potion` | `assets/items/green_potion.png` | 洞穴拾取物和药水投射物 | 已选用 |
 | `item.bean` | `assets/items/bean.svg` | 豆投射物 | 已选用；16×16 绿色像素造型，左上四点浅绿高光 |
+| `item.character_bones` | `assets/items/bones.svg` | 胃袋中的角色遗骨图标 | 已选用；补齐所有当前可吞物品的 HUD 图标 |
 | `decor.cave.yellow_wand` | `assets/items/yellow_wand.png` | 洞穴可编辑装饰实例 | 已选用；场景为 `yellow_wand_decoration.tscn` |
 | `tiles.story_native` | `assets/tiles/story_tiles.svg`、`assets/tiles/story_tileset.tres` | 教学、荒野、森林、洞窟的 TileMapLayer 与碰撞 | 当前生产基线；24px 原生图集，可在 Godot TileMap 面板继续绘制 |
 | `sfx.spit` | `assets/audio/spit.wav` | 吐豆/投射物 | 已选用 |

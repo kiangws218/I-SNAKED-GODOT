@@ -1,0 +1,82 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://game/ui/game_hud.gd" id="1_script"]
+[ext_resource type="Theme" path="res://game/ui/fantasy_ui_theme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://game/ui/health_display.tscn" id="3_health"]
+[ext_resource type="PackedScene" path="res://game/ui/quest_display.tscn" id="4_quest"]
+[ext_resource type="PackedScene" path="res://game/ui/inventory_carousel.tscn" id="5_inventory"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_script")
+
+[node name="SafeArea" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 18.0
+offset_right = -18.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="TopLeft" type="VBoxContainer" parent="SafeArea"]
+offset_right = 310.0
+offset_bottom = 170.0
+theme_override_constants/separation = 8
+
+[node name="HealthPanel" type="PanelContainer" parent="SafeArea/TopLeft"]
+custom_minimum_size = Vector2(0, 62)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="SafeArea/TopLeft/HealthPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 12
+
+[node name="Health" parent="SafeArea/TopLeft/HealthPanel/Margin" instance=ExtResource("3_health")]
+
+[node name="Quest" parent="SafeArea/TopLeft" instance=ExtResource("4_quest")]
+visible = false
+
+[node name="Inventory" parent="SafeArea" instance=ExtResource("5_inventory")]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -180.0
+offset_right = 330.0
+grow_vertical = 0
+
+[node name="Status" type="Label" parent="SafeArea"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -390.0
+offset_bottom = 34.0
+grow_horizontal = 0
+text = ""
+horizontal_alignment = 2
+
+[node name="DebugMap" type="Label" parent="SafeArea"]
+visible = false
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -320.0
+offset_bottom = 28.0
+grow_horizontal = 0
+text = ""
+horizontal_alignment = 2
+
+[node name="LegacyInventoryText" type="Label" parent="SafeArea"]
+visible = false
+text = "▶ 豆子"
+
+[node name="LegacyGoalText" type="Label" parent="SafeArea"]
+visible = false
+text = ""

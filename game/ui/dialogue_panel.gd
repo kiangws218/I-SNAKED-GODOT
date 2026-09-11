@@ -32,6 +32,7 @@ func _ready() -> void:
 	_build_ui()
 	interact_audio = AudioStreamPlayer.new()
 	interact_audio.stream = INTERACT_AUDIO
+	interact_audio.bus = &"SFX"
 	add_child(interact_audio)
 	panel.visible = false
 

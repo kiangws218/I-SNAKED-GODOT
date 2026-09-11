@@ -99,9 +99,11 @@ script = ExtResource("5_prison")
 
 [node name="InteractAudio" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("6_interact")
+bus = &"SFX"
 
 [node name="PrisonAudio" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("7_prison")
+bus = &"SFX"
 
 [node name="SnakePlayer" parent="." instance=ExtResource("2_player")]
 position = Vector2(336, 240)

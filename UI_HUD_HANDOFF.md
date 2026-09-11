@@ -1,6 +1,6 @@
 # UI / HUD 阶段交接规格
 
-状态：视觉基线已接入；完整菜单、设置、存档操作界面、任务栏和胃袋轮播仍待实现。
+状态：完整实现已完成，等待制作人试玩审阅。
 
 本文是下一位负责人实现 UI/HUD 的唯一阶段规格。玩法与剧情事实仍以 `GDD.md`、`CONTENT_SCOPE.md` 和 `N7_REVIEW.md` 为准。
 
@@ -54,45 +54,43 @@
 
 ## 当前实现边界
 
-- `MenuController` 仍以代码创建标题/暂停控件，已有三槽入口可用，但还不是制作人要求的完整菜单结构。
-- 暂停菜单的设置按钮仍是占位，尚无音乐/音效滑杆，也没有设置持久化。
-- `HealthDisplay` 已显示心形生命值；旧的地图、状态、按键文字 HUD 仍存在。
-- 胃袋仍是文字列表，尚无图标轮播和 Q/E Tween。
-- “寻找阿见”任务栏尚未实现，不能直接显示所有 `StoryDirector.goal_changed` 文本。
-- 尚未添加背景音乐素材；已有音效仍按既有播放路径工作。
-- 本轮没有新增 EventBus、Service Locator 或全局演出控制器。
+- `MenuController` 已改为 `menu_controller.tscn` 的页面协调器，开始、暂停、槽位和设置布局均由独立场景持有。
+- `AudioSettingsStore` 将两个滑杆保存到 `user://settings.cfg`；`default_bus_layout.tres` 定义 `Music` 与 `SFX`，现有音效已路由至 `SFX`。
+- `game_hud.tscn` 已组合心形生命、寻找阿见任务和胃袋轮播；旧文字库存只以隐藏兼容节点保留，不进入正式画面。
+- 胃袋显示当前项与左右相邻项；只有两个槽时不重复绘制同一邻项。连续 Q/E 会接管旧 Tween。
+- “寻找阿见”只读取现有剧情任务和 flag；没有把其他 `goal_changed` 文本当作任务。
+- 尚未添加背景音乐素材，但音乐总线和设置接口已稳定，可在 N8 直接接入播放器。
+- 没有新增 EventBus、Service Locator 或全局演出控制器。
 
-## 推荐场景结构
+## 当前场景结构
 
 以下控件应以 `.tscn` 和 Theme 为主要编辑入口，脚本只负责状态绑定、输入和 Tween：
 
 ```text
-UILayer
+MenuController.tscn
 ├─ MainMenuScreen.tscn
-│  ├─ MainActions
-│  ├─ SaveSlotScreen
-│  └─ SettingsScreen（可复用）
 ├─ PauseMenuScreen.tscn
-│  ├─ PauseActions
-│  └─ SettingsScreen（可复用）
-└─ HUD.tscn
+├─ SaveSlotPanel.tscn
+│  └─ SaveSlotRow.tscn × 3
+└─ SettingsPanel.tscn（开始/暂停共用）
+
+GameHud.tscn
    ├─ TopLeft
    │  ├─ HealthDisplay
    │  └─ QuestDisplay
-   └─ BottomLeft
-      └─ InventoryCarousel
+   └─ InventoryCarousel
 ```
 
-不要让单一 `menu_controller.gd` 继续承担全部布局创建。可保留它作为页面协调器，但按钮、容器、间距、锚点和资源引用应迁到场景中，让制作人能在 Godot 编辑器中直接调整。
+`menu_controller.gd` 只作为页面协调器；按钮、容器、间距、锚点和资源引用已经迁入场景，制作人可在 Godot 编辑器中直接调整。
 
-## 实施顺序
+## 已完成的实施顺序
 
-1. 建立 `Music`/`SFX` 总线、设置数据和持久化测试。
-2. 把共享设置页、开始菜单和暂停菜单拆成可编辑场景，同时保留三槽存档故障路径。
-3. 将当前 HUD 拆成可编辑场景，完成心形生命与仅“寻找阿见”的任务显示。
-4. 实现胃袋图标数据映射、两侧缩小布局与 Q/E 横移 Tween。
-5. 增加键盘焦点、Escape 返回、滑杆数值标签和不同窗口比例验收。
-6. 跑完整 N1–N7 回归，并由制作人试玩审阅后再继续下一阶段。
+1. 已建立 `Music`/`SFX` 总线、设置数据和持久化测试。
+2. 已把共享设置页、开始菜单和暂停菜单拆成可编辑场景，并保留三槽存档故障路径。
+3. 已将 HUD 拆成可编辑场景，完成心形生命与仅“寻找阿见”的任务显示。
+4. 已实现胃袋图标数据映射、两侧缩小布局与 Q/E 横移 Tween。
+5. 已增加键盘焦点、Escape 返回、滑杆数值标签和 768×480 原生视口门禁。
+6. 已通过 N1–N7 完整回归；下一步是制作人试玩审阅。
 
 ## 最低验收门禁
 
@@ -102,5 +100,4 @@ UILayer
 - 生命变化立即更新心形；任务栏只在“寻找阿见”有效期间显示。
 - 胃袋在空库存、单物品、满重量和存读档恢复后索引合法；连续 Q/E 不重叠 Tween、不跳项。
 - 720p 及至少一种不同宽高比下不遮挡关键画面或越界。
-- `tests/run_tests.gd` 最终仍输出 `N7 TESTS PASSED (INCLUDING N1-N6 REGRESSION)`，并增加本阶段的新断言。
-
+- `tests/run_tests.gd` 最终输出 `UI/HUD TESTS PASSED (INCLUDING N1-N7 REGRESSION)`。

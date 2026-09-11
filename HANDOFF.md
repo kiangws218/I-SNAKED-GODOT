@@ -6,10 +6,10 @@
 
 - 主分支：`main`
 - 远端：`https://github.com/kiangws218/I-SNAKED-GODOT`
-- 当前阶段：N7 第一章实现与自动门禁已完成；制作人已确认 UI/HUD 素材方向，视觉基线已接入，完整 UI/HUD 功能待下一轮实现。
-- 停止线：下一位负责人先按 `UI_HUD_HANDOFF.md` 完成 UI/HUD 并交制作人审阅；不得顺带进入 N8 的角色美术、全局音效或构建打磨。
+- 当前阶段：N7 与正式 UI/HUD 实现均已完成，等待制作人试玩审阅。
+- 停止线：只处理制作人的 UI/HUD 试玩反馈；制作人确认前不得进入 N8 的角色美术、全局音效或构建打磨。
 - 当前可玩与验证证据：序章见 `N5_N6_REVIEW.md`，N7 见 `N7_REVIEW.md`。
-- 下一工作范围：见 `UI_HUD_HANDOFF.md`；它明确区分视觉基线、完整菜单、设置、任务栏和胃袋轮播。
+- 下一工作：按 `UI_HUD_REVIEW.md` 试玩清单验收；实现结构见 `UI_HUD_HANDOFF.md`。
 - 同步状态：本次交接完成后，本地 `main` 与 `origin/main` 应指向同一提交；接手时仍需用 `git status`、`git log -1 --oneline` 验证。
 - 素材状态：本机 `D:\Kenney_CC0_2D_Library` 保存 Kenney 官方 2D 分类的 145 个完整包、CSV/JSON 索引与同步脚本；仓库只保存当前实际引用的 Tiny Dungeon 最小副本，映射见 `assets/placeholders/kenney/README.md`。
 - 历史门禁说明：远端素材提交曾记录跨图环形节点失败；后续 N7 状态修复已解决，本次合并后的完整回归重新通过。
@@ -63,7 +63,8 @@
 ## 本次 UI 视觉交接摘要
 
 - UI 风格入口：`game/ui/fantasy_ui_theme.tres`。面板与按钮使用九宫格，不要把边框复制进各个页面。
-- 生命组件：`game/ui/health_display.tscn`；它已绑定玩家当前/最大生命，但正式 HUD 场景拆分尚未完成。
+- 生命组件：`game/ui/health_display.tscn`；正式 HUD 由 `game/ui/game_hud.tscn` 组合。
 - 洞穴 Yellow Wand 位于 `game/maps/levels/cave.tscn/Decorations`，每根都是可人工移动的 `yellow_wand_decoration.tscn` 实例。
 - 豆、Green Potion、Heart 和 Yellow Wand 的仓库源文件、Godot `.import` 设置与使用状态见 `ASSET_MANIFEST.md`。
-- 当前标题/暂停菜单仍由 `menu_controller.gd` 动态创建。下一轮应按 `UI_HUD_HANDOFF.md` 拆成可编辑 `.tscn`，但不得破坏测试依赖的三槽存档路径。
+- 标题、暂停、槽位与设置均已拆成可编辑 `.tscn`；`menu_controller.gd` 只负责信号和页面切换。
+- 音量设置保存到 `user://settings.cfg`，剧情存档仍由 `SaveStore` 独立管理；两者不能混写。

@@ -25,12 +25,16 @@ script = ExtResource("2_chain")
 
 [node name="SpitAudio" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("3_spit")
+bus = &"SFX"
 
 [node name="PickupAudio" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("4_pickup")
+bus = &"SFX"
 
 [node name="NodeAudio" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("5_node")
+bus = &"SFX"
 
 [node name="HurtAudio" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("6_hurt")
+bus = &"SFX"
