@@ -12,6 +12,8 @@ N7 第一章剧情、状态、存档恢复和自动回归已经完成。正式 U
 
 ## 打开与验证
 
+2026-09-12：本机正式工程已统一为I-SNAKED-GODOT。六名NPC移动动画已验收，制作人批准与可蒂头像、八项试玩优化一起提交推送；反馈清单与验证见`PLAYTEST_FEEDBACK_REVIEW.md`。Godot打开`game/art_review/npc_review.tscn`按F6查看六人，标准重复导入命令见`NPC_ART_PIPELINE.md`，不代表批准整个N8阶段。
+
 用 Godot 4.7.2 打开本目录的 `project.godot`。建议把 Godot 控制台程序加入本机 `PATH`，然后执行：
 
 ```powershell
@@ -57,5 +59,6 @@ GDA 是效率工具，不是项目依赖。Godot 4.7.2 已完成首次无界面�
 - `LEVEL_AUTHORING.md`：TileMap、角色、机关、出口、物品和刷怪点的编辑器操作指南。
 - `N7A_REVIEW.md`：N7A 可视化关卡编排、镜头、转场和验证证据。
 - `N7_REVIEW.md`：第一章剧情、角色状态、战斗、机关、结算和存档恢复的审阅证据。
+- `PLAYTEST_FEEDBACK_ROUND2.md`：最新八项试玩优化、验证结果与下一轮试玩清单；上一轮见 `PLAYTEST_FEEDBACK_REVIEW.md`。
 
 本项目仅供个人学习。素材在真正需要时只复制当前阶段用到的最小集合。

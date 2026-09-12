@@ -72,7 +72,25 @@ func restore_checkpoint() -> void:
 	actors = Dictionary(checkpoint_snapshot.get("actors", actors)).duplicate(true)
 	gold = int(checkpoint_snapshot.get("gold", gold))
 
-func prepare_released_pair_forest_return() -> bool:
+func prepare_released_pair_forest_return(from_cave := false) -> bool:
+	var ajian_rescue_return := from_cave and not bool(flags.get("rescuePairReturnedToCamp", false)) and (_actor_status(&"ajian") == &"riding" or _player_inventory_has(&"ajian") or bool(flags.get("ajianFound", false)) and bool(flags.get("goblinsDefeated", false)))
+	if ajian_rescue_return:
+		var moved := false
+		for actor_id in [&"ajie", &"lisi"]:
+			var key := String(actor_id)
+			var actor: Dictionary = Dictionary(actors.get(key, {})).duplicate(true)
+			var known := bool(actor.get("met", false)) or bool(flags.get("chapter1MeetingSeen", false)) or bool(flags.get("findAjianAccepted", false))
+			if String(actor.get("status", "")) != "alive" or bool(actor.get("hostile", false)) or not known:
+				continue
+			actor["met"] = true
+			actor["location"] = "forest"
+			actor["spawn_anchor"] = "camp_return_%s" % key
+			actor.erase("position")
+			actors[key] = actor
+			moved = true
+		if moved:
+			flags["rescuePairReturnedToCamp"] = true
+		return moved
 	if _actor_status(&"ajie") != &"unconscious" or _actor_status(&"lisi") != &"unconscious":
 		return false
 	if _player_inventory_has(&"ajie") or _player_inventory_has(&"lisi"):

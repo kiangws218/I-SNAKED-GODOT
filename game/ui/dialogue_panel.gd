@@ -8,6 +8,17 @@ const ENTER_SECONDS := 0.18
 const EXIT_SECONDS := 0.12
 const UI_FONT := preload("res://assets/fonts/fusion-pixel-10px-monospaced-zh_hans.ttf")
 const PLAYER_PORTRAIT := preload("res://assets/portraits/player_snake.png")
+const KETI_PORTRAITS := {
+	"neutral": preload("res://assets/portraits/keti/neutral.png"),
+	"happy": preload("res://assets/portraits/keti/happy.png"),
+	"angry": preload("res://assets/portraits/keti/angry.png"),
+	"blushing": preload("res://assets/portraits/keti/blushing.png"),
+	"crying": preload("res://assets/portraits/keti/crying.png"),
+	"surprised": preload("res://assets/portraits/keti/surprised.png"),
+	"tired": preload("res://assets/portraits/keti/tired.png"),
+	"smug": preload("res://assets/portraits/keti/smug.png"),
+	"terrified": preload("res://assets/portraits/keti/terrified.png"),
+}
 const INTERACT_AUDIO := preload("res://assets/audio/interact.wav")
 const DIALOGUE_THEME := preload("res://game/ui/dialogue_theme.tres")
 const DIVIDER_TEXTURE := preload("res://assets/ui/fantasy/dialogue/divider_fade.png")
@@ -23,8 +34,12 @@ var sub_label: Label
 var body_label: Label
 var choices_box: VBoxContainer
 var name_edit: LineEdit
+var continue_button: Button
+var content_scroll: ScrollContainer
+var content_box: VBoxContainer
 var portrait: TextureRect
 var portrait_placeholder: Label
+var _portrait_regions: Dictionary = {}
 var interact_audio: AudioStreamPlayer
 var _tween: Tween
 var _shown_position := Vector2.ZERO
@@ -33,6 +48,8 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 20
 	_build_ui()
+	get_viewport().size_changed.connect(_layout_panel)
+	_layout_panel()
 	interact_audio = AudioStreamPlayer.new()
 	interact_audio.stream = INTERACT_AUDIO
 	interact_audio.bus = &"SFX"
@@ -78,11 +95,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if name_edit.visible:
 			_submit_name()
 			return
-		if page_index + 1 < pages.size():
-			page_index += 1
-			_render_page()
-		elif not choices.is_empty():
-			choice_selected.emit(String(choices[selected_choice_index].id))
+		_advance_page_or_choice()
 	elif state == &"active" and not name_edit.visible and not choices.is_empty() and event.is_action_pressed("move_up"):
 		get_viewport().set_input_as_handled()
 		_set_choice_index(selected_choice_index - 1)
@@ -96,103 +109,151 @@ func _unhandled_input(event: InputEvent) -> void:
 			_set_choice_index(index)
 
 func _build_ui() -> void:
-	panel = PanelContainer.new()
-	panel.name = "DialogueBox"
-	panel.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-	panel.position = Vector2(-270, -185)
-	panel.size = Vector2(250, 370)
-	panel.theme = DIALOGUE_THEME
-	panel.add_theme_font_override("font", UI_FONT)
+	panel = (load("res://game/ui/dialogue_box.tscn") as PackedScene).instantiate() as PanelContainer
 	add_child(panel)
-	_shown_position = panel.position
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 18)
-	margin.add_theme_constant_override("margin_right", 18)
-	margin.add_theme_constant_override("margin_top", 16)
-	margin.add_theme_constant_override("margin_bottom", 16)
-	panel.add_child(margin)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
-	margin.add_child(box)
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 10)
-	box.add_child(header)
-	var avatar_slot := Control.new()
-	avatar_slot.custom_minimum_size = Vector2(46, 46)
-	avatar_slot.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	header.add_child(avatar_slot)
-	portrait = TextureRect.new()
-	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	portrait.texture = PLAYER_PORTRAIT
-	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	avatar_slot.add_child(portrait)
-	portrait_placeholder = Label.new()
-	portrait_placeholder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	portrait_placeholder.text = "头像"
-	portrait_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	portrait_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	portrait_placeholder.modulate = Color("9cc7d6")
-	portrait_placeholder.add_theme_font_size_override("font_size", 12)
-	avatar_slot.add_child(portrait_placeholder)
-	var names := VBoxContainer.new()
-	header.add_child(names)
-	speaker_label = Label.new()
-	speaker_label.add_theme_font_size_override("font_size", 24)
-	names.add_child(speaker_label)
-	sub_label = Label.new()
-	sub_label.visible = false
-	sub_label.modulate = Color("9cc7d6")
-	names.add_child(sub_label)
-	var divider := TextureRect.new()
-	divider.name = "DividerFade"
-	divider.custom_minimum_size = Vector2(0, 10)
-	divider.texture = DIVIDER_TEXTURE
-	divider.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	divider.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	divider.stretch_mode = TextureRect.STRETCH_SCALE
-	divider.modulate = Color(0.68, 0.94, 0.66, 0.82)
-	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(divider)
-	body_label = Label.new()
-	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body_label.custom_minimum_size = Vector2(210, 150)
-	body_label.add_theme_font_size_override("font_size", 18)
-	box.add_child(body_label)
-	choices_box = VBoxContainer.new()
-	box.add_child(choices_box)
-	name_edit = LineEdit.new()
-	name_edit.placeholder_text = "输入名字（空白则为“未命名”）"
+	speaker_label = panel.get_node("Layout/SpeakerName")
+	sub_label = panel.get_node("Layout/SubLabel")
+	portrait = panel.get_node("Layout/PortraitFrame/PortraitClip/Portrait")
+	portrait_placeholder = panel.get_node("Layout/PortraitFrame/PortraitClip/PortraitPlaceholder")
+	content_scroll = panel.get_node("Layout/ContentScroll")
+	content_box = panel.get_node("Layout/ContentScroll/Content")
+	body_label = content_box.get_node("BodyText")
+	choices_box = content_box.get_node("Choices")
+	name_edit = content_box.get_node("NameInput")
 	name_edit.text_submitted.connect(func(_value): _submit_name())
-	box.add_child(name_edit)
+	continue_button = Button.new()
+	continue_button.name = "ContinuePage"
+	continue_button.text = "继续"
+	continue_button.focus_mode = Control.FOCUS_ALL
+	continue_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	continue_button.custom_minimum_size = Vector2(0, 36)
+	continue_button.pressed.connect(_advance_page_or_choice)
+	content_box.add_child(continue_button)
+
+func _layout_panel() -> void:
+	if not is_instance_valid(panel):
+		return
+	var viewport_size := get_viewport().get_visible_rect().size
+	_shown_position = panel.call("fit_to_viewport", viewport_size)
+	if state == &"hidden" or state == &"active":
+		panel.position = _shown_position
+	if is_instance_valid(choices_box):
+		call_deferred("_refresh_choice_layout")
 
 func _render_page() -> void:
 	if pages.is_empty():
 		return
 	var page := pages[page_index]
-	speaker_label.text = String(page.get("speaker", "旁白"))
-	portrait.visible = speaker_label.text == "我"
+	var speaker := String(page.get("speaker", "旁白"))
+	speaker_label.text = speaker
+	portrait.texture = null
+	if speaker == "我":
+		portrait.texture = PLAYER_PORTRAIT
+	elif speaker == "可蒂" or String(page.get("portrait", "")) == "keti":
+		var expression := String(page.get("expression", "crying" if bool(page.get("crying", false)) else "neutral"))
+		portrait.texture = KETI_PORTRAITS.get(expression, KETI_PORTRAITS.neutral)
+	portrait.visible = portrait.texture != null
 	portrait_placeholder.visible = not portrait.visible
+	var narration := speaker == "旁白"
+	panel.get_node("Layout/PortraitFrame").visible = not narration
+	speaker_label.visible = not narration
+	panel.get_node("Layout/DividerFade").visible = true
+	_center_portrait()
 	sub_label.text = String(page.get("sub", ""))
 	sub_label.visible = false
 	body_label.text = String(page.get("text", ""))
+	continue_button.visible = page_index + 1 < pages.size() and not name_edit.visible
 	if DisplayServer.get_name() != "headless" and is_instance_valid(interact_audio): interact_audio.play()
 	choices.assign(page.get("choices", []))
 	selected_choice_index = 0
 	for child in choices_box.get_children():
+		choices_box.remove_child(child)
 		child.queue_free()
 	for index in range(choices.size()):
 		var choice := choices[index]
 		var button := Button.new()
-		button.text = "%d. %s" % [index + 1, choice.get("label", "继续")]
+		var choice_text := "%d. %s" % [index + 1, choice.get("label", "继续")]
+		button.custom_minimum_size = Vector2(0, 36)
 		button.focus_mode = Control.FOCUS_ALL
 		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		var choice_label := Label.new()
+		choice_label.text = choice_text
+		choice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		choice_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		choice_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+		choice_label.offset_left = 10.0
+		choice_label.offset_top = 10.0
+		choice_label.offset_right = -10.0
+		choice_label.offset_bottom = -10.0
+		choice_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		choice_label.add_theme_font_size_override("font_size", 18)
+		button.add_child(choice_label)
 		button.focus_entered.connect(func(i = index): _set_choice_index(i, false))
 		button.mouse_entered.connect(func(i = index): _set_choice_index(i, true))
 		button.pressed.connect(func(i = index): choice_selected.emit(String(choices[i].id)))
 		choices_box.add_child(button)
 	if not choices.is_empty() and state == &"active":
 		_set_choice_index(0)
+	call_deferred("_refresh_choice_layout")
+
+func _advance_page_or_choice() -> void:
+	if state == &"entering":
+		_finish_enter()
+		return
+	if state != &"active": return
+	if name_edit.visible:
+		_submit_name()
+		return
+	if page_index + 1 < pages.size():
+		page_index += 1
+		_render_page()
+		return
+	if not choices.is_empty():
+		choice_selected.emit(String(choices[selected_choice_index].id))
+
+func _center_portrait() -> void:
+	if portrait.texture == null:
+		return
+	var source := portrait.texture
+	if not _portrait_regions.has(source):
+		var region := source.get_image().get_used_rect()
+		# Share bounds across Keti expressions to avoid facial animation jitter.
+		if source in KETI_PORTRAITS.values():
+			for expression_texture in KETI_PORTRAITS.values():
+				region = region.merge(expression_texture.get_image().get_used_rect())
+		var centered := AtlasTexture.new()
+		centered.atlas = source
+		centered.region = region
+		_portrait_regions[source] = centered
+	portrait.texture = _portrait_regions[source]
+	# Align to the visible frame, not the differently padded source canvases.
+	var border := panel.get_node("Layout/PortraitFrame/Border") as Control
+	var clip := portrait.get_parent() as Control
+	clip.position = border.position + Vector2(2, 2)
+	clip.size = border.size - Vector2(4, 4)
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+
+func _refresh_choice_layout() -> void:
+	if is_instance_valid(content_box) and is_instance_valid(content_scroll):
+		content_box.custom_minimum_size.y = content_scroll.size.y
+	if not is_instance_valid(choices_box):
+		return
+	if choices_box.size.x <= 1.0:
+		return
+	for child in choices_box.get_children():
+		var button := child as Button
+		if not is_instance_valid(button) or button.get_child_count() == 0:
+			continue
+		var choice_label := button.get_child(0) as Label
+		if not is_instance_valid(choice_label):
+			continue
+		var button_width := button.size.x if button.size.x > 1.0 else choices_box.size.x
+		var label_width := maxf(1.0, button_width - 20.0)
+		var label_height := UI_FONT.get_multiline_string_size(choice_label.text, HORIZONTAL_ALIGNMENT_LEFT, label_width, 18).y
+		var line_count := maxi(1, ceili(label_height / UI_FONT.get_height(18)))
+		label_height += choice_label.get_theme_constant("line_spacing") * (line_count - 1)
+		button.custom_minimum_size.y = maxf(36.0, label_height + 20.0)
 
 func _enter() -> void:
 	_kill_tween()

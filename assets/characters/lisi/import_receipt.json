@@ -1,0 +1,118 @@
+{
+	"common_scale": 4.32352941176471,
+	"frames": [
+		{
+			"axis": 57,
+			"source_bounds": [
+				18,
+				9,
+				87,
+				135
+			]
+		},
+		{
+			"axis": 58,
+			"source_bounds": [
+				15,
+				9,
+				87,
+				135
+			]
+		},
+		{
+			"axis": 60,
+			"source_bounds": [
+				14,
+				9,
+				87,
+				135
+			]
+		},
+		{
+			"axis": 64,
+			"source_bounds": [
+				18,
+				3,
+				87,
+				129
+			]
+		},
+		{
+			"axis": 64,
+			"source_bounds": [
+				18,
+				3,
+				81,
+				129
+			]
+		},
+		{
+			"axis": 65,
+			"source_bounds": [
+				20,
+				3,
+				81,
+				129
+			]
+		},
+		{
+			"axis": 49,
+			"source_bounds": [
+				9,
+				2,
+				87,
+				129
+			]
+		},
+		{
+			"axis": 52,
+			"source_bounds": [
+				18,
+				2,
+				81,
+				129
+			]
+		},
+		{
+			"axis": 52,
+			"source_bounds": [
+				14,
+				2,
+				87,
+				129
+			]
+		},
+		{
+			"axis": 53,
+			"source_bounds": [
+				9,
+				1,
+				84,
+				144
+			]
+		},
+		{
+			"axis": 58,
+			"source_bounds": [
+				18,
+				1,
+				81,
+				147
+			]
+		},
+		{
+			"axis": 64,
+			"source_bounds": [
+				26,
+				1,
+				81,
+				147
+			]
+		}
+	],
+	"frames.tres": "840a9b24a02315a8da824f41e738958e6467be80e9b55da63f06f1b2eddda749",
+	"idle.png": "94a520365fe04c4c4544108a52b3c8290f1fd4877c7443cfb578375e3cb30d17",
+	"pipeline_version": 1.0,
+	"signature": "a0548607e96da0ef2088206ff906a5ebc1dfff73646890f6ae04c2531d6d1bd3",
+	"walk.png": "a441a838fa5d4d8e53d645d10049cf5348d997080b3ed8a33cc841bc28069761"
+}

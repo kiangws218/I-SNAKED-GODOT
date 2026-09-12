@@ -1,0 +1,118 @@
+{
+	"common_scale": 3.875,
+	"frames": [
+		{
+			"axis": 62,
+			"source_bounds": [
+				24,
+				20,
+				80,
+				112
+			]
+		},
+		{
+			"axis": 62,
+			"source_bounds": [
+				24,
+				20,
+				80,
+				112
+			]
+		},
+		{
+			"axis": 62,
+			"source_bounds": [
+				20,
+				20,
+				80,
+				112
+			]
+		},
+		{
+			"axis": 67,
+			"source_bounds": [
+				28,
+				8,
+				72,
+				120
+			]
+		},
+		{
+			"axis": 68,
+			"source_bounds": [
+				24,
+				8,
+				76,
+				120
+			]
+		},
+		{
+			"axis": 67,
+			"source_bounds": [
+				24,
+				8,
+				72,
+				120
+			]
+		},
+		{
+			"axis": 60,
+			"source_bounds": [
+				28,
+				0,
+				76,
+				124
+			]
+		},
+		{
+			"axis": 59,
+			"source_bounds": [
+				28,
+				4,
+				76,
+				120
+			]
+		},
+		{
+			"axis": 53,
+			"source_bounds": [
+				24,
+				0,
+				72,
+				124
+			]
+		},
+		{
+			"axis": 66,
+			"source_bounds": [
+				20,
+				0,
+				88,
+				124
+			]
+		},
+		{
+			"axis": 64,
+			"source_bounds": [
+				20,
+				0,
+				88,
+				124
+			]
+		},
+		{
+			"axis": 56,
+			"source_bounds": [
+				16,
+				0,
+				88,
+				124
+			]
+		}
+	],
+	"frames.tres": "e5f5786429ae7846a956822e3e7d0d60653ccf24365b004c8dc35e2f10785cf9",
+	"idle.png": "e635ad8b1aa2b55678cdecd9850fdf632765dfa9ef67d06a0c04f108430e1001",
+	"pipeline_version": 1.0,
+	"signature": "e571db0ac7878c38c73ba8495d67b3651b3cb828b34fcc0dacbe67491e04e928",
+	"walk.png": "bc647b092e495cd47eb20d6444d3099275e266acc9e8147b23b1c124c3bf6b53"
+}

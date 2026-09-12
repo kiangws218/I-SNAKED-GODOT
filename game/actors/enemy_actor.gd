@@ -8,6 +8,7 @@ signal shot_fired(projectile: EnemyProjectile)
 const TILE_SIZE := 24.0
 const PROJECTILE_SCENE := preload("res://game/projectiles/enemy_projectile.tscn")
 const LOOT_BURST_SPEED_SCALE := 0.6
+const OFFSCREEN_AGGRO_TIMEOUT := 3.0
 const TYPES := {
 	&"slime": {"hp": 14.0, "speed": 2.0, "radius": 0.55, "drops": 2},
 	&"mushroom": {"hp": 16.0, "speed": 0.0, "radius": 0.62, "drops": 2, "cadence": 4.0, "telegraph": 0.7, "bullet_speed": 2.0},
@@ -37,6 +38,8 @@ var death_hit_direction := Vector2.RIGHT
 var death_head_distance := 8.0 * TILE_SIZE
 var _recoil_left := 0.0
 var _contact_hitstop_left := 0.0
+var _offscreen_seconds := 0.0
+var _offscreen_aggro_suspended := false
 
 
 func _ready() -> void:
@@ -71,6 +74,11 @@ func _physics_process(delta: float) -> void:
 	_contact_hitstop_left = maxf(0.0, _contact_hitstop_left - delta)
 	if movement_delta <= 0.0:
 		return
+	_update_offscreen_aggro(movement_delta)
+	if _offscreen_aggro_suspended:
+		velocity = Vector2.ZERO
+		warning_active = false
+		return
 	if _recoil_left > 0.0:
 		_recoil_left = maxf(0.0, _recoil_left - movement_delta)
 		move_and_collide(velocity * movement_delta)
@@ -80,6 +88,34 @@ func _physics_process(delta: float) -> void:
 	else:
 		_update_ranged(movement_delta)
 	_damage_player_on_head_contact()
+
+
+func _update_offscreen_aggro(delta: float) -> void:
+	if _is_in_active_camera_view():
+		_offscreen_seconds = 0.0
+		_offscreen_aggro_suspended = false
+		return
+	_offscreen_seconds += delta
+	if _offscreen_seconds >= OFFSCREEN_AGGRO_TIMEOUT:
+		_offscreen_aggro_suspended = true
+
+
+func _is_in_active_camera_view() -> bool:
+	var camera := get_viewport().get_camera_2d()
+	if not is_instance_valid(camera):
+		return true
+	var viewport_size := get_viewport().get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return true
+	var zoom := camera.zoom
+	if zoom.x <= 0.0 or zoom.y <= 0.0:
+		return true
+	var half_view := viewport_size * 0.5 / zoom
+	var center := camera.get_screen_center_position()
+	return (
+		absf(global_position.x - center.x) <= half_view.x
+		and absf(global_position.y - center.y) <= half_view.y
+	)
 
 
 func _move_toward_player(delta: float) -> void:

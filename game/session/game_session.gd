@@ -5,6 +5,7 @@ const MAP_SCRIPT := preload("res://game/maps/story_map.gd")
 const DIALOGUE_SCRIPT := preload("res://game/ui/dialogue_panel.gd")
 const MENU_SCENE := preload("res://game/ui/menu_controller.tscn")
 const STORY_SCRIPT := preload("res://game/story/story_director.gd")
+const DEATH_SCENE := preload("res://game/ui/death_screen.tscn")
 
 @onready var world_host: Node2D = $WorldHost
 @onready var screen_transition: ScreenTransition = $ScreenTransition
@@ -22,12 +23,17 @@ var menus: MenuController
 var story: StoryDirector
 var pause_reasons: Dictionary = {}
 var map_transition_active := false
+var death_screen: DeathScreen
 
 func _ready() -> void:
 	dialogue = DIALOGUE_SCRIPT.new()
 	add_child(dialogue)
 	menus = MENU_SCENE.instantiate()
 	add_child(menus)
+	death_screen = DEATH_SCENE.instantiate()
+	add_child(death_screen)
+	death_screen.reload_requested.connect(_reload_after_death)
+	death_screen.home_requested.connect(return_to_title)
 	story = STORY_SCRIPT.new()
 	add_child(story)
 	var graph_result := story.setup(self, dialogue)
@@ -47,6 +53,7 @@ func _ready() -> void:
 	menus.show_main(store.list_slots())
 
 func _unhandled_input(event: InputEvent) -> void:
+	if death_screen.is_open() or pause_reasons.has(&"cutscene"): return
 	if not event is InputEventKey or not event.pressed or event.echo: return
 	if event.is_action_pressed("pause") and not menus.main_menu.visible and not pause_reasons.has(&"dialogue"):
 		toggle_pause()
@@ -63,6 +70,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_F9: retry_checkpoint()
 
 func start_new_game(slot: int) -> void:
+	death_screen.hide_screen()
 	active_slot = clampi(slot, 1, SaveStore.SLOT_COUNT)
 	state = SessionState.new()
 	state.slot = active_slot
@@ -98,7 +106,7 @@ func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_c
 	await screen_transition.fade_out()
 	if capture_current: _capture_player()
 	if map_id == &"forest" and source_map != &"forest":
-		state.prepare_released_pair_forest_return()
+		state.prepare_released_pair_forest_return(source_map == &"cave")
 	if is_instance_valid(current_world):
 		var outgoing_world := current_world
 		current_world = null
@@ -132,6 +140,7 @@ func remember_checkpoint(map_id: StringName, entry := &"") -> void:
 
 func retry_checkpoint() -> void:
 	if not is_instance_valid(current_world): return
+	story.cancel_pending_flow()
 	status_label.text = "从检查点重建地图…"
 	state.restore_checkpoint()
 	await load_map(state.checkpoint_map, state.checkpoint_entry, false, false)
@@ -154,7 +163,8 @@ func load_active_slot() -> Dictionary:
 		return loaded
 	var applied := state.load_dictionary(loaded.data)
 	if not applied.ok: return applied
-	await load_map(state.current_map)
+	story.cancel_pending_flow()
+	await load_map(state.current_map, &"", false, false)
 	status_label.text = "槽位 %d 已载入" % active_slot
 	return loaded
 
@@ -167,12 +177,16 @@ func set_pause_reason(reason: StringName, active: bool) -> void:
 	get_tree().paused = not pause_reasons.is_empty()
 
 func toggle_pause() -> void:
+	if death_screen.is_open(): return
 	var opening := not pause_reasons.has(&"menu")
 	set_pause_reason(&"menu", opening)
 	if opening: menus.show_pause()
 	else: menus.hide_pause()
 
 func return_to_title() -> void:
+	story.cancel_pending_flow()
+	death_screen.hide_screen()
+	dialogue.close()
 	if is_instance_valid(current_world): current_world.queue_free()
 	current_world = null
 	pause_reasons.clear()
@@ -205,8 +219,36 @@ func _on_mechanism_changed(id: StringName, done: bool) -> void:
 	if done: story.mechanism_completed(id)
 
 func _on_player_died(_reason: String) -> void:
-	await get_tree().create_timer(0.35).timeout
-	await retry_checkpoint()
+	if death_screen.is_open(): return
+	story.cancel_pending_flow()
+	dialogue.close()
+	menus.hide_all()
+	set_pause_reason(&"death", true)
+	var saved := store.load_slot(active_slot)
+	death_screen.show_screen(saved.ok and not saved.get("empty", false))
+
+func _reload_after_death() -> void:
+	if not death_screen.is_open() or map_transition_active: return
+	death_screen.reload_button.disabled = true
+	death_screen.home_button.disabled = true
+	var saved := store.load_slot(active_slot)
+	if saved.ok and not saved.get("empty", false):
+		var applied := state.load_dictionary(saved.data)
+		if not applied.ok:
+			death_screen.message.text = "存档无效，请返回主菜单选择其他槽位"
+			death_screen.reload_button.disabled = false
+			death_screen.home_button.disabled = false
+			return
+		pause_reasons.clear()
+		get_tree().paused = false
+		await load_map(state.current_map, &"", false, false)
+		story.resume()
+	else:
+		pause_reasons.clear()
+		get_tree().paused = false
+		await retry_checkpoint()
+	death_screen.hide_screen()
+	hud.visible = true
 
 func _capture_player() -> void:
 	if not is_instance_valid(current_world) or not is_instance_valid(current_world.player): return
@@ -228,6 +270,8 @@ func _restore_player() -> void:
 	if not rider_id.is_empty():
 		var rider := current_world.get_story_actor(rider_id)
 		if is_instance_valid(rider):
+			var rider_state: Dictionary = state.actors.get(String(rider_id), {})
+			rider.restore_persistent_state({"hp": float(rider_state.get("hp", rider.hp)), "max_hp": float(rider_state.get("max_hp", rider.max_hp)), "damageable": false, "active": false, "is_dead": false, "is_downed": false})
 			rider.attach_to_carrier(v, Vector2.ZERO)
 	v.resources_changed.emit()
 	v.health_changed.emit(v.hearts, v.max_hearts)

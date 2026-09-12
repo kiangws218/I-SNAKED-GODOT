@@ -27,13 +27,15 @@ tile_set = ExtResource("1_idjo7")
 [node name="Ajie" parent="Actors" unique_id=151101506 instance=ExtResource("9_npc")]
 position = Vector2(1164, 684)
 npc_id = &"ajie"
+roam_partner_id = &"lisi"
 damageable = false
 initially_active = false
 defeat_mode = "downed"
 
 [node name="Lisi" parent="Actors" unique_id=289364597 instance=ExtResource("9_npc")]
-position = Vector2(1212, 780)
+position = Vector2(1212, 684)
 npc_id = &"lisi"
+roam_partner_id = &"ajie"
 damageable = false
 initially_active = false
 defeat_mode = "downed"
@@ -48,13 +50,15 @@ defeat_mode = "downed"
 [node name="Buck" parent="Actors" unique_id=1252343617 instance=ExtResource("9_npc")]
 position = Vector2(1692, 660)
 npc_id = &"buck"
+roam_partner_id = &"miro"
 damageable = false
 initially_active = false
 defeat_mode = "downed"
 
 [node name="Miro" parent="Actors" unique_id=11159431 instance=ExtResource("9_npc")]
-position = Vector2(1692, 732)
+position = Vector2(1740, 660)
 npc_id = &"miro"
+roam_partner_id = &"buck"
 damageable = false
 initially_active = false
 defeat_mode = "downed"
@@ -155,7 +159,7 @@ entry_id = &"camp_return_ajie"
 facing = Vector2(-1, 0)
 
 [node name="LisiCampReturn" parent="SpawnPoints" instance=ExtResource("2_entry")]
-position = Vector2(1812, 1140)
+position = Vector2(1740, 1068)
 entry_id = &"camp_return_lisi"
 facing = Vector2(-1, 0)
 

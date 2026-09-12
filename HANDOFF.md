@@ -7,9 +7,10 @@
 - 主分支：`main`
 - 远端：`https://github.com/kiangws218/I-SNAKED-GODOT`
 - 当前阶段：N7 与正式 UI/HUD 实现均已完成，等待制作人试玩审阅。
-- 停止线：只处理制作人的 UI/HUD 试玩反馈；制作人确认前不得进入 N8 的角色美术、全局音效或构建打磨。
+- 停止线：六名NPC移动动画已验收合格；本次批准六人动画、可蒂头像与八项试玩优化一起提交推送。反馈收口后等待试玩审阅，不进入N8全局音效或学习构建。
 - 当前可玩与验证证据：序章见 `N5_N6_REVIEW.md`，N7 见 `N7_REVIEW.md`。
-- 下一工作：按 `UI_HUD_REVIEW.md` 试玩清单验收；实现结构见 `UI_HUD_HANDOFF.md`。
+- 下一工作：按 `PLAYTEST_FEEDBACK_ROUND2.md` 试玩最新八项优化；上一轮见 `PLAYTEST_FEEDBACK_REVIEW.md`，头像按 `KETI_PORTRAIT_REVIEW.md` 视觉审阅。
+- 本机工程：remote-review已提升并更名为I-SNAKED-GODOT；原工程及其未提交修改已退役保存在工程外_project_backups。本轮反馈提交纳入角色接入、头像和管线；实际同步以git log与origin/main核对为准。
 - 同步状态：本次交接完成后，本地 `main` 与 `origin/main` 应指向同一提交；接手时仍需用 `git status`、`git log -1 --oneline` 验证。
 - 素材状态：本机 `D:\Kenney_CC0_2D_Library` 保存 Kenney 官方 2D 分类的 145 个完整包、CSV/JSON 索引与同步脚本；仓库只保存当前实际引用的 Tiny Dungeon 最小副本，映射见 `assets/placeholders/kenney/README.md`。
 - 历史门禁说明：远端素材提交曾记录跨图环形节点失败；后续 N7 状态修复已解决，本次合并后的完整回归重新通过。
@@ -61,6 +62,8 @@
 - 旧 `IM-SNAKE` 只读参考通常位于仓库同级目录；家庭电脑没有该目录时，以本仓库 `GDD.md` 和已经提交的审计结论为准，不因此阻断已明确的工作。
 
 ## 本次 UI 视觉交接摘要
+
+- 2026-09-12两轮试玩优化见PLAYTEST_FEEDBACK_REVIEW.md与PLAYTEST_FEEDBACK_ROUND2.md；六人动画、可蒂头像获准与优化一起提交推送。完整N1–N7/UI/HUD回归、定向反馈测试和最新UI实际渲染检查通过。当前停在试玩审阅，不进入N8。
 
 - 菜单风格入口：`game/ui/fantasy_ui_theme.tres`；对话框入口：`game/ui/dialogue_theme.tres`。HUD 心形、任务和背包不使用底框，章节/对话/地图调试文字保持隐藏。
 - 生命组件：`game/ui/health_display.tscn`；正式 HUD 由 `game/ui/game_hud.tscn` 组合。

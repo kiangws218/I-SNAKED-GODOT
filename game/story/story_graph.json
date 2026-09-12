@@ -3010,6 +3010,16 @@
         ]
       }
     },
+    "camp_followup": {
+      "id": "camp_followup",
+      "goal": {"kind": "text", "text": "继续探索"},
+      "dialogue": {
+        "speaker": "旁白",
+        "sub": "河边营地",
+        "pages": ["阿见已经回到了营地。", "大家继续留在营火附近。"],
+        "choices": [{"id": "leave", "label": "继续探索", "next": "chapter1_explore"}]
+      }
+    },
     "camp_settled": {
       "id": "camp_settled",
       "progress": {

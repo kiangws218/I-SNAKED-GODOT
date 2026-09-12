@@ -1,0 +1,118 @@
+{
+	"common_scale": 3.76470588235294,
+	"frames": [
+		{
+			"axis": 52,
+			"source_bounds": [
+				12,
+				12,
+				88,
+				128
+			]
+		},
+		{
+			"axis": 56,
+			"source_bounds": [
+				12,
+				12,
+				84,
+				128
+			]
+		},
+		{
+			"axis": 61,
+			"source_bounds": [
+				16,
+				12,
+				88,
+				128
+			]
+		},
+		{
+			"axis": 53,
+			"source_bounds": [
+				12,
+				8,
+				92,
+				124
+			]
+		},
+		{
+			"axis": 57,
+			"source_bounds": [
+				12,
+				8,
+				88,
+				124
+			]
+		},
+		{
+			"axis": 60,
+			"source_bounds": [
+				16,
+				8,
+				92,
+				124
+			]
+		},
+		{
+			"axis": 63,
+			"source_bounds": [
+				12,
+				8,
+				92,
+				120
+			]
+		},
+		{
+			"axis": 58,
+			"source_bounds": [
+				12,
+				8,
+				88,
+				120
+			]
+		},
+		{
+			"axis": 52,
+			"source_bounds": [
+				16,
+				8,
+				92,
+				120
+			]
+		},
+		{
+			"axis": 59,
+			"source_bounds": [
+				12,
+				4,
+				88,
+				128
+			]
+		},
+		{
+			"axis": 56,
+			"source_bounds": [
+				16,
+				4,
+				80,
+				128
+			]
+		},
+		{
+			"axis": 54,
+			"source_bounds": [
+				16,
+				4,
+				88,
+				128
+			]
+		}
+	],
+	"frames.tres": "a95f2d8de2a0eae9ba85fa520649335b838e08defac70f46a404fdd175542c1d",
+	"idle.png": "a2fbe130a53f1a9cd5ad36b1fe0ece95d73af6925009c1a7694debc026dda32a",
+	"pipeline_version": 1.0,
+	"signature": "0a98adf3e0e61cc321e0c48b0f0d38bc10be95f364a13ec651aa2330eb948178",
+	"walk.png": "e3ebea3abdb57fb84458f2aa17a8d4358c89c4b819c8d6c98e889b6fb5709b33"
+}

@@ -1,0 +1,28 @@
+{
+	"alpha": "preserved from user source",
+	"angry": "5d7733063eef6d7b9d23534f4e61692ee36fabc08b2f7d33475e4494340718d3",
+	"blushing": "db7947bf56ec2df966ae60030f3d807903efdb19646202659cc21442cc5501dd",
+	"crying": "7df8064d98bc49268ee24f31efbc22355426519c3829c455402459051e6b28e6",
+	"expressions": [
+		"neutral",
+		"happy",
+		"angry",
+		"blushing",
+		"crying",
+		"surprised",
+		"tired",
+		"smug",
+		"terrified"
+	],
+	"happy": "d782713d238c554234a464dbc5e62cca36193fe6c84251af8ff3dfe5c335d80c",
+	"neutral": "c60060a0b76d525c07455c24db19485787af69f13df975816f717de6f86d9f99",
+	"signature": "821de15e3cd91fbae99860ce844d7e6e8c233a4d7d768031ea98db18dd1ccef5",
+	"size": [
+		128,
+		128
+	],
+	"smug": "64baeddfc037ff90903c92142523b1008b7090b3c9d1d89e16f2bd433b580d87",
+	"surprised": "87d79a3e4d9d6848d474507aba119563b1e9d80f61a295c2cd942ee3cddcfd83",
+	"terrified": "d5c159b1149f3968253d84e6cfa1f32b408675c1ca36fbb15a6a2985d2eb8434",
+	"tired": "b535c02a8087a7765de9f34930137825a941dc21e963995abef0088b17133fd5"
+}

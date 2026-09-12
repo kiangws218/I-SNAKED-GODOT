@@ -49,6 +49,8 @@ func setup(id: StringName, saved_flags: Dictionary, entry := &"", saved_items: D
 	_spawn_beans()
 	_build_camera()
 	_bind_authored_content()
+	for node in _layout_nodes():
+		if node is NpcActor: node.configure_pair_roam()
 	_spawn_automatic_enemies()
 
 func _build_layers() -> void:
@@ -116,6 +118,7 @@ func spawn_npc(actor_id: StringName, at_position: Vector2) -> NpcActor:
 	var existing := _find_npc(actor_id)
 	if is_instance_valid(existing):
 		existing.global_position = at_position
+		existing.reset_roam_origin()
 		if existing.player == null:
 			_bind_npc(existing)
 		else:
@@ -126,6 +129,7 @@ func spawn_npc(actor_id: StringName, at_position: Vector2) -> NpcActor:
 	npc.npc_id = actor_id
 	add_child(npc)
 	npc.global_position = at_position
+	npc.reset_roam_origin()
 	_bind_npc(npc)
 	return npc
 
@@ -378,8 +382,15 @@ func capture_actor_states() -> void:
 		var key := String(node.npc_id)
 		var state: Dictionary = actor_states.get(key, {})
 		var current_status := String(state.get("status", "alive"))
+		# Scene-authored inactive placeholders are not entities in this map. Do
+		# not let them overwrite the actor's last real-map location/position.
+		if not node.visible or (current_status == "riding" and not node.is_riding()):
+			continue
+		if current_status == "riding":
+			state["hp"] = node.hp
+			state["max_hp"] = node.max_hp
 		if current_status not in ["swallowed", "riding", "dead", "left"]:
-			state["status"] = "downed" if node.is_downed else ("dead" if node.is_dead else current_status)
+			state["status"] = "downed" if node.is_downed and current_status != "unconscious" else ("dead" if node.is_dead else current_status)
 			state["location"] = String(map_id)
 			state["hp"] = node.hp
 			state["max_hp"] = node.max_hp
@@ -401,11 +412,15 @@ func _restore_actor_state(npc: NpcActor) -> void:
 	if state.is_empty():
 		return
 	var actor_here := StringName(state.get("location", "")) == map_id
+	if not actor_here:
+		npc.set_actor_active(false)
+		return
 	var spawn_anchor := StringName(state.get("spawn_anchor", ""))
 	var anchor := _find_entry(spawn_anchor) if actor_here and not spawn_anchor.is_empty() else null
 	if anchor != null:
 		npc.global_position = anchor.global_position
 		state["position"] = [anchor.global_position.x, anchor.global_position.y]
+		state.erase("spawn_anchor")
 		actor_states[String(npc.npc_id)] = state
 	var saved_position: Array = state.get("position", [])
 	if anchor == null and saved_position.size() == 2 and actor_here:
@@ -417,8 +432,9 @@ func _restore_actor_state(npc: NpcActor) -> void:
 		"damageable": bool(state.get("damageable", false)),
 		"hostile": bool(state.get("hostile", false)),
 		"active": status not in ["dead", "swallowed", "riding", "left"],
-		"is_dead": status == "dead", "is_downed": status == "downed",
+		"is_dead": status == "dead", "is_downed": status in ["downed", "unconscious"],
 	})
+	npc.reset_roam_origin()
 
 func _on_bridge_pillar_completed(pillar: BridgePillar) -> void:
 	pillar_done = true

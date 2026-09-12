@@ -6,13 +6,13 @@ const ICONS := {
 	&"iron_sword": preload("res://assets/placeholders/kenney/tiny_dungeon/items/iron_sword.png"),
 	&"healing_potion": preload("res://assets/items/green_potion.png"),
 	&"character_bones": preload("res://assets/items/bones.svg"),
-	&"keti": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/keti.png"),
-	&"keti_corpse": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/keti.png"),
-	&"ajie": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/ajie.png"),
-	&"lisi": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/lisi.png"),
-	&"ajian": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/ajian.png"),
-	&"buck": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/buck.png"),
-	&"miro": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/miro.png"),
+	&"keti": preload("res://assets/characters/keti/idle.png"),
+	&"keti_corpse": preload("res://assets/characters/keti/idle.png"),
+	&"ajie": preload("res://assets/characters/ajie/idle.png"),
+	&"lisi": preload("res://assets/characters/lisi/idle.png"),
+	&"ajian": preload("res://assets/characters/ajian/idle.png"),
+	&"buck": preload("res://assets/characters/buck/idle.png"),
+	&"miro": preload("res://assets/characters/miro/idle.png"),
 }
 
 const NAMES := {

@@ -1,0 +1,155 @@
+[gd_scene format=3 uid="uid://innso1t476yu"]
+
+[ext_resource type="Theme" uid="uid://2vetdku4orhn" path="res://game/ui/dialogue_theme.tres" id="1"]
+[ext_resource type="Script" uid="uid://bkkh2qcf81v5p" path="res://game/ui/dialogue_box_layout.gd" id="2"]
+[ext_resource type="Texture2D" uid="uid://bgaesdm7qynqo" path="res://assets/ui/fantasy/dialogue/divider_fade.png" id="3"]
+[ext_resource type="Texture2D" uid="uid://kwdgi46sahuu" path="res://assets/portraits/keti/neutral.png" id="4"]
+[ext_resource type="Texture2D" uid="uid://ck8sek0ht0n77" path="res://assets/ui/fantasy/dialogue/transparent_border.png" id="4_g1vat"]
+
+[node name="DialogueBox" type="PanelContainer" unique_id=812493965]
+offset_left = 491.0
+offset_top = 16.0
+offset_right = 752.0
+offset_bottom = 464.0
+theme = ExtResource("1")
+script = ExtResource("2")
+
+[node name="Layout" type="Control" parent="." unique_id=543910124]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="PortraitFrame" type="Control" parent="Layout" unique_id=342682078]
+anchors_preset = 0
+offset_left = 56.0
+offset_top = 44.0
+offset_right = 200.0
+offset_bottom = 188.0
+mouse_filter = 2
+
+[node name="PortraitClip" type="Control" parent="Layout/PortraitFrame" unique_id=1993755687]
+clip_contents = true
+anchors_preset = 0
+offset_left = -37.0
+offset_top = -14.0
+offset_right = 91.0
+offset_bottom = 101.0
+mouse_filter = 2
+
+[node name="Portrait" type="TextureRect" parent="Layout/PortraitFrame/PortraitClip" unique_id=1570206268]
+texture_filter = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -5.0
+offset_top = 1.0
+offset_right = -5.0
+offset_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("4")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PortraitPlaceholder" type="Label" parent="Layout/PortraitFrame/PortraitClip" unique_id=725953351]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "头像"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Border" type="NinePatchRect" parent="Layout/PortraitFrame" unique_id=1108463938]
+visible = false
+modulate = Color(0.45501357, 0.58134687, 0.4475724, 1)
+texture_filter = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -39.0
+offset_top = -16.0
+offset_right = -56.0
+offset_bottom = -33.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("4_g1vat")
+draw_center = false
+patch_margin_left = 12
+patch_margin_top = 12
+patch_margin_right = 12
+patch_margin_bottom = 12
+
+[node name="SpeakerName" type="Label" parent="Layout" unique_id=434851973]
+layout_mode = 0
+offset_left = 159.0
+offset_top = 38.0
+offset_right = 335.0
+offset_bottom = 70.0
+theme_override_font_sizes/font_size = 24
+text = "可蒂"
+
+[node name="SubLabel" type="Label" parent="Layout" unique_id=920202354]
+visible = false
+layout_mode = 0
+
+[node name="DividerFade" type="TextureRect" parent="Layout" unique_id=1999787099]
+modulate = Color(0.68, 0.94, 0.66, 0.82)
+texture_filter = 1
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 22.0
+offset_top = 170.0
+offset_right = -14.0
+offset_bottom = 180.0
+grow_horizontal = 2
+mouse_filter = 2
+texture = ExtResource("3")
+expand_mode = 1
+
+[node name="ContentScroll" type="ScrollContainer" parent="Layout" unique_id=367773255]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 198.0
+offset_right = -18.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+follow_focus = true
+horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="Layout/ContentScroll" unique_id=438860988]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BodyText" type="Label" parent="Layout/ContentScroll/Content" unique_id=444695855]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "对话正文预览"
+autowrap_mode = 3
+
+[node name="ActionSpacer" type="Control" parent="Layout/ContentScroll/Content"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Choices" type="VBoxContainer" parent="Layout/ContentScroll/Content" unique_id=57774154]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NameInput" type="LineEdit" parent="Layout/ContentScroll/Content" unique_id=780143721]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "输入名字（空白则为“未命名”）"

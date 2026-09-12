@@ -9,6 +9,9 @@ var node_id := ""
 var page_index := 0
 var dialogue: Dictionary = {}
 
+const MAX_PAGE_TEXT_LENGTH := 42
+const MIN_SENTENCE_BREAK_LENGTH := 1
+
 func load_graph(path := "res://game/story/story_graph.json") -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
@@ -52,9 +55,10 @@ func validate_graph(value: Dictionary) -> Dictionary:
 func begin(id: String, node_dialogue: Dictionary, variable_store: Dictionary, resolver: Callable) -> Dictionary:
 	node_id = id
 	dialogue = node_dialogue.duplicate(true)
-	dialogue["pages"] = _normalise_pages(Array(dialogue.get("pages", [])))
 	variables = variable_store
 	condition_resolver = resolver
+	# Expand runtime tokens before measuring so generated names cannot overflow a page.
+	dialogue["pages"] = _normalise_pages(Array(dialogue.get("pages", [])))
 	page_index = 0
 	return current_page()
 
@@ -79,6 +83,9 @@ func current_page() -> Dictionary:
 	return {
 		"line_id": "%s.page.%d" % [node_id, page_index],
 		"speaker": speaker,
+		"portrait": dialogue.get("portrait", ""),
+		"expression": dialogue.get("expression", "crying" if bool(dialogue.get("crying", false)) else "neutral"),
+		"crying": bool(dialogue.get("crying", false)),
 		"sub": sub,
 		"text": _substitute(text),
 		"page": page_index,
@@ -153,27 +160,34 @@ func _normalise_pages(source_pages: Array) -> Array:
 		if not prefixed.is_empty():
 			speaker = prefixed.speaker
 			text = prefixed.text
-		var pieces := _split_long_text(text)
+		var pieces := _split_long_text(_substitute(text))
 		for piece in pieces:
 			result.append({"speaker": speaker, "sub": sub, "text": piece})
 	return result
 
 
 func _split_long_text(text: String) -> Array[String]:
-	if text.length() <= 42:
+	if text.length() <= MAX_PAGE_TEXT_LENGTH:
 		return [text]
 	var result: Array[String] = []
-	var start := 0
-	for index in range(text.length()):
-		if text[index] not in ["。", "！", "？", "；"]:
-			continue
-		if index - start + 1 < 18 or index + 1 >= text.length():
-			continue
-		result.append(text.substr(start, index - start + 1).strip_edges())
-		start = index + 1
-	if start == 0:
-		return [text]
-	var tail := text.substr(start).strip_edges()
-	if not tail.is_empty():
-		result.append(tail)
+	var remaining := text.strip_edges()
+	while remaining.length() > MAX_PAGE_TEXT_LENGTH:
+		var break_at := -1
+		var search_start := MIN_SENTENCE_BREAK_LENGTH - 1
+		var search_end := MAX_PAGE_TEXT_LENGTH - 1
+		for index in range(search_start, search_end + 1):
+			if remaining[index] in ["。", "！", "？", "；", "\n"]:
+				break_at = index + 1
+		if break_at < 0:
+			for index in range(search_start, search_end + 1):
+				if remaining[index] in ["，", ","]: break_at = index + 1
+		if break_at < 0:
+			break_at = MAX_PAGE_TEXT_LENGTH
+		var piece := remaining.substr(0, break_at).strip_edges()
+		if piece.is_empty():
+			break
+		result.append(piece)
+		remaining = remaining.substr(break_at).strip_edges()
+	if not remaining.is_empty():
+		result.append(remaining)
 	return result

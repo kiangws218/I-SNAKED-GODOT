@@ -23,6 +23,9 @@ func _run() -> void:
 	await _test_n7_chapter_one_contract()
 	await _test_n7_integrated_story_paths()
 	await _test_ui_hud_contract()
+	await _test_keti_character_visual()
+	await _test_all_npc_character_visuals()
+	await _test_death_screen_feedback()
 	if failures.is_empty():
 		print("UI/HUD TESTS PASSED (INCLUDING N1-N7 REGRESSION)")
 		quit(0)
@@ -30,6 +33,141 @@ func _run() -> void:
 		for failure in failures:
 			push_error(failure)
 		quit(1)
+
+
+func _test_death_screen_feedback() -> void:
+	var session := (load("res://game/main.tscn") as PackedScene).instantiate() as GameSession
+	session.store = SaveStore.new("res://.godot/feedback_death_saves")
+	session.store.delete_slot(1)
+	root.add_child(session)
+	session.menus.hide_all()
+	await session.load_map(&"cave", &"", true, false)
+	session.current_world.player.set_physics_process(false)
+	var checkpoint_length := session.current_world.player.body_chain.segment_count
+	session.current_world.player.set_length(checkpoint_length + 5)
+	session._on_player_died("test")
+	check(session.death_screen.is_open() and paused, "死亡显示你寄了界面并暂停世界")
+	check(session.death_screen.reload_button.text == "加载最近存档", "死亡界面保留加载最近存档选项")
+	await create_timer(0.45, true).timeout
+	check(session.death_screen.is_open(), "死亡不再自动重载")
+	await session._reload_after_death()
+	check(not session.death_screen.is_open() and session.current_world.player.body_chain.segment_count == checkpoint_length, "无手动存档时死亡加载回最近检查点")
+	session.dialogue.close()
+	session.pause_reasons.clear()
+	paused = false
+	session.current_world.player.set_physics_process(false)
+	session.current_world.player.set_length(11)
+	check(session.save_active_slot().ok, "死亡测试手动存档可写")
+	session.current_world.player.set_length(18)
+	session._on_player_died("test")
+	await session._reload_after_death()
+	check(session.current_world.player.body_chain.segment_count == 11, "死亡读取当前槽最近手动保存而非死亡资源")
+	session._on_player_died("test")
+	session.death_screen.home_requested.emit()
+	check(session.current_world == null and session.menus.main_menu.visible and not paused, "死亡返回主菜单清理世界和暂停状态")
+	session.store.delete_slot(1)
+	session.queue_free()
+	await process_frame
+
+func _head_touch_for_test(session: GameSession, npc: NpcActor) -> void:
+	var player := session.current_world.player
+	player.set_physics_process(false)
+	player.global_position = npc.global_position + Vector2(80, 0)
+	npc.setup(player)
+	npc._physics_process(0.016)
+	player.global_position = npc.global_position + Vector2(0, 12)
+	npc._physics_process(0.016)
+
+
+func _test_keti_character_visual() -> void:
+	var scene := load("res://game/actors/npc_actor.tscn") as PackedScene
+	var npc := scene.instantiate() as NpcActor
+	root.add_child(npc)
+	check(npc.character_sprite.visible and not npc.placeholder_sprite.visible, "可蒂使用新小人，不叠加占位图")
+	check(npc.character_sprite.position == Vector2(0, -18), "可蒂脚底锚点不改变角色碰撞位置")
+	var frames := npc.character_sprite.sprite_frames
+	for direction in ["down", "left", "right", "up"]:
+		check(frames.get_frame_count(StringName("idle_" + direction)) == 1, "可蒂四方向待机：" + direction)
+		check(frames.get_frame_count(StringName("walk_" + direction)) == 4, "可蒂行走循环为左步/中立/右步/中立：" + direction)
+	var atlas := (load("res://assets/characters/keti/walk.png") as Texture2D).get_image()
+	check(atlas.get_size() == Vector2i(96, 160), "可蒂标准化图集尺寸")
+	for row in range(4):
+		for column in range(3):
+			var cell := atlas.get_region(Rect2i(column * 32, row * 40, 32, 40))
+			check(cell.get_pixel(0, 0).a == 0.0, "可蒂背景透明")
+			check(cell.get_used_rect().end.y == 38, "可蒂每帧脚底对齐")
+	var snake := (load("res://game/player/snake_player.tscn") as PackedScene).instantiate() as SnakePlayer
+	root.add_child(snake)
+	snake.set_physics_process(false)
+	npc.setup(snake)
+	for direction in {"right": Vector2.RIGHT, "left": Vector2.LEFT, "down": Vector2.DOWN, "up": Vector2.UP}:
+		npc.position = Vector2(400, 400)
+		npc._last_visual_position = npc.global_position
+		snake.position = npc.position + Vector2({"right": Vector2.RIGHT, "left": Vector2.LEFT, "down": Vector2.DOWN, "up": Vector2.UP}[direction]) * 100.0
+		npc.start_combat(snake)
+		for tick in range(4):
+			await physics_frame
+			await process_frame
+		check(npc.character_sprite.animation == StringName("walk_" + direction), "可蒂真实追击位移驱动朝向：" + direction)
+	npc.stop_combat()
+	npc.player = null
+	await create_timer(0.12).timeout
+	await process_frame
+	await process_frame
+	check(String(npc.character_sprite.animation).begins_with("idle_"), "可蒂停止移动后回到站立")
+	npc.is_downed = true
+	await process_frame
+	await process_frame
+	check(not String(npc.character_sprite.animation).begins_with("walk_"), "可蒂倒地状态不播放行走")
+	npc.queue_free()
+	snake.queue_free()
+	await process_frame
+	print("KETI VISUAL TESTS PASSED")
+
+
+func _test_all_npc_character_visuals() -> void:
+	var scene := load("res://game/actors/npc_actor.tscn") as PackedScene
+	var snake := (load("res://game/player/snake_player.tscn") as PackedScene).instantiate() as SnakePlayer
+	root.add_child(snake)
+	snake.set_physics_process(false)
+	for id in [&"keti", &"ajie", &"lisi", &"ajian", &"buck", &"miro"]:
+		var npc := scene.instantiate() as NpcActor
+		npc.npc_id = id
+		root.add_child(npc)
+		npc.setup(snake)
+		check(npc.character_sprite.visible and not npc.placeholder_sprite.visible, "六人统一使用正式小人：" + String(id))
+		check(npc.character_sprite.sprite_frames == NpcActor.CHARACTER_FRAMES[id], "六人按稳定ID选择动画：" + String(id))
+		var folder := "res://assets/characters/" + String(id) + "/"
+		var atlas := (load(folder + "walk.png") as Texture2D).get_image()
+		check(atlas.get_size() == Vector2i(96, 160), "六人统一图集规格：" + String(id))
+		for row in range(4):
+			for column in range(3):
+				var frame := atlas.get_region(Rect2i(column * 32, row * 40, 32, 40))
+				check(frame.get_pixel(0, 0).a == 0.0 and frame.get_used_rect().end.y == 38, "六人透明背景及脚底对齐：" + String(id))
+		check(InventoryCarousel.ICONS[id] == load(folder + "idle.png"), "六人胃袋图标使用同一造型：" + String(id))
+		check(BeanProjectile.PLACEHOLDER_TEXTURES[id] == load(folder + "idle.png"), "六人投射物使用同一造型：" + String(id))
+		for facing in {"right": Vector2.RIGHT, "left": Vector2.LEFT, "down": Vector2.DOWN, "up": Vector2.UP}:
+			npc.position = Vector2(400, 400)
+			npc._last_visual_position = npc.global_position
+			snake.position = npc.position + Vector2({"right": Vector2.RIGHT, "left": Vector2.LEFT, "down": Vector2.DOWN, "up": Vector2.UP}[facing]) * 100.0
+			npc.start_combat(snake)
+			for tick in range(4):
+				await physics_frame
+				await process_frame
+			check(npc.character_sprite.animation == StringName("walk_" + facing), "六人真实追击驱动四方向：%s %s" % [id, facing])
+		npc.stop_combat()
+		npc.player = null
+		await create_timer(0.12).timeout
+		check(String(npc.character_sprite.animation).begins_with("idle_"), "六人停步恢复站立：" + String(id))
+		npc.is_downed = true
+		await process_frame
+		await process_frame
+		check(npc.character_sprite.modulate == Color(0.65, 0.65, 0.65), "六人倒地暂用变暗站立：" + String(id))
+		npc.queue_free()
+		await process_frame
+	snake.queue_free()
+	await process_frame
+	print("ALL SIX NPC VISUAL TESTS PASSED")
 
 
 func _test_project_contract() -> void:
@@ -68,6 +206,7 @@ func _test_project_contract() -> void:
 		check(ResourceLoader.exists(audio_path), "N2/N3 音效存在：%s" % audio_path)
 	check(ResourceLoader.exists("res://assets/enemies/mushroom/idle.png"), "蘑菇待机素材存在")
 	check(ResourceLoader.exists("res://assets/enemies/slime/idle.png"), "史莱姆素材存在")
+	check(ResourceLoader.exists("res://assets/characters/keti/frames.tres"), "可蒂正式样板动画资源存在")
 	var production_audio: Array[String] = []
 	for file_name in DirAccess.get_files_at("res://assets/audio"):
 		if not file_name.ends_with(".import"):
@@ -518,7 +657,7 @@ func _test_n3_contract() -> void:
 	check(is_equal_approx(mushroom.bullet_speed, 2.0), "蘑菇针刺弹速 2 格/秒")
 	check(is_equal_approx(PrisonController.PLAIN_BURST, 10.0) and is_equal_approx(PrisonController.PLAIN_DPS, 10.0), "普通监狱 10 burst/10 DPS")
 	check(is_equal_approx(PrisonController.NODE_BURST, 15.0) and is_equal_approx(PrisonController.NODE_DPS, 30.0), "节点监狱 15 burst/30 DPS")
-	check(is_equal_approx(NpcActor.ENTER_RADIUS, 0.85 * NpcActor.TILE_SIZE) and is_equal_approx(NpcActor.RESET_RADIUS, 1.25 * NpcActor.TILE_SIZE), "NPC 接触迟滞半径")
+	check(is_equal_approx(NpcActor.ENTER_RADIUS, 1.1 * NpcActor.TILE_SIZE), "NPC 头触半径包含蛇头与人物碰撞，不再要求额外绕远复位")
 	check(is_equal_approx(SnakePlayer.CONTACT_HITSTOP_SECONDS, 0.025), "怪物接触卡肉 25ms")
 	var enemy_visual: EnemyActor = load("res://game/actors/enemy_actor.tscn").instantiate()
 	check(enemy_visual.get_node("Slime").scale.is_equal_approx(Vector2(1.25, 1.25)), "敌人美术放大到蛇身量级")
@@ -671,7 +810,7 @@ func _test_n3_real_paths() -> void:
 	await physics_frame
 	player.global_position = npc.global_position
 	await physics_frame
-	check(npc.interaction_count == 2, "NPC 超过 1.25 格后重入再次互动")
+	check(npc.interaction_count == 2, "NPC 离开接触范围后重入再次互动")
 
 	var enemy_for_prison: EnemyActor = slime
 	enemy_for_prison.set_physics_process(false)
@@ -894,9 +1033,9 @@ func _test_n5_n6_contract() -> void:
 	var runner := DialogueRunner.new()
 	var graph_result := runner.load_graph()
 	check(graph_result.ok, "N5 剧情图无悬空跳转")
-	check(graph_result.nodes == 139 and graph_result.actions == 58 and graph_result.conditions == 18, "N7 剧情图包含 139 节点/58 动作/18 条件")
+	check(graph_result.nodes == 140 and graph_result.actions == 58 and graph_result.conditions == 18, "N7 剧情图包含 139 原节点+营地后续节点/58 动作/18 条件")
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://game/story/story_manifest.json"))
-	check(manifest.nodes.size() == 139 and manifest.actions.size() == 58 and manifest.conditions.size() == 18 and manifest.flags.size() == 42, "N7 逐 ID 清单包含 139 节点/58 动作/18 条件/42 flag")
+	check(manifest.nodes.size() == 140 and manifest.actions.size() == 58 and manifest.conditions.size() == 18 and manifest.flags.size() == 42, "N7 逐 ID 清单包含 140 节点/58 动作/18 条件/42 原迁移flag")
 	var variables := {"flags": {}}
 	var first := runner.begin("dialogue_1", runner.nodes.dialogue_1.dialogue, variables, func(_name): return true)
 	check(first.line_id == "dialogue_1.page.0" and first.page_count == 3, "N5 对话稳定行 ID 与分页")
@@ -973,7 +1112,10 @@ func _test_n5_n6_contract() -> void:
 	check(session.story.current_id == "wilderness_slimes" and session.story.enemies_left == 2, "N6 保护路线真实生成两只史莱姆")
 	for index in range(2): session.current_world.story_enemy_defeated.emit(&"slime")
 	await process_frame
-	check(session.story.current_id == "keti_saved", "N6 击败史莱姆进入可蒂存活结局")
+	check(session.story.current_id == "free_explore" and bool(session.state.flags.get("keti_rescue_pending", false)), "N6 史莱姆全灭后等待返回可蒂，不自动对白")
+	_head_touch_for_test(session, session.current_world.get_story_actor(&"keti"))
+	await process_frame
+	check(session.story.current_id == "keti_saved", "N6 真实头触可蒂后进入存活结局对白")
 	session.dialogue._finish_enter()
 	session.story._on_choice("name")
 	await process_frame
@@ -986,26 +1128,31 @@ func _test_n5_n6_contract() -> void:
 	session.current_world.camera.restore_seconds = 0.0
 	await session.story._on_name_submitted("测试蛇")
 	check(session.current_world.map_id == &"wilderness" and session.story.current_id == "prologue_complete" and story_gate.is_open, "N7 命名后聚焦石门并升起，保留玩家手动通过")
+	var keti_after_name := session.current_world.get_story_actor(&"keti")
+	check(is_instance_valid(keti_after_name) and not keti_after_name.damageable and not bool(session.state.actors.keti.get("damageable", true)), "N7 命名完成后可蒂保留可见实体但不可伤害")
+	var keti_hp_after_name := keti_after_name.hp
+	keti_after_name.take_damage(999.0, &"n7_invulnerability")
+	await process_frame
+	check(is_equal_approx(keti_after_name.hp, keti_hp_after_name), "N7 命名完成后可蒂真实受伤无效")
 	session.current_world.story_actor_interacted.emit(&"keti")
 	await process_frame
-	check(session.story.current_id == "keti_after_prologue" and "测试蛇" in session.dialogue.body_label.text, "N7 序章完成后可蒂会用玩家姓名继续对话")
-	session.dialogue._finish_enter()
-	session.story._on_choice("continue")
-	await process_frame
-	check(session.story.current_id == "free_explore", "N7 可蒂指引对话结束后进入可重复互动的探索态")
-	session.current_world.story_actor_interacted.emit(&"keti")
-	await process_frame
-	check(session.story.current_id == "keti_after_prologue" and "测试蛇" in session.dialogue.body_label.text, "N7 free_explore 中再次接触可蒂仍展示含玩家姓名的对话")
-	session.dialogue._finish_enter()
-	session.story._on_choice("continue")
-	await process_frame
+	check(session.story.current_id == "prologue_complete", "N7 命名完成后再次接触可蒂不重复对白或吐豆")
 	await session._on_exit_reached(&"forest", &"forest_from_wilderness")
 	check(session.current_world.map_id == &"forest" and session.story.current_id == "chapter1_explore", "N7 穿过出口渐隐进入森林并停在第一章起点")
 	await session._on_exit_reached(&"wilderness", &"wilderness_from_forest")
 	check(session.current_world.map_id == &"wilderness", "N7 森林保留可编辑回程出口并能返回荒野")
+	check(not session.current_world.get_story_actor(&"keti").damageable, "N7 可蒂不可伤害状态跨图保持")
 	check(session.state.story.get("player_name", "") == "测试蛇", "N6 玩家姓名写入可序列化剧情状态")
+	# Start the legacy memory-vomit branch from its pre-completion exploration
+	# state; the completed-prologue invulnerability is covered above separately.
+	session.state.flags.erase("prologue_complete")
+	session.state.flags.erase("keti_event_complete")
+	session.state.flags.erase("keti_eaten")
+	session.state.actors["keti"] = {"status": "alive", "location": "wilderness", "hp": 14.0, "max_hp": 14.0, "met": true, "damageable": true}
+	session.state.story.current_node = "free_explore"
 	await session.load_map(&"wilderness")
 	session.current_world.player.play_sfx = false
+	session.state.flags.erase("memory_blurred")
 	var eaten := await session.story.execute_command("eatKeti")
 	check(eaten.ok and session.current_world.player.inventory.count_item(&"keti") == 1, "N6 吞入可蒂写入真实胃袋与身长")
 	check("可蒂" in session.inventory_slots.text, "N6 胃袋 HUD 立即显示吞入的可蒂")
@@ -1339,6 +1486,7 @@ func _test_n7_integrated_story_paths() -> void:
 	check(session.story.current_id == "cave_explore" and bool(session.state.flags.get("caveEntered", false)), "N7 洞窟开场后进入可交互探索")
 
 	var ajian := session.current_world.get_story_actor(&"ajian")
+	check(is_instance_valid(ajian) and ajian.visible and ajian.monitoring, "N7 首次进洞阿见以可见活动实体出现")
 	session.current_world.story_actor_interacted.emit(&"ajian")
 	await process_frame
 	check(session.story.current_id == "cave_ajian_found", "N7 洞窟阿见按持久状态进入被绑分支")
@@ -1354,7 +1502,15 @@ func _test_n7_integrated_story_paths() -> void:
 		goblin.take_damage(999.0, &"n7_integration")
 	await process_frame
 	await process_frame
-	check(encounter.ok and goblins.size() == 2 and session.story.current_id == "cave_ajian_rescued" and bool(session.state.flags.get("goblinsDefeated", false)), "N7 两名哥布林真实倒下后续接阿见获救分支")
+	check(encounter.ok and goblins.size() == 2 and session.story.current_id == "cave_explore" and bool(session.state.flags.get("goblinsDefeated", false)), "N7 两名哥布林倒下后回到洞窟探索而非自动对白")
+	session.current_world.finish_actor_interaction()
+	session.current_world.player.global_position = ajian.global_position + Vector2(240.0, 0.0)
+	for index in range(3): await physics_frame
+	session.current_world.player.global_position = ajian.global_position
+	for index in range(3): await physics_frame
+	ajian._physics_process(0.1)
+	await process_frame
+	check(session.story.current_id == "cave_ajian_rescued", "N7 蛇头远离后再次接触阿见才触发获救对白")
 
 	await session.story.execute_command("revealAjian")
 	var mount := await session.story.execute_command("mountAjian")
@@ -1366,6 +1522,12 @@ func _test_n7_integrated_story_paths() -> void:
 	session.current_world.story_trigger_entered.emit(&"camp_settlement")
 	await process_frame
 	check(bool(session.state.flags.get("campSettlementSeen", false)) and session.state.player.rider == "" and String(session.state.actors.ajian.location) == "forest" and not forest_ajian.is_riding(), "N7 营地结算让骑乘阿见落地到可编辑森林实例")
+	# A delayed memory timer must not revive after the owning flow is canceled.
+	session.story.current_id = "timer_probe"
+	session.story._start_memory_timer("timer_probe")
+	session.story.cancel_pending_flow()
+	await create_timer(6.2, true).timeout
+	check(session.story.current_id == "timer_probe", "N7 取消剧情流程后旧六秒计时器不再推进节点")
 	session.queue_free()
 	paused = false
 	await process_frame
@@ -1389,7 +1551,10 @@ func _test_n7_integrated_story_paths() -> void:
 	for actor_id in [&"buck", &"miro"]:
 		combat_session.current_world.get_story_actor(actor_id).take_damage(999.0, &"n7_integration")
 	await process_frame
-	check(combat_session.story.current_id == "bandit_search" and String(combat_session.state.actors.buck.status) == "downed" and String(combat_session.state.actors.miro.status) == "downed", "N7 两名劫匪倒地后进入一次性搜刮分支")
+	check(combat_session.story.current_id == "chapter1_explore" and String(combat_session.state.actors.buck.status) == "downed" and String(combat_session.state.actors.miro.status) == "downed", "N7 两名劫匪倒地后等待头触，不自动搜刮")
+	_head_touch_for_test(combat_session, combat_session.current_world.get_story_actor(&"buck"))
+	await process_frame
+	check(combat_session.story.current_id == "bandit_search", "N7 真实头触倒地劫匪后进入搜刮选择")
 	combat_session.queue_free()
 	paused = false
 	await process_frame
@@ -1419,7 +1584,10 @@ func _test_n7_integrated_story_paths() -> void:
 	check(hostage_session.story.current_id == "bandit_combat" and hostage_session.story.enemies_left == 1 and miro.hostile, "N7 人质状态下对话后只激活剩余劫匪战斗")
 	miro.take_damage(999.0, &"n7_hostage")
 	await process_frame
-	check(hostage_session.story.current_id == "bandit_search" and String(hostage_session.state.actors.buck.status) == "swallowed", "N7 剩余劫匪倒地后推进剧情且不覆盖胃袋人质状态")
+	check(hostage_session.story.current_id == "chapter1_explore" and String(hostage_session.state.actors.buck.status) == "swallowed", "N7 剩余劫匪倒地后等待接触，保留胃袋人质状态")
+	_head_touch_for_test(hostage_session, miro)
+	await process_frame
+	check(hostage_session.story.current_id == "bandit_search", "N7 头触剩余倒地劫匪后继续剧情")
 	hostage_session.queue_free()
 	paused = false
 	await process_frame
