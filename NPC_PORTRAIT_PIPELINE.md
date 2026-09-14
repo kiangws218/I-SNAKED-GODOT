@@ -13,4 +13,4 @@
 
 审阅：打开game/art_review/npc_portrait_review.tscn按F6，右侧按钮切角色和表情；左侧按阿见、阿杰、巴克、丽丝、米罗排列九表情。
 专项检查：tests/test_npc_portraits.gd；兼容检查：tests/test_keti_portraits.gd。
-本轮本地接入，未提交或推送。
+已合入公司新版；情绪与CG头像桥接、验证及同步记录见DIALOGUE_EMOTIONS_REVIEW.md。实际远端同步以git log与origin/main为准。

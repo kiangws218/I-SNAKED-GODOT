@@ -754,7 +754,7 @@ func _on_choice(choice_id: String) -> void:
 	var has_presentation := not presentation.is_empty()
 	if has_presentation:
 		panel.set_input_locked(true)
-		panel.set_presentation_expression(String(presentation.get("portrait_expression", "")))
+		panel.set_presentation_expression(String(presentation.get("portrait_expression", "")), String(presentation.get("portrait_id", String(presentation.get("variant", "")).trim_suffix("_foot"))))
 	if not has_presentation:
 		panel.close()
 		pause_requested.emit(&"dialogue", false)

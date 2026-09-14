@@ -2603,7 +2603,7 @@
             "presentation": {
               "cg_id": "lick.foot",
               "variant": "lisi_foot",
-              "portrait_expression": "surprised"
+              "portrait_expression": "blushing"
             },
             "next": "camp_lick_lisi"
           },
@@ -2660,7 +2660,7 @@
             "presentation": {
               "cg_id": "lick.foot",
               "variant": "lisi_foot",
-              "portrait_expression": "surprised"
+              "portrait_expression": "blushing"
             },
             "next": "camp_lick_lisi_alone"
           },

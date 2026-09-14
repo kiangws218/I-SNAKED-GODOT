@@ -8,6 +8,11 @@ var condition_resolver: Callable
 var node_id := ""
 var page_index := 0
 var dialogue: Dictionary = {}
+var emotion_tags: Dictionary = {}
+
+func _init() -> void:
+	var tags: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://game/story/dialogue_emotions.json"))
+	emotion_tags = tags.get("nodes", {})
 
 const MAX_PAGE_TEXT_LENGTH := 42
 const MIN_SENTENCE_BREAK_LENGTH := 1
@@ -83,8 +88,10 @@ func current_page() -> Dictionary:
 	return {
 		"line_id": "%s.page.%d" % [node_id, page_index],
 		"speaker": speaker,
-		"portrait": dialogue.get("portrait", ""),
-		"expression": dialogue.get("expression", "crying" if bool(dialogue.get("crying", false)) else "neutral"),
+		"portrait": raw_page.get("portrait", dialogue.get("portrait", "")) if raw_page is Dictionary else dialogue.get("portrait", ""),
+		"emotion": raw_page.get("emotion", "neutral") if raw_page is Dictionary else "neutral",
+		"source_page": raw_page.get("source_page", page_index) if raw_page is Dictionary else page_index,
+		"expression": raw_page.get("expression", "neutral") if raw_page is Dictionary else dialogue.get("expression", "neutral"),
 		"crying": bool(dialogue.get("crying", false)),
 		"sub": sub,
 		"text": _substitute(text),
@@ -137,7 +144,7 @@ func _parse_speaker_prefix(text: String) -> Dictionary:
 	if colon < 1 or colon > 8:
 		return {}
 	var candidate := text.substr(0, colon).strip_edges()
-	if candidate not in ["我", "玩家", "阿杰", "丽丝", "巴克", "米罗", "阿见", "可蒂", "旁白"]:
+	if candidate not in ["我", "玩家", "阿杰", "阿洁", "丽丝", "巴克", "米罗", "阿见", "少女", "可蒂", "旁白"]:
 		return {}
 	if candidate == "玩家":
 		candidate = "我"
@@ -146,11 +153,19 @@ func _parse_speaker_prefix(text: String) -> Dictionary:
 
 func _normalise_pages(source_pages: Array) -> Array:
 	var result: Array = []
-	for raw_page in source_pages:
+	for source_index in range(source_pages.size()):
+		var raw_page: Variant = source_pages[source_index]
+		var labels: Array = emotion_tags.get(node_id, [])
+		var emotion := String(labels[source_index]) if source_index < labels.size() else "neutral"
+		var expression := String(dialogue.get("expression", emotion if source_index < labels.size() else ("crying" if bool(dialogue.get("crying", false)) else emotion)))
+		var portrait := String(dialogue.get("portrait", ""))
 		var speaker := String(dialogue.get("speaker", "旁白"))
 		var sub := String(dialogue.get("sub", ""))
 		var text := ""
 		if raw_page is Dictionary:
+			emotion = String(raw_page.get("emotion", emotion))
+			expression = String(raw_page.get("expression", raw_page.get("emotion", expression)))
+			portrait = String(raw_page.get("portrait", portrait))
 			speaker = String(raw_page.get("speaker", speaker))
 			sub = String(raw_page.get("sub", sub))
 			text = String(raw_page.get("text", ""))
@@ -162,7 +177,7 @@ func _normalise_pages(source_pages: Array) -> Array:
 			text = prefixed.text
 		var pieces := _split_long_text(_substitute(text))
 		for piece in pieces:
-			result.append({"speaker": speaker, "sub": sub, "text": piece})
+			result.append({"speaker": speaker, "sub": sub, "text": piece, "portrait": portrait, "emotion": emotion, "expression": expression, "source_page": source_index})
 	return result
 
 

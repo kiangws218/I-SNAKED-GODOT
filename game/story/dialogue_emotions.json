@@ -1,0 +1,571 @@
+{
+  "schema_version": 1,
+  "source": "story_graph.json original page indices; split pages inherit",
+  "nodes": {
+    "dialogue_1": [
+      "tired",
+      "tired",
+      "surprised"
+    ],
+    "dialogue_2": [
+      "happy",
+      "surprised",
+      "surprised",
+      "neutral"
+    ],
+    "dialogue_3": [
+      "neutral",
+      "happy"
+    ],
+    "dialogue_4": [
+      "tired",
+      "tired"
+    ],
+    "keti_question": [
+      "terrified"
+    ],
+    "keti_cry": [
+      "crying",
+      "crying"
+    ],
+    "keti_reassured": [
+      "surprised",
+      "terrified"
+    ],
+    "keti_saved": [
+      "surprised",
+      "tired",
+      "neutral",
+      "happy"
+    ],
+    "keti_dead": [
+      "neutral",
+      "neutral"
+    ],
+    "memory_blur_dialogue": [
+      "tired",
+      "surprised",
+      "tired"
+    ],
+    "chapter1_hunger": [
+      "tired",
+      "surprised"
+    ],
+    "chapter1_sword": [
+      "neutral"
+    ],
+    "chapter1_sword_eaten": [
+      "tired",
+      "tired"
+    ],
+    "chapter1_meeting": [
+      "surprised",
+      "neutral",
+      "smug",
+      "angry",
+      "neutral",
+      "neutral"
+    ],
+    "chapter1_meeting_hunger": [
+      "neutral"
+    ],
+    "chapter1_ajie_swallowed": [
+      "terrified",
+      "terrified",
+      "terrified"
+    ],
+    "chapter1_ajie_released": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "surprised",
+      "blushing",
+      "blushing",
+      "surprised",
+      "surprised",
+      "surprised"
+    ],
+    "chapter1_lisi_swallowed": [
+      "angry",
+      "angry",
+      "angry"
+    ],
+    "chapter1_lisi_released": [
+      "neutral",
+      "neutral",
+      "blushing",
+      "blushing"
+    ],
+    "chapter1_ajie_unconscious": [
+      "neutral"
+    ],
+    "chapter1_ajie_woken_face": [
+      "tired",
+      "surprised",
+      "surprised"
+    ],
+    "chapter1_ajie_woken_foot": [
+      "surprised",
+      "surprised",
+      "neutral"
+    ],
+    "chapter1_lisi_unconscious": [
+      "neutral"
+    ],
+    "chapter1_lisi_woken_face": [
+      "tired",
+      "surprised",
+      "surprised"
+    ],
+    "chapter1_lisi_woken_foot": [
+      "tired",
+      "surprised",
+      "blushing"
+    ],
+    "chapter1_both_swallowed": [
+      "neutral"
+    ],
+    "chapter1_ajie_released_alone": [
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "chapter1_lisi_released_alone": [
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "chapter1_both_released_unconscious": [
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "chapter1_sword_recognized": [
+      "surprised",
+      "angry"
+    ],
+    "chapter1_quest_request": [
+      "tired",
+      "angry",
+      "neutral"
+    ],
+    "chapter1_quest_accepted": [
+      "happy",
+      "surprised",
+      "neutral",
+      "neutral",
+      "happy"
+    ],
+    "chapter1_quest_declined": [
+      "tired",
+      "happy",
+      "neutral"
+    ],
+    "chapter1_lisi_only": [
+      "terrified",
+      "terrified"
+    ],
+    "chapter1_ajie_only": [
+      "angry"
+    ],
+    "chapter1_sword_recognized_lisi": [
+      "surprised",
+      "terrified"
+    ],
+    "chapter1_sword_recognized_ajie": [
+      "surprised",
+      "angry"
+    ],
+    "chapter1_quest_request_ajie": [
+      "neutral",
+      "angry",
+      "neutral"
+    ],
+    "chapter1_quest_accepted_ajie": [
+      "blushing",
+      "neutral"
+    ],
+    "chapter1_quest_declined_ajie": [
+      "angry",
+      "neutral"
+    ],
+    "chapter1_ajie_body_learned": [
+      "surprised",
+      "surprised"
+    ],
+    "chapter1_ajie_downed": [
+      "tired",
+      "tired"
+    ],
+    "chapter1_lisi_released_after_fight": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "angry",
+      "neutral",
+      "tired",
+      "tired",
+      "neutral"
+    ],
+    "bandit_intro": [
+      "smug",
+      "neutral",
+      "angry",
+      "smug"
+    ],
+    "bandit_paid": [
+      "neutral",
+      "neutral",
+      "angry"
+    ],
+    "bandit_sword_paid": [
+      "neutral",
+      "angry",
+      "neutral"
+    ],
+    "bandit_threat": [
+      "angry",
+      "neutral"
+    ],
+    "bandit_reverse_challenge": [
+      "smug",
+      "surprised",
+      "neutral",
+      "angry",
+      "neutral"
+    ],
+    "bandit_hostage_threat": [
+      "neutral",
+      "terrified",
+      "angry"
+    ],
+    "bandit_buck_swallowed": [
+      "neutral",
+      "terrified",
+      "terrified"
+    ],
+    "bandit_miro_swallowed": [
+      "neutral",
+      "surprised",
+      "angry"
+    ],
+    "bandit_hostage_return_hostile": [
+      "angry",
+      "angry"
+    ],
+    "bandit_released": [
+      "neutral",
+      "neutral"
+    ],
+    "bandit_both_swallowed": [
+      "neutral",
+      "neutral"
+    ],
+    "bandit_robbed": [
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "bandit_search": [
+      "neutral",
+      "neutral"
+    ],
+    "bandit_resolved": [
+      "neutral"
+    ],
+    "bandit_resolved_buck": [
+      "angry"
+    ],
+    "bandit_resolved_miro": [
+      "neutral"
+    ],
+    "camp_settlement_rider_both": [
+      "happy",
+      "surprised",
+      "happy",
+      "blushing",
+      "surprised",
+      "tired"
+    ],
+    "camp_settlement_rider_lisi": [
+      "happy",
+      "happy",
+      "neutral",
+      "tired"
+    ],
+    "camp_settlement_rider_ajie": [
+      "happy",
+      "surprised",
+      "neutral",
+      "tired"
+    ],
+    "camp_settlement_stomach_both": [
+      "neutral",
+      "neutral",
+      "surprised",
+      "surprised",
+      "neutral"
+    ],
+    "camp_settlement_stomach_lisi": [
+      "neutral",
+      "neutral",
+      "surprised",
+      "neutral"
+    ],
+    "camp_settlement_stomach_ajie": [
+      "neutral",
+      "neutral",
+      "surprised",
+      "tired"
+    ],
+    "camp_reward_lisi": [
+      "tired",
+      "blushing",
+      "neutral",
+      "neutral"
+    ],
+    "camp_reward_lisi_only": [
+      "tired",
+      "blushing",
+      "neutral",
+      "neutral"
+    ],
+    "camp_reward_ajie": [
+      "angry",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "camp_lick_ajie": [
+      "surprised",
+      "blushing",
+      "smug",
+      "neutral"
+    ],
+    "camp_lick_lisi": [
+      "blushing",
+      "happy",
+      "angry",
+      "neutral"
+    ],
+    "camp_lick_ajie_alone": [
+      "surprised",
+      "blushing",
+      "neutral"
+    ],
+    "camp_lick_lisi_alone": [
+      "blushing",
+      "happy",
+      "neutral"
+    ],
+    "camp_eat_ajie": [
+      "terrified",
+      "crying",
+      "tired"
+    ],
+    "camp_eat_lisi": [
+      "neutral",
+      "angry",
+      "tired",
+      "terrified"
+    ],
+    "camp_eat_ajie_alone": [
+      "neutral",
+      "neutral"
+    ],
+    "camp_eat_lisi_alone": [
+      "neutral",
+      "neutral"
+    ],
+    "camp_release_ajie": [
+      "neutral",
+      "neutral"
+    ],
+    "camp_release_lisi": [
+      "neutral",
+      "neutral"
+    ],
+    "camp_followup": [
+      "neutral",
+      "neutral"
+    ],
+    "camp_settled": [
+      "neutral",
+      "neutral"
+    ],
+    "camp_ajian_unconscious": [
+      "neutral"
+    ],
+    "camp_ajian_woken": [
+      "blushing",
+      "neutral"
+    ],
+    "camp_ajian_resting": [
+      "tired",
+      "neutral"
+    ],
+    "bandit_resolved_return": [
+      "neutral"
+    ],
+    "cave_intro": [
+      "neutral",
+      "neutral"
+    ],
+    "cave_soup": [
+      "neutral",
+      "neutral"
+    ],
+    "cave_soup_drunk": [
+      "surprised",
+      "happy",
+      "happy"
+    ],
+    "cave_soup_empty": [
+      "neutral"
+    ],
+    "cave_potion": [
+      "neutral"
+    ],
+    "cave_potion_taken": [
+      "neutral",
+      "neutral"
+    ],
+    "cave_ajian_found": [
+      "neutral",
+      "neutral"
+    ],
+    "cave_ajian_woke_face": [
+      "surprised",
+      "terrified",
+      "terrified",
+      "tired"
+    ],
+    "cave_ajian_woke_foot": [
+      "surprised",
+      "terrified",
+      "terrified",
+      "tired"
+    ],
+    "cave_ajian_left_bound": [
+      "terrified"
+    ],
+    "cave_ajian_untie_return": [
+      "tired"
+    ],
+    "cave_ajian_untied": [
+      "neutral",
+      "surprised",
+      "blushing"
+    ],
+    "cave_ajian_identity_who": [
+      "blushing",
+      "blushing",
+      "terrified",
+      "tired",
+      "terrified",
+      "terrified"
+    ],
+    "cave_ajian_identity_why": [
+      "tired",
+      "terrified",
+      "terrified"
+    ],
+    "cave_goblins_return": [
+      "neutral",
+      "neutral",
+      "terrified"
+    ],
+    "cave_ajian_rescued": [
+      "surprised",
+      "neutral",
+      "happy"
+    ],
+    "cave_ajian_rescue_lick": [
+      "surprised",
+      "blushing",
+      "blushing"
+    ],
+    "cave_ajian_critical": [
+      "neutral",
+      "neutral"
+    ],
+    "cave_ajian_critical_brief": [
+      "tired",
+      "tired"
+    ],
+    "cave_ajian_reveal_known": [
+      "blushing",
+      "tired",
+      "tired",
+      "neutral",
+      "surprised",
+      "neutral"
+    ],
+    "cave_ajian_reveal_unknown": [
+      "blushing",
+      "tired",
+      "tired",
+      "neutral",
+      "tired",
+      "neutral"
+    ],
+    "cave_ajian_sword": [
+      "terrified"
+    ],
+    "cave_ajian_sword_recognized": [
+      "surprised",
+      "neutral",
+      "neutral",
+      "tired"
+    ],
+    "cave_ajian_destination": [
+      "neutral"
+    ],
+    "cave_ajian_mounted": [
+      "surprised",
+      "tired",
+      "neutral",
+      "blushing"
+    ],
+    "cave_ajian_rewake": [
+      "neutral"
+    ],
+    "cave_ajian_rewake_same_face": [
+      "tired",
+      "surprised",
+      "blushing",
+      "surprised"
+    ],
+    "cave_ajian_rewake_same_foot": [
+      "neutral",
+      "surprised",
+      "blushing",
+      "surprised"
+    ],
+    "cave_ajian_rewake_switch_foot": [
+      "surprised",
+      "blushing",
+      "surprised"
+    ],
+    "cave_ajian_rewake_switch_face": [
+      "happy",
+      "blushing",
+      "surprised"
+    ],
+    "chapter1_ring": [
+      "neutral"
+    ],
+    "chapter1_ring_tutorial": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "keti_unconscious": [
+      "tired"
+    ],
+    "keti_after_prologue": [
+      "happy"
+    ]
+  }
+}

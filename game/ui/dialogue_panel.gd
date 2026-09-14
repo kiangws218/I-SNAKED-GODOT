@@ -9,7 +9,7 @@ const EXIT_SECONDS := 0.12
 const UI_FONT := preload("res://assets/fonts/fusion-pixel-10px-monospaced-zh_hans.ttf")
 const PLAYER_PORTRAIT := preload("res://assets/portraits/player_snake.png")
 const NPC_PORTRAITS := preload("res://game/ui/npc_portrait_library.gd").PORTRAITS
-const PORTRAIT_SPEAKERS := {"阿见": "ajian", "阿杰": "ajie", "阿洁": "ajie", "丽丝": "lisi", "巴克": "buck", "米罗": "miro"}
+const PORTRAIT_SPEAKERS := {"阿见": "ajian", "少女": "ajian", "阿杰": "ajie", "阿洁": "ajie", "丽丝": "lisi", "巴克": "buck", "米罗": "miro"}
 const KETI_PORTRAITS := {
 	"neutral": preload("res://assets/portraits/keti/neutral.png"),
 	"happy": preload("res://assets/portraits/keti/happy.png"),
@@ -99,15 +99,21 @@ func set_input_locked(locked: bool) -> void:
 
 ## Applies a presentation expression without coupling dialogue to a specific CG.
 ## Placeholder speakers expose the request as text until portrait art is supplied.
-func set_presentation_expression(expression: String) -> void:
+func set_presentation_expression(expression: String, portrait_id := "") -> void:
 	if expression.is_empty() or pages.is_empty():
 		return
 	var page: Dictionary = pages[page_index]
 	var speaker := String(page.get("speaker", ""))
-	if speaker == "可蒂" or String(page.get("portrait", "")) == "keti":
-		portrait.texture = KETI_PORTRAITS.get(expression, portrait.texture)
+	if portrait_id.is_empty():
+		portrait_id = String(page.get("portrait", ""))
+	if portrait_id.is_empty():
+		portrait_id = PORTRAIT_SPEAKERS.get(speaker, "keti" if speaker == "可蒂" else "")
+	if portrait_id == "keti" or NPC_PORTRAITS.has(portrait_id):
+		var expressions: Dictionary = KETI_PORTRAITS if portrait_id == "keti" else NPC_PORTRAITS[portrait_id]
+		portrait.texture = expressions.get(expression, expressions.neutral)
 		portrait.visible = portrait.texture != null
 		portrait_placeholder.visible = not portrait.visible
+		panel.get_node("Layout/PortraitFrame").visible = portrait.visible
 		_center_portrait()
 	else:
 		var expression_label := String({"surprised": "惊讶", "happy": "开心", "angry": "生气", "terrified": "惊恐", "blushing": "脸红"}.get(expression, expression))
