@@ -67,6 +67,13 @@ func _run() -> void:
 	_check(bool(paused_result.get("ok", false)) and not bool(paused_result.get("cancelled", true)), "对话暂停期间 CG 仍可完整播放")
 	var bad_result: Dictionary = await host.play_presentation({"cg_id": "unknown", "variant": "female"})
 	_check(not bool(bad_result.get("accepted", true)), "未知 CG id 被稳定接口拒绝")
+	var foot_frames := load("res://assets/cg/lick/human_foot_frames.png") as Texture2D
+	var snake_head := load("res://assets/cg/lick/snake_head.png") as Texture2D
+	var tongue_frames := load("res://assets/cg/lick/tongue_frames.png") as Texture2D
+	_check(foot_frames.get_size() == Vector2(1536, 1024), "人类脚序列保持 3×2 的 512 像素帧布局")
+	_check(snake_head.get_size() == Vector2(1254, 1254), "蛇头独立透明资源尺寸正确")
+	_check(tongue_frames.get_size() == Vector2(2172, 724), "信子序列保持 4×1 的 543 像素帧布局")
+	_check(foot_frames.get_image().get_pixel(0, 0).a == 0.0 and snake_head.get_image().get_pixel(0, 0).a == 0.0 and tongue_frames.get_image().get_pixel(0, 0).a == 0.0, "三项 CG 美术资源保留透明背景")
 
 	var graph: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://game/story/story_graph.json"))
 	var nodes: Dictionary = graph.get("nodes", {})

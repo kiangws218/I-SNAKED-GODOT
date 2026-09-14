@@ -1,7 +1,14 @@
 class_name LickCg
 extends Control
 
-## A single, cancellable lick performance. Replace the drawing with imported art later.
+const HUMAN_FOOT_FRAMES := preload("res://assets/cg/lick/human_foot_frames.png")
+const SNAKE_HEAD := preload("res://assets/cg/lick/snake_head.png")
+const TONGUE_FRAMES := preload("res://assets/cg/lick/tongue_frames.png")
+const FOOT_FRAME_SIZE := Vector2(512, 512)
+const TONGUE_FRAME_SIZE := Vector2(543, 724)
+const TONGUE_FRAME_ORDER := [3, 0, 1, 2]
+
+## A single, cancellable lick performance that composes replaceable imported art layers.
 signal cue(name: String)
 signal finished
 signal cancelled
@@ -44,11 +51,12 @@ func play_once() -> void:
 	_tween.tween_interval(0.18)
 	_tween.tween_callback(func(): cue.emit("contact"))
 	_tween.parallel().tween_property(self, "_tongue_progress", 1.0, 0.32)
-	_tween.parallel().tween_property(self, "_toe_spread", 0.72, 0.22)
-	_tween.tween_interval(0.12)
+	_tween.parallel().tween_property(self, "_toe_spread", 1.0, 0.18)
 	_tween.tween_callback(func(): cue.emit("reaction_peak"))
+	_tween.tween_property(self, "_toe_spread", 2.0, 0.16)
+	_tween.tween_interval(0.1)
 	_tween.tween_property(self, "_tongue_progress", 0.0, 0.28)
-	_tween.parallel().tween_property(self, "_toe_spread", 0.12, 0.28)
+	_tween.parallel().tween_property(self, "_toe_spread", 0.0, 0.28)
 	_tween.tween_interval(0.25)
 	_tween.tween_property(self, "_snake_position", Vector2(88, 398), 0.3)
 	_tween.tween_property(self, "_visible_amount", 0.0, 0.3)
@@ -99,6 +107,12 @@ func _draw() -> void:
 func _draw_foot(a: float) -> void:
 	var p := variant.subject_offset
 	var s := variant.subject_scale
+	if variant.foot_asset_id == &"human_female":
+		var frame := clampi(roundi(_toe_spread), 0, 2)
+		var source := Rect2(Vector2(frame * FOOT_FRAME_SIZE.x, 0), FOOT_FRAME_SIZE)
+		var destination := Rect2(p + Vector2(-155, -220) * s, Vector2(325, 325) * s)
+		draw_texture_rect_region(HUMAN_FOOT_FRAMES, destination, source, Color(1, 1, 1, a))
+		return
 	var skin := variant.skin_color
 	var accent := variant.accent_color
 	# Sole points down-left; polygon is intentionally graphic placeholder art.
@@ -114,14 +128,11 @@ func _draw_foot(a: float) -> void:
 		draw_circle(pos - Vector2(2, 2), (7.0 - abs(t) * 0.8) * s.x, Color(skin.lightened(0.08), a))
 
 func _draw_snake(a: float) -> void:
-	var head := _snake_position
-	draw_circle(head, 25.0, Color("#5cc6a1", a))
-	draw_circle(head + Vector2(9, -7), 4.0, Color("#101b2b", a))
-	draw_circle(head + Vector2(9, 7), 4.0, Color("#101b2b", a))
-	draw_arc(head, 18.0, -0.7, 0.7, 12, Color("#193b46", a), 3.0)
-	var tip := variant.subject_offset + variant.contact_offset
-	var tongue_end := head.lerp(tip, _tongue_progress)
+	var movement := _snake_position - Vector2(88, 398)
+	draw_texture_rect(SNAKE_HEAD, Rect2(Vector2(20, 230) + movement, Vector2(250, 250)), false, Color(1, 1, 1, a))
 	if _tongue_progress > 0.01:
-		draw_line(head + Vector2(20, 0), tongue_end, Color("#f07f91", a), 4.0)
-		draw_line(tongue_end, tongue_end + Vector2(-8, -6), Color("#f07f91", a), 2.0)
-		draw_line(tongue_end, tongue_end + Vector2(-8, 6), Color("#f07f91", a), 2.0)
+		var order_index := clampi(floori(_tongue_progress * TONGUE_FRAME_ORDER.size()), 0, TONGUE_FRAME_ORDER.size() - 1)
+		var frame: int = TONGUE_FRAME_ORDER[order_index]
+		var source := Rect2(Vector2(frame * TONGUE_FRAME_SIZE.x, 0), TONGUE_FRAME_SIZE)
+		var destination := Rect2(Vector2(174, 205) + movement, Vector2(180, 240))
+		draw_texture_rect_region(TONGUE_FRAMES, destination, source, Color(1, 1, 1, a))

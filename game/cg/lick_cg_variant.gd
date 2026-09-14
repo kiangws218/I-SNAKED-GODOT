@@ -8,6 +8,7 @@ extends Resource
 @export var subject_scale: Vector2 = Vector2.ONE
 @export var subject_offset: Vector2 = Vector2(300, 215)
 @export var contact_offset: Vector2 = Vector2(-90, 82)
+@export var foot_asset_id: StringName = &"human_female"
 
 static func human_female() -> LickCgVariant:
 	var v := LickCgVariant.new()
@@ -27,6 +28,7 @@ static func monster() -> LickCgVariant:
 	v.subject_scale = Vector2(1.14, 1.08)
 	v.subject_offset = Vector2(300, 208)
 	v.contact_offset = Vector2(-108, 92)
+	v.foot_asset_id = &"placeholder_monster"
 	return v
 
 static func ajian_foot() -> LickCgVariant:

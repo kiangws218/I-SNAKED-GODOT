@@ -52,10 +52,10 @@ func _on_cue(name: String) -> void:
 	_status.text = _variants[_index].display_name + "  |  cue: " + name + "  |  R 重播  |  V 切换变体"
 
 func _capture_review() -> void:
-	await get_tree().create_timer(1.05, true).timeout
+	await get_tree().create_timer(1.25, true).timeout
 	get_viewport().get_texture().get_image().save_png("res://.godot/cg_review_female.png")
 	_index = 1
 	_player.play_lick(_variants[_index])
-	await get_tree().create_timer(1.05, true).timeout
+	await get_tree().create_timer(1.25, true).timeout
 	get_viewport().get_texture().get_image().save_png("res://.godot/cg_review_monster.png")
 	get_tree().quit()
