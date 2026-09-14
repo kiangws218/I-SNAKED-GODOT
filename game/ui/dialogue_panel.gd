@@ -45,6 +45,8 @@ var _portrait_regions: Dictionary = {}
 var interact_audio: AudioStreamPlayer
 var _tween: Tween
 var _shown_position := Vector2.ZERO
+var input_locked := false
+var _portrait_placeholder_default := ""
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -59,6 +61,7 @@ func _ready() -> void:
 	panel.visible = false
 
 func show_dialogue(dialogue_pages: Array[Dictionary]) -> void:
+	input_locked = false
 	pages = dialogue_pages
 	page_index = 0
 	selected_choice_index = 0
@@ -86,8 +89,37 @@ func close() -> void:
 	_tween.tween_property(panel, "modulate:a", 0.0, EXIT_SECONDS)
 	_tween.chain().tween_callback(_finish_exit)
 
+## Keeps the dialogue visible while an external presentation runs.
+func set_input_locked(locked: bool) -> void:
+	input_locked = locked
+	if is_instance_valid(choices_box):
+		for child in choices_box.get_children():
+			if child is Button:
+				child.disabled = locked
+
+## Applies a presentation expression without coupling dialogue to a specific CG.
+## Placeholder speakers expose the request as text until portrait art is supplied.
+func set_presentation_expression(expression: String) -> void:
+	if expression.is_empty() or pages.is_empty():
+		return
+	var page: Dictionary = pages[page_index]
+	var speaker := String(page.get("speaker", ""))
+	if speaker == "可蒂" or String(page.get("portrait", "")) == "keti":
+		portrait.texture = KETI_PORTRAITS.get(expression, portrait.texture)
+		portrait.visible = portrait.texture != null
+		portrait_placeholder.visible = not portrait.visible
+		_center_portrait()
+	else:
+		var expression_label := String({"surprised": "惊讶", "happy": "开心", "angry": "生气", "terrified": "惊恐", "blushing": "脸红"}.get(expression, expression))
+		portrait_placeholder.text = "%s\n表情：%s" % [speaker, expression_label]
+		portrait_placeholder.visible = true
+		portrait.visible = false
+
 func _unhandled_input(event: InputEvent) -> void:
 	if state == &"hidden" or state == &"exiting" or not event.is_pressed() or (event is InputEventKey and event.echo):
+		return
+	if input_locked:
+		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("interact"):
 		get_viewport().set_input_as_handled()
@@ -117,6 +149,7 @@ func _build_ui() -> void:
 	sub_label = panel.get_node("Layout/SubLabel")
 	portrait = panel.get_node("Layout/PortraitFrame/PortraitClip/Portrait")
 	portrait_placeholder = panel.get_node("Layout/PortraitFrame/PortraitClip/PortraitPlaceholder")
+	_portrait_placeholder_default = portrait_placeholder.text
 	content_scroll = panel.get_node("Layout/ContentScroll")
 	content_box = panel.get_node("Layout/ContentScroll/Content")
 	body_label = content_box.get_node("BodyText")
@@ -147,6 +180,7 @@ func _render_page() -> void:
 		return
 	var page := pages[page_index]
 	var speaker := String(page.get("speaker", "旁白"))
+	portrait_placeholder.text = _portrait_placeholder_default
 	speaker_label.text = speaker
 	portrait.texture = null
 	if speaker == "我":

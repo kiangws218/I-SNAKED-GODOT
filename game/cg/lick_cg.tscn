@@ -1,0 +1,49 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://game/cg/lick_cg.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/cg/lick/human_foot_frames.png" id="2_foot"]
+[ext_resource type="Texture2D" path="res://assets/cg/lick/snake_head.png" id="3_snake"]
+[ext_resource type="Texture2D" path="res://assets/cg/lick/tongue_frames.png" id="4_tongue"]
+
+[node name="LickCg" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="Stage" type="Node2D" parent="."]
+editor_description = "480×480 的共享 CG 构图舞台。角色差异请在 variants/*.tres 中调整。"
+
+[node name="Foot" type="Sprite2D" parent="Stage"]
+editor_description = "所有人类角色共用的脚部基础位置与尺寸；可在 2D 视图直接拖动、缩放、旋转。"
+position = Vector2(145, 16)
+scale = Vector2(0.634766, 0.583984)
+texture = ExtResource("2_foot")
+centered = false
+hframes = 3
+vframes = 2
+
+[node name="SnakeRig" type="Node2D" parent="Stage"]
+editor_description = "蛇头和信子的共同动画父节点；靠近位移作用在这里。"
+
+[node name="SnakeHead" type="Sprite2D" parent="Stage/SnakeRig"]
+editor_description = "蛇头基础构图节点；可直接拖动和缩放。"
+position = Vector2(-5, 145)
+scale = Vector2(0.28, 0.28)
+texture = ExtResource("3_snake")
+centered = false
+
+[node name="Tongue" type="Sprite2D" parent="Stage/SnakeRig"]
+editor_description = "信子基础构图与旋转枢轴；编辑器中保持可见，运行时由序列动画控制显隐。"
+position = Vector2(224, 315)
+rotation = -0.523599
+scale = Vector2(0.36, 0.36)
+texture = ExtResource("4_tongue")
+centered = false
+offset = Vector2(-35, -440)
+hframes = 4
+frame = 2

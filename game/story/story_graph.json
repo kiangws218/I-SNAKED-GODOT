@@ -2600,6 +2600,11 @@
             "label": "舔一下丽丝的脚",
             "when": "lisiAlive",
             "action": "claimCampLick",
+            "presentation": {
+              "cg_id": "lick.foot",
+              "variant": "lisi_foot",
+              "portrait_expression": "surprised"
+            },
             "next": "camp_lick_lisi"
           },
           {
@@ -2652,6 +2657,11 @@
             "id": "lick",
             "label": "舔一下丽丝的脚",
             "action": "claimCampLick",
+            "presentation": {
+              "cg_id": "lick.foot",
+              "variant": "lisi_foot",
+              "portrait_expression": "surprised"
+            },
             "next": "camp_lick_lisi_alone"
           },
           {
@@ -3073,8 +3083,13 @@
           },
           {
             "id": "foot",
-            "label": "舔他的脚叫醒他",
+            "label": "舔她的脚叫醒她",
             "action": "rewakeAjianFoot",
+            "presentation": {
+              "cg_id": "lick.foot",
+              "variant": "ajian_foot",
+              "portrait_expression": "surprised"
+            },
             "next": "camp_ajian_woken"
           },
           {
@@ -3385,6 +3400,11 @@
             "id": "foot",
             "label": "舔她的脚",
             "action": "wakeAjianFoot",
+            "presentation": {
+              "cg_id": "lick.foot",
+              "variant": "ajian_foot",
+              "portrait_expression": "surprised"
+            },
             "next": "cave_ajian_woke_foot"
           },
           {
@@ -3696,6 +3716,11 @@
             "label": "舔她的脚",
             "when": "ajianFootAvailable",
             "action": "lickRescuedAjian",
+            "presentation": {
+              "cg_id": "lick.foot",
+              "variant": "ajian_foot",
+              "portrait_expression": "surprised"
+            },
             "next": "cave_ajian_rescue_lick"
           },
           {
@@ -4056,8 +4081,13 @@
           },
           {
             "id": "foot",
-            "label": "舔他的脚",
+            "label": "舔她的脚",
             "action": "rewakeAjianFoot",
+            "presentation": {
+              "cg_id": "lick.foot",
+              "variant": "ajian_foot",
+              "portrait_expression": "surprised"
+            },
             "next": "cave_ajian_rewake_resolve"
           },
           {

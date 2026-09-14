@@ -48,6 +48,10 @@ func cancel_pending_flow() -> void:
 	flow_epoch += 1
 	memory_timer_started = false
 	pending_map_node = ""
+	if is_instance_valid(session):
+		session.cancel_cg()
+	if is_instance_valid(panel):
+		panel.set_input_locked(false)
 
 func setup(owner_session: GameSession, dialogue_panel: DialoguePanel) -> Dictionary:
 	session = owner_session
@@ -746,17 +750,44 @@ func _on_choice(choice_id: String) -> void:
 	var choice_epoch := flow_epoch
 	var result := runner.choose(choice_id)
 	if not result.ok: return
-	panel.close()
-	pause_requested.emit(&"dialogue", false)
-	_finish_world_interaction()
+	var presentation: Dictionary = result.choice.get("presentation", {})
+	var has_presentation := not presentation.is_empty()
+	if has_presentation:
+		panel.set_input_locked(true)
+		panel.set_presentation_expression(String(presentation.get("portrait_expression", "")))
+	if not has_presentation:
+		panel.close()
+		pause_requested.emit(&"dialogue", false)
+		_finish_world_interaction()
 	var action := String(result.get("action", ""))
 	if not action.is_empty():
 		var command := await _run_action(action, result.choice, current_id)
 		if choice_epoch != flow_epoch: return
 		if action == "waitForWall" or action == "waitForExit": return
-		if not command.ok: return
+		if not command.ok:
+			if has_presentation: panel.set_input_locked(false)
+			return
+	if has_presentation:
+		var cg_result: Dictionary = {"ok": true, "skipped": true}
+		if is_instance_valid(session):
+			var raw_cg_result: Variant = await session.play_cg(presentation)
+			if raw_cg_result is Dictionary:
+				cg_result = raw_cg_result
+		if choice_epoch != flow_epoch: return
+		if not bool(cg_result.get("ok", true)):
+			status_changed.emit("演出播放失败：%s" % String(cg_result.get("error", "UNKNOWN")))
+		panel.set_input_locked(false)
+		panel.close()
+		pause_requested.emit(&"dialogue", false)
+		_finish_world_interaction()
+		await _continue_after_presentation(result)
+		return
 	var next := String(result.get("next", ""))
-	if not next.is_empty(): enter_node(next)
+	if not next.is_empty(): await enter_node(next)
+
+func _continue_after_presentation(result: Dictionary) -> void:
+	var next := String(result.get("next", ""))
+	if not next.is_empty(): await enter_node(next)
 
 func _on_name_submitted(player_name: String) -> void:
 	if bool(session.state.flags.get("keti_event_complete", false)): return

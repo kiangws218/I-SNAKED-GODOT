@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="LickCgVariant" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/cg/lick_cg_variant.gd" id="1_variant"]
+
+[resource]
+script = ExtResource("1_variant")
+display_name = "丽丝的脚"
+foot_offset = Vector2(0, 0)
+foot_scale = Vector2(1, 1)
+foot_rotation_degrees = 0.0
+foot_tint = Color(1, 1, 1, 1)
+foot_asset_id = &"human_female"
