@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://game/session/game_session.gd" id="1_session"]
 [ext_resource type="PackedScene" path="res://game/ui/screen_transition.tscn" id="2_transition"]
 [ext_resource type="PackedScene" path="res://game/ui/game_hud.tscn" id="3_hud"]
+[ext_resource type="PackedScene" path="res://game/cg/cg_player.tscn" id="4_cg"]
 
 [node name="GameSession" type="Node"]
 script = ExtResource("1_session")
@@ -12,3 +13,9 @@ script = ExtResource("1_session")
 [node name="ScreenTransition" parent="." instance=ExtResource("2_transition")]
 
 [node name="HUD" parent="." instance=ExtResource("3_hud")]
+
+[node name="CGLayer" type="CanvasLayer" parent="."]
+process_mode = 3
+layer = 10
+
+[node name="CGPlayer" parent="CGLayer" instance=ExtResource("4_cg")]

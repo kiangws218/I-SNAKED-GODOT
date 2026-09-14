@@ -14,6 +14,7 @@ const DEATH_SCENE := preload("res://game/ui/death_screen.tscn")
 @onready var status_label: Label = $HUD/SafeArea/Status
 @onready var hint_label: Label = $HUD/SafeArea/LegacyGoalText
 @onready var inventory_slots: Label = $HUD/SafeArea/LegacyInventoryText
+@onready var cg_player: CgPlayer = $CGLayer/CGPlayer
 var state := SessionState.new()
 var store := SaveStore.new()
 var current_world: StoryMap
@@ -175,6 +176,14 @@ func set_pause_reason(reason: StringName, active: bool) -> void:
 	if active: pause_reasons[reason] = true
 	else: pause_reasons.erase(reason)
 	get_tree().paused = not pause_reasons.is_empty()
+
+## Presentation bridge: story requests a data-defined CG while the player owns
+## only its playback lifetime. Gameplay/save state never lives in the CG scene.
+func play_cg(presentation: Dictionary) -> Dictionary:
+	return await cg_player.play_presentation(presentation)
+
+func cancel_cg() -> void:
+	cg_player.cancel()
 
 func toggle_pause() -> void:
 	if death_screen.is_open(): return
