@@ -8,6 +8,8 @@ const ENTER_SECONDS := 0.18
 const EXIT_SECONDS := 0.12
 const UI_FONT := preload("res://assets/fonts/fusion-pixel-10px-monospaced-zh_hans.ttf")
 const PLAYER_PORTRAIT := preload("res://assets/portraits/player_snake.png")
+const NPC_PORTRAITS := preload("res://game/ui/npc_portrait_library.gd").PORTRAITS
+const PORTRAIT_SPEAKERS := {"阿见": "ajian", "阿杰": "ajie", "阿洁": "ajie", "丽丝": "lisi", "巴克": "buck", "米罗": "miro"}
 const KETI_PORTRAITS := {
 	"neutral": preload("res://assets/portraits/keti/neutral.png"),
 	"happy": preload("res://assets/portraits/keti/happy.png"),
@@ -152,6 +154,13 @@ func _render_page() -> void:
 	elif speaker == "可蒂" or String(page.get("portrait", "")) == "keti":
 		var expression := String(page.get("expression", "crying" if bool(page.get("crying", false)) else "neutral"))
 		portrait.texture = KETI_PORTRAITS.get(expression, KETI_PORTRAITS.neutral)
+	else:
+		var portrait_id: String = String(page.get("portrait", ""))
+		if not NPC_PORTRAITS.has(portrait_id):
+			portrait_id = PORTRAIT_SPEAKERS.get(speaker, "")
+		if NPC_PORTRAITS.has(portrait_id):
+			var expressions: Dictionary = NPC_PORTRAITS[portrait_id]
+			portrait.texture = expressions.get(String(page.get("expression", "neutral")), expressions.neutral)
 	portrait.visible = portrait.texture != null
 	portrait_placeholder.visible = not portrait.visible
 	var narration := speaker == "旁白"
@@ -221,6 +230,10 @@ func _center_portrait() -> void:
 		if source in KETI_PORTRAITS.values():
 			for expression_texture in KETI_PORTRAITS.values():
 				region = region.merge(expression_texture.get_image().get_used_rect())
+		for expressions in NPC_PORTRAITS.values():
+			if source in expressions.values():
+				for expression_texture in expressions.values():
+					region = region.merge(expression_texture.get_image().get_used_rect())
 		var centered := AtlasTexture.new()
 		centered.atlas = source
 		centered.region = region

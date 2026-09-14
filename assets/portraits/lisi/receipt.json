@@ -1,0 +1,17 @@
+{
+	"alpha": "preserved from user source",
+	"angry": "5b218a81089498c35d8b427e81f92122dd411ebbeeed40efbe79d7b689167fb4",
+	"blushing": "909ad28dac67b45094138f75153e2717cce5adbc6326d8ba865fccada78efb58",
+	"crying": "95b4a1465c8b53e1b53302e25517b14c2268ad721ca5c0650f404ed8f173c644",
+	"happy": "787e8f5761b2c238dada3596053d41d780aa5a829310ed4be3c0f8389b216063",
+	"neutral": "43ac2797d2d7cf5783a87a494ea458dd9ab249b1c9ee0cd5ab48e67fb3c4527d",
+	"signature": "e7897bbe731fa9dffe04499bde4fee1e5cfac012b2d70b42ea7e7cbd5940bb35",
+	"size": [
+		128,
+		128
+	],
+	"smug": "e86a1ca91eb8806e35da6a1e56471e4e0da5b42daa8ff920ac866770ae10258a",
+	"surprised": "4726ebb0254da4c7e1b0e9a2f83424b2ec6cde46c0fc6c2d24d3e94b825db2bc",
+	"terrified": "d43cf26609be91848e386880ed4aa3e04b413b11a5f7261a80b7b57e2430367c",
+	"tired": "1b4d277aad1388689a236e0b0a70f3eb6063a329ea8b75e1a200a3295bbe5be7"
+}
