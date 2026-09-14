@@ -2,39 +2,31 @@ class_name LickCgVariant
 extends Resource
 
 ## Data-only presentation preset. It deliberately contains no story or save state.
-@export var display_name: String = "人类脚（占位）"
+@export var display_name: String = "人类脚"
+@export_group("角色脚部微调")
+@export var foot_offset: Vector2 = Vector2.ZERO
+@export var foot_scale: Vector2 = Vector2.ONE
+@export_range(-180.0, 180.0, 0.5) var foot_rotation_degrees: float = 0.0
+@export var foot_tint: Color = Color.WHITE
+@export_group("脚部素材")
+@export var foot_asset_id: StringName = &"human_female"
+@export_group("怪物占位回退")
 @export var skin_color: Color = Color("#e8b39a")
 @export var accent_color: Color = Color("#c87970")
 @export var subject_scale: Vector2 = Vector2.ONE
 @export var subject_offset: Vector2 = Vector2(300, 215)
 @export var contact_offset: Vector2 = Vector2(-90, 82)
-@export var foot_asset_id: StringName = &"human_female"
 
 static func human_female() -> LickCgVariant:
-	var v := LickCgVariant.new()
-	v.display_name = "女性脚（占位）"
-	v.skin_color = Color("#f0b9a2")
-	v.accent_color = Color("#d77f86")
-	v.subject_scale = Vector2(1.0, 0.92)
-	v.subject_offset = Vector2(300, 218)
-	v.contact_offset = Vector2(-96, 83)
-	return v
+	return _load_preset("res://game/cg/variants/lisi_foot.tres")
 
 static func monster() -> LickCgVariant:
-	var v := LickCgVariant.new()
-	v.display_name = "怪物脚（占位）"
-	v.skin_color = Color("#83c39a")
-	v.accent_color = Color("#3a7e62")
-	v.subject_scale = Vector2(1.14, 1.08)
-	v.subject_offset = Vector2(300, 208)
-	v.contact_offset = Vector2(-108, 92)
-	v.foot_asset_id = &"placeholder_monster"
-	return v
+	return _load_preset("res://game/cg/variants/monster_foot.tres")
 
 static func ajian_foot() -> LickCgVariant:
-	var v := human_female()
-	v.display_name = "阿见脚（占位）"
-	v.subject_scale = Vector2(1.08, 1.0)
-	v.subject_offset = Vector2(300, 212)
-	v.contact_offset = Vector2(-102, 88)
-	return v
+	return _load_preset("res://game/cg/variants/ajian_foot.tres")
+
+static func _load_preset(path: String) -> LickCgVariant:
+	var preset := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REUSE) as LickCgVariant
+	assert(preset != null, "Missing lick CG variant: %s" % path)
+	return preset.duplicate(true) as LickCgVariant

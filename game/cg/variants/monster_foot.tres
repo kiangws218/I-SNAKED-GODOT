@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="LickCgVariant" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/cg/lick_cg_variant.gd" id="1_variant"]
+
+[resource]
+script = ExtResource("1_variant")
+display_name = "怪物脚（占位）"
+foot_asset_id = &"placeholder_monster"
+skin_color = Color(0.5137, 0.7647, 0.6039, 1)
+accent_color = Color(0.2275, 0.4941, 0.3843, 1)
+subject_scale = Vector2(1.14, 1.08)
+subject_offset = Vector2(300, 208)
+contact_offset = Vector2(-108, 92)

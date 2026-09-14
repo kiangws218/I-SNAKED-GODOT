@@ -1,11 +1,6 @@
 class_name LickCg
 extends Control
 
-const HUMAN_FOOT_FRAMES := preload("res://assets/cg/lick/human_foot_frames.png")
-const SNAKE_HEAD := preload("res://assets/cg/lick/snake_head.png")
-const TONGUE_FRAMES := preload("res://assets/cg/lick/tongue_frames.png")
-const FOOT_FRAME_SIZE := Vector2(512, 512)
-const TONGUE_FRAME_SIZE := Vector2(543, 724)
 const TONGUE_FRAME_ORDER := [3, 0, 1, 2]
 
 ## A single, cancellable lick performance that composes replaceable imported art layers.
@@ -23,14 +18,32 @@ var _running := false
 var _generation := 0
 var _tween: Tween
 
+@onready var _stage: Node2D = $Stage
+@onready var _foot: Sprite2D = $Stage/Foot
+@onready var _snake_rig: Node2D = $Stage/SnakeRig
+@onready var _tongue: Sprite2D = $Stage/SnakeRig/Tongue
+
+var _foot_base_position: Vector2
+var _foot_base_scale: Vector2
+var _foot_base_rotation: float
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_foot_base_position = _foot.position
+	_foot_base_scale = _foot.scale
+	_foot_base_rotation = _foot.rotation
+	resized.connect(_update_stage_layout)
+	_update_stage_layout()
+	_apply_variant()
+	_sync_visuals()
 	set_process(false)
 	queue_redraw()
 
 func set_variant(value: LickCgVariant) -> void:
 	variant = value
+	if is_node_ready():
+		_apply_variant()
 	queue_redraw()
 
 func play_once() -> void:
@@ -85,34 +98,24 @@ func _finish(run_id: int) -> void:
 	completed.emit({"ok": true, "cancelled": false})
 
 func _process(_delta: float) -> void:
+	_sync_visuals()
 	queue_redraw()
 
 func _draw() -> void:
 	var a := _visible_amount
 	if a <= 0.001:
 		return
-	var dialogue_width := clampf(size.x * 0.34, 240.0, 360.0)
-	var safe_width := maxf(240.0, size.x - dialogue_width - 28.0)
-	var stage_scale := minf(safe_width / 480.0, size.y / 480.0)
-	var stage_x := (safe_width - 480.0 * stage_scale) * 0.5 + 14.0
-	var stage_y := (size.y - 480.0 * stage_scale) * 0.5
-	draw_set_transform(Vector2(stage_x, stage_y), 0.0, Vector2(stage_scale, stage_scale))
+	draw_set_transform(_stage.position, 0.0, _stage.scale)
 	# Dedicated left-side stage: x=0..480 leaves the production dialogue zone clear.
 	draw_rect(Rect2(0, 0, 480, 480), Color(0.035, 0.045, 0.09, 0.94 * a))
 	draw_circle(Vector2(246, 210), 150.0, Color(0.10, 0.13, 0.22, 0.8 * a))
-	_draw_foot(a)
-	_draw_snake(a)
+	if variant.foot_asset_id != &"human_female":
+		_draw_placeholder_foot(a)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-func _draw_foot(a: float) -> void:
+func _draw_placeholder_foot(a: float) -> void:
 	var p := variant.subject_offset
 	var s := variant.subject_scale
-	if variant.foot_asset_id == &"human_female":
-		var frame := clampi(roundi(_toe_spread), 0, 2)
-		var source := Rect2(Vector2(frame * FOOT_FRAME_SIZE.x, 0), FOOT_FRAME_SIZE)
-		var destination := Rect2(p + Vector2(-155, -220) * s, Vector2(325, 325) * s)
-		draw_texture_rect_region(HUMAN_FOOT_FRAMES, destination, source, Color(1, 1, 1, a))
-		return
 	var skin := variant.skin_color
 	var accent := variant.accent_color
 	# Sole points down-left; polygon is intentionally graphic placeholder art.
@@ -127,12 +130,27 @@ func _draw_foot(a: float) -> void:
 		draw_circle(pos, (11.0 - abs(t) * 1.2) * s.x, Color(accent, a))
 		draw_circle(pos - Vector2(2, 2), (7.0 - abs(t) * 0.8) * s.x, Color(skin.lightened(0.08), a))
 
-func _draw_snake(a: float) -> void:
-	var movement := _snake_position - Vector2(88, 398)
-	draw_texture_rect(SNAKE_HEAD, Rect2(Vector2(20, 230) + movement, Vector2(250, 250)), false, Color(1, 1, 1, a))
-	if _tongue_progress > 0.01:
+func _update_stage_layout() -> void:
+	var dialogue_width := clampf(size.x * 0.34, 240.0, 360.0)
+	var safe_width := maxf(240.0, size.x - dialogue_width - 28.0)
+	var stage_scale := minf(safe_width / 480.0, size.y / 480.0)
+	_stage.position = Vector2((safe_width - 480.0 * stage_scale) * 0.5 + 14.0, (size.y - 480.0 * stage_scale) * 0.5)
+	_stage.scale = Vector2.ONE * stage_scale
+	queue_redraw()
+
+func _apply_variant() -> void:
+	var is_human := variant.foot_asset_id == &"human_female"
+	_foot.visible = is_human
+	_foot.position = _foot_base_position + variant.foot_offset
+	_foot.scale = _foot_base_scale * variant.foot_scale
+	_foot.rotation = _foot_base_rotation + deg_to_rad(variant.foot_rotation_degrees)
+	_foot.modulate = variant.foot_tint
+
+func _sync_visuals() -> void:
+	_stage.modulate.a = _visible_amount
+	_snake_rig.position = _snake_position - Vector2(88, 398)
+	_foot.frame = clampi(roundi(_toe_spread), 0, 2)
+	_tongue.visible = _tongue_progress > 0.01
+	if _tongue.visible:
 		var order_index := clampi(floori(_tongue_progress * TONGUE_FRAME_ORDER.size()), 0, TONGUE_FRAME_ORDER.size() - 1)
-		var frame: int = TONGUE_FRAME_ORDER[order_index]
-		var source := Rect2(Vector2(frame * TONGUE_FRAME_SIZE.x, 0), TONGUE_FRAME_SIZE)
-		var destination := Rect2(Vector2(174, 205) + movement, Vector2(180, 240))
-		draw_texture_rect_region(TONGUE_FRAMES, destination, source, Color(1, 1, 1, a))
+		_tongue.frame = TONGUE_FRAME_ORDER[order_index]

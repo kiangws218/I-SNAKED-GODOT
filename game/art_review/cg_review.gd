@@ -1,7 +1,7 @@
 extends Node2D
 
 var _player: CgPlayer
-var _variants: Array[LickCgVariant] = [LickCgVariant.human_female(), LickCgVariant.monster()]
+var _variants: Array[LickCgVariant] = [LickCgVariant.human_female(), LickCgVariant.ajian_foot(), LickCgVariant.monster()]
 var _index := 0
 var _status: Label
 
@@ -14,7 +14,7 @@ func _ready() -> void:
 	add_child(ui)
 	_status = Label.new()
 	_status.position = Vector2(16, 14)
-	_status.text = "CG 试验场  |  女性脚（占位）  |  R 重播  |  V 切换变体"
+	_status.text = "CG 试验场  |  丽丝的脚  |  R 重播  |  V 切换变体"
 	_status.add_theme_color_override("font_color", Color("#e8edf5"))
 	ui.add_child(_status)
 	var hint := Label.new()
@@ -55,6 +55,10 @@ func _capture_review() -> void:
 	await get_tree().create_timer(1.25, true).timeout
 	get_viewport().get_texture().get_image().save_png("res://.godot/cg_review_female.png")
 	_index = 1
+	_player.play_lick(_variants[_index])
+	await get_tree().create_timer(1.25, true).timeout
+	get_viewport().get_texture().get_image().save_png("res://.godot/cg_review_ajian.png")
+	_index = 2
 	_player.play_lick(_variants[_index])
 	await get_tree().create_timer(1.25, true).timeout
 	get_viewport().get_texture().get_image().save_png("res://.godot/cg_review_monster.png")

@@ -1,6 +1,8 @@
 class_name CgPlayer
 extends Control
 
+const LICK_CG_SCENE := preload("res://game/cg/lick_cg.tscn")
+
 ## Small host for reusable CG performances. It owns only presentation lifetime.
 signal finished
 signal cue(name: String)
@@ -16,7 +18,7 @@ func _ready() -> void:
 		_fit_to_viewport()
 		get_viewport().size_changed.connect(_fit_to_viewport)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lick = LickCg.new()
+	lick = LICK_CG_SCENE.instantiate() as LickCg
 	lick.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	lick.cue.connect(func(name: String): cue.emit(name))
 	lick.finished.connect(func():

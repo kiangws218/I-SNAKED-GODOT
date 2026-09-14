@@ -19,10 +19,21 @@ func _run() -> void:
 
 	_check(not host.visible, "CG 播放器初始隐藏")
 	_check(host.lick != null, "CG 播放器创建舔舐表现子组件")
+	_check(host.lick.get_node_or_null("Stage/Foot") is Sprite2D, "脚部是可在场景编辑器拖放的 Sprite2D")
+	_check(host.lick.get_node_or_null("Stage/SnakeRig/SnakeHead") is Sprite2D, "蛇头是可在场景编辑器拖放的 Sprite2D")
+	var tongue_node := host.lick.get_node_or_null("Stage/SnakeRig/Tongue") as Sprite2D
+	_check(tongue_node != null and is_equal_approx(rad_to_deg(tongue_node.rotation), -30.0), "信子默认向上倾斜 30 度")
+	var snake_node := host.lick.get_node_or_null("Stage/SnakeRig/SnakeHead") as Sprite2D
+	_check(snake_node != null and snake_node.scale.x >= 0.28, "近景蛇头使用放大后的基础构图")
 
 	# Variant resources are data-only and must actually alter the same scene.
 	var female := LickCgVariant.human_female()
+	var ajian := LickCgVariant.ajian_foot()
 	var monster := LickCgVariant.monster()
+	var lisi_preset := load("res://game/cg/variants/lisi_foot.tres") as LickCgVariant
+	var ajian_preset := load("res://game/cg/variants/ajian_foot.tres") as LickCgVariant
+	_check(lisi_preset != null and ajian_preset != null and lisi_preset.resource_path != ajian_preset.resource_path, "丽丝与阿见使用独立可编辑角色预设")
+	_check(female.foot_scale != ajian.foot_scale and female.foot_tint != ajian.foot_tint, "角色预设可独立调整脚部大小与颜色")
 	host.play_lick(female)
 	await _frames(8)
 	_check(host.visible and host.lick.variant == female, "女性脚变体应用到同一舔舐场景")

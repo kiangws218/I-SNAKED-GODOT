@@ -42,6 +42,7 @@
 | `cg.lick.human_foot` | `assets/cg/lick/human_foot_frames.png`（1536×1024，3×2） | 女性/阿见舔脚 CG 的自然、蜷缩、张开脚趾状态 | 制作人提供并已接入；当前使用上排 3 帧 |
 | `cg.lick.snake_head` | `assets/cg/lick/snake_head.png`（1254×1254） | 舔舐 CG 左下蛇头与靠近位移 | 制作人提供并已接入 |
 | `cg.lick.tongue` | `assets/cg/lick/tongue_frames.png`（2172×724，4×1） | 信子伸出/收回序列 | 制作人提供并已接入 |
+| `cg.lick.layout` | `game/cg/lick_cg.tscn` + `game/cg/variants/*.tres` | 通用可视化构图与丽丝/阿见逐角色脚部微调 | 已接入；基础节点在 2D 编辑器调整，角色偏移/缩放/旋转/调色在 Inspector 调整 |
 | `placeholder.npc.*` | `assets/placeholders/kenney/tiny_dungeon/characters/`（16×16） | 六名 NPC 地图辨识占位、角色载荷占位 | Kenney Tiny Dungeon CC0；N8 由制作人正式素材替换 |
 | `placeholder.item.iron_sword` | `assets/placeholders/kenney/tiny_dungeon/items/iron_sword.png`（16×16） | 铁剑拾取物与投射物 | Kenney Tiny Dungeon CC0；N8 替换 |
 

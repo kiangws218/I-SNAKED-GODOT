@@ -165,7 +165,7 @@ N7 已完成第一章状态与剧情接入：第一章 action 白名单可执行
 
 - `StoryDirector` 只读取选择上的 `presentation` 并在 action 单次提交后请求播放；CG 不解释条件、不写剧情 flag。
 - `GameSession` 持有一个 `CGLayer/CgPlayer`，作为剧情到表现的唯一桥；播放器以 awaitable 结果明确报告完成、取消或拒绝。
-- 具体舔舐表现由一个 `LickCg` 场景和 `LickCgVariant` 数据资源组合，蛇头、信子、主体与反应共享时间线，人物/怪物差异不复制控制器。
+- 具体舔舐表现由一个可视化编辑的 `LickCg` 场景和每角色独立的 `LickCgVariant` `.tres` 数据资源组合；蛇头、信子、主体与反应共享时间线，人物/怪物差异不复制控制器。基础构图在 `.tscn` 调整，角色脚部偏移、缩放、旋转与调色在各自 `.tres` 调整。
 - CG 位于 HUD 之上、对话框之下，按右侧对话宽度计算左侧安全区；对话暂停时仍处理 Tween。
 - 会话取消提升播放 generation 并唤醒旧等待者，防止旧 Tween、死亡或读档后的协程推进新剧情。
 
