@@ -449,21 +449,22 @@
       },
       "dialogue": {
         "speaker": "我",
-        "sub": "可蒂死亡",
+        "sub": "可蒂濒死",
         "pages": [
-          "哭声消失了。",
-          "她的尸体还留在这里。"
+          "可蒂倒在地上，已经失去反抗能力，但还剩下一口气。",
+          "你可以现在吃掉她，也可以先离开。"
         ],
         "choices": [
           {
             "id": "leave",
             "label": "离开",
-            "next": "free_explore"
+            "next": "wilderness_slimes"
           },
           {
             "id": "eat",
-            "label": "吃掉尸体",
-            "next": "keti_eaten_after_death",
+            "label": "吃掉",
+            "action": "eatKeti",
+            "next": "eaten_slimes",
             "danger": true
           }
         ]

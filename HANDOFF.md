@@ -9,7 +9,7 @@
 - 当前阶段：N7 与正式 UI/HUD 实现均已完成；制作人另行批准的 CG 占位试验切片已完成，等待构图与节奏审阅。
 - 停止线：六名NPC移动动画已验收合格；本次批准六人动画、可蒂头像与八项试玩优化一起提交推送。反馈收口后等待试玩审阅，不进入N8全局音效或学习构建。
 - 当前可玩与验证证据：序章见 `N5_N6_REVIEW.md`，N7 见 `N7_REVIEW.md`。
-- 下一工作：按 `CG_REVIEW.md` F6 试玩舔舐 CG 试验场并确认视觉方向；原八项优化仍见 `PLAYTEST_FEEDBACK_ROUND2.md`，头像见 `KETI_PORTRAIT_REVIEW.md`。
+- 下一工作：按 `PLAYTEST_FEEDBACK_ROUND3.md` 复核可蒂濒死、导出长选项与劫匪搜刮；CG视觉方向仍见 `CG_REVIEW.md`，上一轮优化见 `PLAYTEST_FEEDBACK_ROUND2.md`。
 - 2026-09-14美术增量：在公司012cada基础上合并五人透明九表情，标注327条故事台词及两条动态可蒂对白，补齐CG真实头像临时表情接口。验证与审阅见 `DIALOGUE_EMOTIONS_REVIEW.md`；保持公司CG/玩法，等待制作人审阅。
 - 本机工程：remote-review已提升并更名为I-SNAKED-GODOT；原工程及其未提交修改已退役保存在工程外_project_backups。本轮反馈提交纳入角色接入、头像和管线；实际同步以git log与origin/main核对为准。
 - 同步状态：本次交接完成后，本地 `main` 与 `origin/main` 应指向同一提交；接手时仍需用 `git status`、`git log -1 --oneline` 验证。

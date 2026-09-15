@@ -137,7 +137,7 @@ func notify(event: StringName) -> void:
 	elif current_id == "dialogue_2" and _tutorial_wall_ready():
 		enter_node("dialogue_3")
 	elif current_id in ["wilderness_slimes", "eaten_slimes"] and _condition("enemiesCleared"):
-		if current_id == "wilderness_slimes" and not bool(session.state.flags.get("keti_dead", false)):
+		if current_id == "wilderness_slimes" and _actor_status(&"keti") == &"alive" and not bool(session.state.flags.get("keti_dead", false)):
 			# Finishing the protection encounter only arms the rescue conversation;
 			# the player must physically contact Keti again.
 			session.state.flags["keti_rescue_pending"] = true
@@ -845,21 +845,32 @@ func _on_actor_event(actor_id: StringName, event: StringName) -> void:
 		session.state.flags.erase("keti_rescue_pending")
 		enter_node("keti_saved")
 		return
+	if actor_id == &"keti" and event == &"interacted" and _actor_status(&"keti") == &"critical":
+		enter_node("keti_dead")
+		return
 	if actor_id in [&"buck", &"miro"] and event == &"interacted":
 		# After the fight, defeated bandits remain in place as downed actors.
 		# Route this state before the old post-combat search dialogue so they
 		# cannot re-enter their normal hostile conversation.
-		if _actor_status(actor_id) in [&"downed", &"unconscious"]:
-			enter_node("bandit_buck_unconscious" if actor_id == &"buck" else "bandit_miro_unconscious")
-			return
 		if bool(session.state.flags.get("bandit_contact_pending", false)):
 			session.state.flags.erase("bandit_contact_pending")
 			enter_node("bandit_search")
 			return
+		if _actor_status(actor_id) in [&"downed", &"unconscious"]:
+			enter_node("bandit_buck_unconscious" if actor_id == &"buck" else "bandit_miro_unconscious")
+			return
 	if actor_id == &"keti" and current_id == "wilderness_keti_wait":
 		if event == &"died":
-			session.state.flags["keti_dead"] = true
-			enter_node("keti_dead")
+			# Keti's zero-HP hit is a downed/critical state, not a corpse. Keep
+			# the actor in the world so the player can make the eat/leave choice.
+			session.state.flags["keti_dead"] = false
+			session.state.flags["keti_contact"] = true
+			_set_actor_status(&"keti", &"critical", "wilderness")
+			var keti := session.current_world.get_story_actor(&"keti") if is_instance_valid(session.current_world) else null
+			if is_instance_valid(keti):
+				keti.restore_persistent_state({"active": true, "damageable": false, "is_dead": false, "is_downed": true, "hp": 0.0})
+				_rearm_actor_contact(&"keti")
+			return
 		else:
 			session.state.flags["keti_contact"] = true
 			enter_node("keti_question")

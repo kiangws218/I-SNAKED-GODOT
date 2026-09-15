@@ -231,7 +231,7 @@ func _render_page() -> void:
 		var choice_label := Label.new()
 		choice_label.text = choice_text
 		choice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		choice_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		choice_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 		choice_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 		choice_label.offset_left = 10.0
 		choice_label.offset_top = 10.0
@@ -293,6 +293,10 @@ func _center_portrait() -> void:
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 
 func _refresh_choice_layout() -> void:
+	_refresh_choice_layout_now()
+	call_deferred("_refresh_choice_layout_now")
+
+func _refresh_choice_layout_now() -> void:
 	if is_instance_valid(content_box) and is_instance_valid(content_scroll):
 		content_box.custom_minimum_size.y = content_scroll.size.y
 	if not is_instance_valid(choices_box):
@@ -306,12 +310,13 @@ func _refresh_choice_layout() -> void:
 		var choice_label := button.get_child(0) as Label
 		if not is_instance_valid(choice_label):
 			continue
-		var button_width := button.size.x if button.size.x > 1.0 else choices_box.size.x
-		var label_width := maxf(1.0, button_width - 20.0)
-		var label_height := UI_FONT.get_multiline_string_size(choice_label.text, HORIZONTAL_ALIGNMENT_LEFT, label_width, 18).y
-		var line_count := maxi(1, ceili(label_height / UI_FONT.get_height(18)))
+		if choice_label.size.x <= 1.0:
+			continue
+		var line_count := maxi(1, choice_label.get_line_count())
+		var line_height := maxf(1.0, choice_label.get_line_height())
+		var label_height := float(line_count) * line_height
 		label_height += choice_label.get_theme_constant("line_spacing") * (line_count - 1)
-		button.custom_minimum_size.y = maxf(36.0, label_height + 20.0)
+		button.custom_minimum_size.y = maxf(36.0, ceili(label_height) + 24.0)
 
 func _enter() -> void:
 	_kill_tween()

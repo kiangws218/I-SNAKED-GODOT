@@ -1555,7 +1555,13 @@ func _test_n7_integrated_story_paths() -> void:
 	check(combat_session.story.current_id == "chapter1_explore" and String(combat_session.state.actors.buck.status) == "downed" and String(combat_session.state.actors.miro.status) == "downed", "N7 两名劫匪倒地后等待头触，不自动搜刮")
 	_head_touch_for_test(combat_session, combat_session.current_world.get_story_actor(&"buck"))
 	await process_frame
-	check(combat_session.story.current_id == "bandit_buck_unconscious", "N7 真实头触倒地劫匪后只显示昏迷描述")
+	check(combat_session.story.current_id == "bandit_search", "N7 真实头触倒地劫匪首次进入搜刮")
+	combat_session.state.flags["banditRewardClaimed"] = true
+	combat_session.state.flags.erase("bandit_contact_pending")
+	combat_session.story.current_id = "chapter1_explore"
+	combat_session.story._on_actor_event(&"buck", &"interacted")
+	await process_frame
+	check(combat_session.story.current_id == "bandit_buck_unconscious", "N7 领取后再次头触倒地劫匪只显示昏迷")
 	combat_session.queue_free()
 	paused = false
 	await process_frame
@@ -1588,7 +1594,7 @@ func _test_n7_integrated_story_paths() -> void:
 	check(hostage_session.story.current_id == "chapter1_explore" and String(hostage_session.state.actors.buck.status) == "swallowed", "N7 剩余劫匪倒地后等待接触，保留胃袋人质状态")
 	_head_touch_for_test(hostage_session, miro)
 	await process_frame
-	check(hostage_session.story.current_id == "bandit_miro_unconscious", "N7 头触剩余倒地劫匪后只显示昏迷描述")
+	check(hostage_session.story.current_id == "bandit_search", "N7 人质分支首次头触剩余倒地劫匪也可搜刮")
 	hostage_session.queue_free()
 	paused = false
 	await process_frame
