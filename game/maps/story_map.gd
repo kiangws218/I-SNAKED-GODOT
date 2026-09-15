@@ -251,6 +251,7 @@ func open_story_gate(gate_id: StringName) -> bool:
 		return false
 	camera.focus_on_position(gate.global_position, false)
 	await get_tree().create_timer(camera.focus_seconds, true, false, true).timeout
+	player.play_world_sfx(&"sfx.world.stone_gate")
 	await gate.open()
 	camera.restore()
 	await get_tree().create_timer(camera.restore_seconds, true, false, true).timeout
@@ -328,6 +329,7 @@ func _on_npc_interaction_requested(npc: NpcActor, _player: SnakePlayer) -> void:
 
 func _on_story_pickup_interaction_requested(pickup: StoryPickup) -> void:
 	active_pickup = pickup
+	player.play_interaction_contact_sfx()
 	story_item_interacted.emit(pickup.item_id if not pickup.item_id.is_empty() else pickup.persistent_id())
 
 func _on_npc_defeated(npc: NpcActor) -> void:
@@ -356,8 +358,7 @@ func _on_story_pickup_collected(pickup: StoryPickup) -> void:
 	item_states[item_key] = true
 	if pickup.item_id == &"ring":
 		player.grant_node_charges(1, true)
-		if player.play_sfx:
-			player.pickup_audio.play()
+		player.play_pickup_sfx()
 	pickup.consume()
 	story_item_collected.emit(pickup.item_id)
 

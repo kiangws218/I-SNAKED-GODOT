@@ -21,7 +21,6 @@ const KETI_PORTRAITS := {
 	"smug": preload("res://assets/portraits/keti/smug.png"),
 	"terrified": preload("res://assets/portraits/keti/terrified.png"),
 }
-const INTERACT_AUDIO := preload("res://assets/audio/interact.wav")
 const DIALOGUE_THEME := preload("res://game/ui/dialogue_theme.tres")
 const DIVIDER_TEXTURE := preload("res://assets/ui/fantasy/dialogue/divider_fade.png")
 
@@ -42,7 +41,7 @@ var content_box: VBoxContainer
 var portrait: TextureRect
 var portrait_placeholder: Label
 var _portrait_regions: Dictionary = {}
-var interact_audio: AudioStreamPlayer
+var sfx_director: SfxDirector
 var _tween: Tween
 var _shown_position := Vector2.ZERO
 var input_locked := false
@@ -54,11 +53,14 @@ func _ready() -> void:
 	_build_ui()
 	get_viewport().size_changed.connect(_layout_panel)
 	_layout_panel()
-	interact_audio = AudioStreamPlayer.new()
-	interact_audio.stream = INTERACT_AUDIO
-	interact_audio.bus = &"SFX"
-	add_child(interact_audio)
 	panel.visible = false
+
+func set_sfx_director(director: SfxDirector) -> void:
+	sfx_director = director
+
+func _play_sfx(sfx_id: StringName) -> void:
+	if is_instance_valid(sfx_director):
+		sfx_director.play_sfx(sfx_id)
 
 func show_dialogue(dialogue_pages: Array[Dictionary]) -> void:
 	input_locked = false
@@ -81,6 +83,7 @@ func show_name_input() -> void:
 func close() -> void:
 	if state == &"hidden" or state == &"exiting":
 		return
+	_play_sfx(&"sfx.ui.cancel")
 	_kill_tween()
 	state = &"exiting"
 	_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
@@ -212,7 +215,7 @@ func _render_page() -> void:
 	sub_label.visible = false
 	body_label.text = String(page.get("text", ""))
 	continue_button.visible = page_index + 1 < pages.size() and not name_edit.visible
-	if DisplayServer.get_name() != "headless" and is_instance_valid(interact_audio): interact_audio.play()
+	if DisplayServer.get_name() != "headless": _play_sfx(&"sfx.ui.dialogue_open")
 	choices.assign(page.get("choices", []))
 	selected_choice_index = 0
 	for child in choices_box.get_children():
@@ -254,10 +257,12 @@ func _advance_page_or_choice() -> void:
 		_submit_name()
 		return
 	if page_index + 1 < pages.size():
+		_play_sfx(&"sfx.ui.dialogue_page")
 		page_index += 1
 		_render_page()
 		return
 	if not choices.is_empty():
+		_play_sfx(&"sfx.ui.confirm")
 		choice_selected.emit(String(choices[selected_choice_index].id))
 
 func _center_portrait() -> void:
@@ -343,6 +348,8 @@ func _set_choice_index(index: int, grab_focus := true) -> void:
 		return
 	var button := buttons[selected_choice_index] as Button
 	if grab_focus and is_instance_valid(button):
+		if state == &"active":
+			_play_sfx(&"sfx.ui.choice")
 		button.grab_focus()
 
 func _finish_exit() -> void:
@@ -353,6 +360,7 @@ func _submit_name() -> void:
 	if state != &"active":
 		return
 	var value := name_edit.text.strip_edges()
+	_play_sfx(&"sfx.ui.confirm")
 	name_submitted.emit(value if not value.is_empty() else "未命名")
 
 func _kill_tween() -> void:

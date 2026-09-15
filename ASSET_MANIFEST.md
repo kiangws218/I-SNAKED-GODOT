@@ -38,7 +38,10 @@
 | `sfx.node` | `assets/audio/node.wav` | 环形节点放置/回收 | 已选用 |
 | `sfx.hurt` | `assets/audio/hurt.wav` | 玩家受伤 | 已选用 |
 | `sfx.prison` | `assets/audio/prison.wav` | 监狱成立反馈 | 已选用；N8 可拆分成立/解除专用声 |
-| `sfx.interact` | `assets/audio/interact.wav` | NPC 接触提示和对话 UI | 已选用 |
+| `sfx.npc.contact` | `assets/audio/npc_contact.ogg` | 蛇头撞击可互动 NPC 或道具 | 已选用；NPC/道具互动共用 |
+| `sfx.ui.dialogue_page` | `assets/audio/click_002.ogg` | 对话翻页、对话框打开 | 已选用；响度已统一 |
+| `sfx.player.actor_drop` | `assets/audio/drop_004.ogg` | 吐出角色载荷 | 已选用；与吐豆音分离 |
+| `sfx.world.stone_gate` | `assets/audio/stone_gate.ogg` | 石门开启演出 | 已选用；响度已统一 |
 | `cg.lick.human_foot` | `assets/cg/lick/human_foot_frames.png`（1536×1024，3×2） | 女性/阿见舔脚 CG 的自然、蜷缩、张开脚趾状态 | 制作人提供并已接入；当前使用上排 3 帧 |
 | `cg.lick.snake_head` | `assets/cg/lick/snake_head.png`（1254×1254） | 舔舐 CG 左下蛇头与靠近位移 | 制作人提供并已接入 |
 | `cg.lick.tongue` | `assets/cg/lick/tongue_frames.png`（2172×724，4×1） | 信子伸出/收回序列 | 制作人提供并已接入 |
@@ -79,7 +82,7 @@
 - 蘑菇攻击、受伤/死亡动画；环形节点未激活、激活、连接、受损四状态。
 - 豆、铁剑、药水、敌方弹体、门、桥桩等仍登记为代码占位的统一像素表现。
 - 项目标题 Logo、菜单视觉、角色头像统一裁切与色板。
-- 专用豆反弹、监狱成立/解除音效；背景音乐仅在先定义使用场景、循环/切换和音量验收后加入。
+- 专用豆反弹、监狱解除音效仍待补。背景音乐的标题/四地图 cue、跨淡入淡出、同曲不重启与 `Music` 音量验收已定义；当前 catalog stream 为空，等制作人选定实际 BGM 素材后在编辑器赋值。
 - 四张地图 TileSet 的细化只扩展当前 `story_tileset.tres` 或明确替换它，不再并行维护第二套地图事实。
 
 ## 5. 交接者核对方法

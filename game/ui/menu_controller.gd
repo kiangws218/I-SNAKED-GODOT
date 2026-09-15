@@ -17,6 +17,7 @@ signal exit_requested
 @onready var slots_box: VBoxContainer = $SaveSlotPanel/Center/Panel/Margin/VBox/Slots
 
 var settings_store := AudioSettingsStore.new()
+var sfx_director: SfxDirector
 var _slots: Array[Dictionary] = []
 var _overlay_origin: StringName = &"main"
 
@@ -30,6 +31,31 @@ func _ready() -> void:
 	pause_menu.visible = false
 	slot_panel.visible = false
 	settings_panel.visible = false
+	_wire_buttons_in(self)
+
+
+func set_sfx_director(director: SfxDirector) -> void:
+	sfx_director = director
+
+
+func _play_menu_sfx(sfx_id: StringName) -> void:
+	if is_instance_valid(sfx_director):
+		sfx_director.play_sfx(sfx_id)
+
+
+func _wire_buttons_in(node: Node) -> void:
+	for child in node.get_children():
+		if child is Button:
+			_wire_button(child as Button)
+		_wire_buttons_in(child)
+
+
+func _wire_button(button: Button) -> void:
+	if button.get_meta(&"menu_audio_wired", false):
+		return
+	button.set_meta(&"menu_audio_wired", true)
+	button.focus_entered.connect(func(): _play_menu_sfx(&"sfx.ui.choice"))
+	button.pressed.connect(func(): _play_menu_sfx(&"sfx.ui.confirm"))
 
 
 func show_main(slots: Array[Dictionary]) -> void:
@@ -109,6 +135,7 @@ func _connect_buttons() -> void:
 func _open_slots(mode: StringName, origin: StringName) -> void:
 	_overlay_origin = origin
 	slot_panel.configure(_slots, mode)
+	_wire_buttons_in(slot_panel)
 	slot_panel.visible = true
 	settings_panel.visible = false
 	slot_panel.call_deferred("focus_first")
@@ -117,6 +144,7 @@ func _open_slots(mode: StringName, origin: StringName) -> void:
 func _open_settings(origin: StringName) -> void:
 	_overlay_origin = origin
 	settings_panel.configure(settings_store.music_percent, settings_store.sfx_percent)
+	_wire_buttons_in(settings_panel)
 	settings_panel.visible = true
 	slot_panel.visible = false
 	settings_panel.call_deferred("focus_first")

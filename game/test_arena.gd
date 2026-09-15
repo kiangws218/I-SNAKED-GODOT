@@ -9,8 +9,7 @@ extends Node2D
 @onready var mushroom: EnemyActor = $Mushroom
 @onready var keti: NpcActor = $Keti
 @onready var prison_controller: PrisonController = $PrisonController
-@onready var interact_audio: AudioStreamPlayer = $InteractAudio
-@onready var prison_audio: AudioStreamPlayer = $PrisonAudio
+@onready var sfx_director: SfxDirector = $SfxDirector
 @onready var camera: Camera2D = $Camera2D
 
 var enclosure_count := 0
@@ -20,6 +19,7 @@ const BEAN_PROJECTILE_SCENE := preload("res://game/projectiles/bean_projectile.t
 
 
 func _ready() -> void:
+	player.set_sfx_director(sfx_director)
 	player.died.connect(_on_player_died)
 	player.health_changed.connect(_on_player_health_changed)
 	player.damaged.connect(_on_player_damaged)
@@ -107,12 +107,12 @@ func _spawn_enemy_loot(death_position: Vector2, burst: Array[Dictionary]) -> voi
 func _on_npc_interaction(npc: NpcActor, _target: SnakePlayer) -> void:
 	var display_name := "可提" if npc.npc_id == &"keti" else String(npc.npc_id)
 	npc_hint_label.text = "%s：你好！" % display_name
-	interact_audio.play()
+	sfx_director.play_sfx(&"sfx.ui.dialogue_open")
 	npc.call_deferred("finish_interaction")
 
 
 func _on_prison_burst(_target: Node2D, _damage: float, _node_prison: bool) -> void:
-	prison_audio.play()
+	sfx_director.play_sfx(&"sfx.world.prison_form", {"global_position": _target.global_position})
 
 
 func _on_player_health_changed(_current: int, _maximum: int) -> void:

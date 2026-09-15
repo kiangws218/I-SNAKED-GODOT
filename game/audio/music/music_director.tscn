@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/audio/music/music_director.gd" id="1_music_director"]
+[ext_resource type="Resource" path="res://game/audio/music/default_music_catalog.tres" id="2_music_catalog"]
+
+[node name="MusicDirector" type="Node"]
+process_mode = 3
+script = ExtResource("1_music_director")
+catalog = ExtResource("2_music_catalog")
+
+[node name="PlayerA" type="AudioStreamPlayer" parent="."]
+bus = &"Music"
+volume_db = -80.0
+
+[node name="PlayerB" type="AudioStreamPlayer" parent="."]
+bus = &"Music"
+volume_db = -80.0

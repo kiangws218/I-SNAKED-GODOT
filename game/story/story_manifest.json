@@ -3,11 +3,13 @@
   "nodes": [
     "bandit_both_swallowed",
     "bandit_buck_swallowed",
+    "bandit_buck_unconscious",
     "bandit_combat",
     "bandit_hostage_threat",
     "bandit_hostage_return_hostile",
     "bandit_intro",
     "bandit_miro_swallowed",
+    "bandit_miro_unconscious",
     "bandit_paid",
     "bandit_released",
     "bandit_resolved",

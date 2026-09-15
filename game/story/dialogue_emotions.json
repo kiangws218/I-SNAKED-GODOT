@@ -273,6 +273,12 @@
     "bandit_resolved": [
       "neutral"
     ],
+    "bandit_buck_unconscious": [
+      "neutral"
+    ],
+    "bandit_miro_unconscious": [
+      "neutral"
+    ],
     "bandit_resolved_buck": [
       "angry"
     ],

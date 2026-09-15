@@ -1,12 +1,11 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://game/test_arena.gd" id="1_arena"]
 [ext_resource type="PackedScene" path="res://game/player/snake_player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://game/actors/enemy_actor.tscn" id="3_enemy"]
 [ext_resource type="PackedScene" path="res://game/actors/npc_actor.tscn" id="4_npc"]
 [ext_resource type="Script" path="res://game/systems/prison_controller.gd" id="5_prison"]
-[ext_resource type="AudioStream" path="res://assets/audio/interact.wav" id="6_interact"]
-[ext_resource type="AudioStream" path="res://assets/audio/prison.wav" id="7_prison"]
+[ext_resource type="PackedScene" path="res://game/audio/sfx/sfx_director.tscn" id="6_sfx"]
 
 [sub_resource type="RectangleShape2D" id="ShapeHorizontal"]
 size = Vector2(768, 24)
@@ -97,13 +96,7 @@ damageable = false
 [node name="PrisonController" type="Node" parent="."]
 script = ExtResource("5_prison")
 
-[node name="InteractAudio" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("6_interact")
-bus = &"SFX"
-
-[node name="PrisonAudio" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("7_prison")
-bus = &"SFX"
+[node name="SfxDirector" parent="." instance=ExtResource("6_sfx")]
 
 [node name="SnakePlayer" parent="." instance=ExtResource("2_player")]
 position = Vector2(336, 240)

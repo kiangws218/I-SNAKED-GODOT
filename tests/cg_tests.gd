@@ -19,7 +19,9 @@ func _run() -> void:
 
 	_check(not host.visible, "CG 播放器初始隐藏")
 	_check(host.lick != null, "CG 播放器创建舔舐表现子组件")
-	_check(host.lick.get_node_or_null("Stage/Foot") is Sprite2D, "脚部是可在场景编辑器拖放的 Sprite2D")
+	var foot_node := host.lick.get_node_or_null("Stage/Foot") as AnimatedSprite2D
+	_check(foot_node != null, "脚部是可在场景编辑器拖放和编辑帧的 AnimatedSprite2D")
+	_check(foot_node != null and foot_node.sprite_frames.has_animation(&"foot_action"), "脚部拥有可在 SpriteFrames 面板中编辑的动画")
 	_check(host.lick.get_node_or_null("Stage/SnakeRig/SnakeHead") is Sprite2D, "蛇头是可在场景编辑器拖放的 Sprite2D")
 	var tongue_node := host.lick.get_node_or_null("Stage/SnakeRig/Tongue") as Sprite2D
 	_check(tongue_node != null and is_equal_approx(rad_to_deg(tongue_node.rotation), -30.0), "信子默认向上倾斜 30 度")

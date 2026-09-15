@@ -8,6 +8,8 @@ const STORY_SCRIPT := preload("res://game/story/story_director.gd")
 const DEATH_SCENE := preload("res://game/ui/death_screen.tscn")
 
 @onready var world_host: Node2D = $WorldHost
+@onready var music_director: MusicDirector = $MusicDirector
+@onready var sfx_director: SfxDirector = $SfxDirector
 @onready var screen_transition: ScreenTransition = $ScreenTransition
 @onready var hud = $HUD
 @onready var map_label: Label = $HUD/SafeArea/DebugMap
@@ -29,8 +31,10 @@ var death_screen: DeathScreen
 func _ready() -> void:
 	dialogue = DIALOGUE_SCRIPT.new()
 	add_child(dialogue)
+	dialogue.set_sfx_director(sfx_director)
 	menus = MENU_SCENE.instantiate()
 	add_child(menus)
+	menus.set_sfx_director(sfx_director)
 	death_screen = DEATH_SCENE.instantiate()
 	add_child(death_screen)
 	death_screen.reload_requested.connect(_reload_after_death)
@@ -52,6 +56,7 @@ func _ready() -> void:
 	menus.exit_requested.connect(func(): get_tree().quit())
 	hud.visible = false
 	menus.show_main(store.list_slots())
+	music_director.play_cue(&"music.title")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if death_screen.is_open() or pause_reasons.has(&"cutscene"): return
@@ -105,6 +110,7 @@ func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_c
 	var source_map := state.current_map
 	map_transition_active = true
 	await screen_transition.fade_out()
+	sfx_director.stop_all()
 	if capture_current: _capture_player()
 	if map_id == &"forest" and source_map != &"forest":
 		state.prepare_released_pair_forest_return(source_map == &"cave")
@@ -117,6 +123,10 @@ func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_c
 	world_host.add_child(current_world)
 	state.current_map = map_id
 	current_world.setup(map_id, state.flags, entry, state.items, state.actors, state.encounters)
+	current_world.player.set_sfx_director(sfx_director)
+	var music_cue := StringName(StoryMapCatalog.get_map(map_id).get("music_cue", &""))
+	if not music_cue.is_empty():
+		music_director.play_cue(music_cue)
 	_restore_player()
 	current_world.exit_reached.connect(_on_exit_reached)
 	current_world.exit_blocked.connect(func(message: String): status_label.text = message)
@@ -182,6 +192,9 @@ func set_pause_reason(reason: StringName, active: bool) -> void:
 func play_cg(presentation: Dictionary) -> Dictionary:
 	return await cg_player.play_presentation(presentation)
 
+func play_sfx(sfx_id: StringName, options: Dictionary = {}) -> Dictionary:
+	return sfx_director.play_sfx(sfx_id, options)
+
 func cancel_cg() -> void:
 	cg_player.cancel()
 
@@ -194,6 +207,8 @@ func toggle_pause() -> void:
 
 func return_to_title() -> void:
 	story.cancel_pending_flow()
+	sfx_director.stop_all()
+	music_director.play_cue(&"music.title")
 	death_screen.hide_screen()
 	dialogue.close()
 	if is_instance_valid(current_world): current_world.queue_free()

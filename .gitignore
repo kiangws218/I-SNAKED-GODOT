@@ -3,3 +3,5 @@ build/
 exports/
 export_templates/
 *.tmp
+assets/audio/public_candidates/*
+!assets/audio/public_candidates/.gdignore

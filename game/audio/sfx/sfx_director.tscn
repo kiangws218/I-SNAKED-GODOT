@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/audio/sfx/sfx_director.gd" id="1_director"]
+[ext_resource type="Resource" path="res://game/audio/sfx/default_sfx_catalog.tres" id="2_catalog"]
+
+[node name="SfxDirector" type="Node"]
+process_mode = 3
+script = ExtResource("1_director")
+catalog = ExtResource("2_catalog")
+
+[node name="Players" type="Node" parent="."]

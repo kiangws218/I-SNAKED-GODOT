@@ -153,7 +153,12 @@ N7 已完成第一章状态与剧情接入：第一章 action 白名单可执行
 
 ### N8：整体打磨与学习构建
 
-制作人单独批准的当前子范围：六名NPC小人与重复可调用的导入管线。NpcActor共用AnimatedSprite2D，配置化开发期导入生成静态资源，运行时不切帧、不调用AI、不持有第二份角色状态。六人移动已验收，制作人批准与可蒂头像、八项试玩优化一起提交推送；全局音效、其他打磨与构建仍未批准。详见NPC_ART_PIPELINE.md与PLAYTEST_FEEDBACK_REVIEW.md。
+制作人已单独批准六名 NPC 导入、CG 试验切片与音频架构改造；其他统一打磨与学习构建仍需逐项确认。
+
+- `GameSession` 持有跨地图常驻的 `MusicDirector` 与 `SfxDirector`，换图只提交稳定 cue ID，音频运行态不进存档。
+- `MusicCue` / `MusicCatalog` 保存静态音乐定义；双播放器跨淡入淡出，同 cue 不重启，generation 防止旧 Tween 回写。当前只登记 `music.title/tutorial/wilderness/forest/cave`，未有实际 BGM 素材时安静返回 `missing_stream`。
+- `SfxDefinition` / `SfxCatalog` 以语义 ID 管理变体、响度、音高、cooldown 和单音效并发上限；`SfxDirector` 池化复用 2D/非空间播放器。玩家、对话和 TestArena 均通过显式注入使用，不新增 Autoload、EventBus 或 Service Locator。
+- Bus 图为 `Music -> Master`、`SFX -> Master`、`UI/CG -> SFX`、`Ambience -> Music`；既有音乐/音效两个设置滑杆继续控制全部子总线。
 
 - 全流程难度、镜头、UI 动效、音效、像素一致性和无障碍提示收尾。
 - 压力测试长蛇、多弹体、反复换图/读档和全部剧情分支；清理调试入口与未引用资源。

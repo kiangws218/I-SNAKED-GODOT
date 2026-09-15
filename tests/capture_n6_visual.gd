@@ -23,7 +23,7 @@ func _capture() -> void:
 	for index in range(12): await process_frame
 	if error == OK: error = root.get_texture().get_image().save_png("res://.godot/n6_inventory_exit.png")
 	if error == OK: print("N6 MENU + DIALOGUE VISUAL CAPTURES SAVED")
-	session.dialogue.interact_audio.stop()
+	session.sfx_director.stop_all()
 	session.queue_free()
 	await process_frame
 	quit(error)

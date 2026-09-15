@@ -34,10 +34,6 @@ const RING_NODE_SCENE := preload("res://game/nodes/ring_node.tscn")
 @export var play_sfx := true
 
 @onready var body_chain: BodyChain = $BodyChain
-@onready var spit_audio: AudioStreamPlayer = $SpitAudio
-@onready var pickup_audio: AudioStreamPlayer = $PickupAudio
-@onready var node_audio: AudioStreamPlayer = $NodeAudio
-@onready var hurt_audio: AudioStreamPlayer = $HurtAudio
 
 var direction := Vector2.RIGHT
 var direction_queue: Array[Vector2] = []
@@ -61,6 +57,8 @@ var invulnerability_left := 0.0
 var hit_flash_left := 0.0
 var contact_hitstop_left := 0.0
 var feedback_color := Color.TRANSPARENT
+var movement_locked := false
+var sfx_director: SfxDirector
 
 
 func _ready() -> void:
@@ -68,6 +66,10 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if movement_locked:
+		current_speed = 0.0
+		direction_queue.clear()
+		return
 	var movement_delta := maxf(0.0, delta - contact_hitstop_left)
 	contact_hitstop_left = maxf(0.0, contact_hitstop_left - delta)
 	invulnerability_left = maxf(0.0, invulnerability_left - delta)
@@ -117,9 +119,11 @@ func _input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("inventory_previous"):
 		inventory.cycle(-1)
+		_play_sfx(&"sfx.ui.inventory_switch", false)
 		resources_changed.emit()
 	elif event.is_action_pressed("inventory_next"):
 		inventory.cycle(1)
+		_play_sfx(&"sfx.ui.inventory_switch", false)
 		resources_changed.emit()
 	elif event.is_action_pressed("cut_tail"):
 		cut_tail()
@@ -161,6 +165,24 @@ func set_length(value: int) -> void:
 	resources_changed.emit()
 
 
+func set_movement_locked(locked: bool) -> void:
+	movement_locked = locked
+	if locked:
+		current_speed = 0.0
+		direction_queue.clear()
+
+
+func set_sfx_director(director: SfxDirector) -> void:
+	sfx_director = director
+
+
+func _play_sfx(sfx_id: StringName, spatial := true) -> void:
+	if not play_sfx or not is_instance_valid(sfx_director):
+		return
+	var options := {"global_position": global_position} if spatial else {}
+	sfx_director.play_sfx(sfx_id, options)
+
+
 func add_special_item(item_id: StringName, metadata := {}) -> bool:
 	if not inventory.add_item(item_id, metadata):
 		return false
@@ -196,8 +218,11 @@ func try_spit(cinematic := false) -> bool:
 	projectile.released_actor.connect(_on_actor_released)
 	projectile.actor_interacted.connect(_on_actor_interacted)
 	projectile.launch(payload, global_position + direction * TILE_SIZE * 0.9, direction, self, cinematic)
-	if play_sfx:
-		spit_audio.play()
+	var actor_payload := bool(payload.get("actor", false))
+	if not actor_payload:
+		var metadata: Dictionary = payload.get("metadata", {})
+		actor_payload = not String(metadata.get("actor_id", "")).is_empty()
+	_play_sfx(&"sfx.player.actor_drop" if actor_payload else &"sfx.player.spit")
 	shot_cooldown_left = SHOT_INTERVAL
 	resources_changed.emit()
 	if payload.get("id", &"") == &"bean":
@@ -268,8 +293,7 @@ func place_node() -> bool:
 	ring.destroyed.connect(_on_node_destroyed)
 	placed_nodes.append(ring)
 	node_charges -= 1
-	if play_sfx:
-		node_audio.play()
+	_play_sfx(&"sfx.player.node_place")
 	resources_changed.emit()
 	return true
 
@@ -380,8 +404,7 @@ func try_collect_payload(payload: Dictionary) -> bool:
 			return false
 		body_chain.set_segment_count(body_chain.segment_count + int(payload.get("length", 1)), global_position)
 	resources_changed.emit()
-	if play_sfx:
-		pickup_audio.play()
+	_play_sfx(&"sfx.player.eat" if item_id == &"bean" else &"sfx.player.pickup")
 	return true
 
 
@@ -394,8 +417,7 @@ func take_damage(amount: int, reason: StringName = &"damage") -> bool:
 	if reason == &"enemy_contact":
 		contact_hitstop_left = CONTACT_HITSTOP_SECONDS
 	_update_visual_feedback()
-	if play_sfx:
-		hurt_audio.play()
+	_play_sfx(&"sfx.player.hurt_head")
 	health_changed.emit(hearts, max_hearts)
 	damaged.emit(reason)
 	queue_redraw()
@@ -432,6 +454,22 @@ func _on_actor_interacted(payload: Dictionary) -> void:
 	actor_interacted.emit(payload)
 
 
+func play_npc_contact_sfx() -> void:
+	play_interaction_contact_sfx()
+
+
+func play_world_sfx(sfx_id: StringName, spatial := true) -> void:
+	_play_sfx(sfx_id, spatial)
+
+
+func play_interaction_contact_sfx() -> void:
+	_play_sfx(&"sfx.npc.contact")
+
+
+func play_pickup_sfx() -> void:
+	_play_sfx(&"sfx.player.pickup")
+
+
 func _interact_with_nearest_actor() -> bool:
 	var nearest: BeanProjectile
 	var nearest_distance := INF
@@ -448,8 +486,7 @@ func _on_node_reclaimed(ring: RingNode) -> void:
 	placed_nodes.erase(ring)
 	node_charges = mini(3, node_charges + 1)
 	ring.queue_free()
-	if play_sfx:
-		node_audio.play()
+	_play_sfx(&"sfx.player.node_recover")
 	resources_changed.emit()
 
 
@@ -460,8 +497,11 @@ func _on_node_destroyed(ring: RingNode) -> void:
 
 
 func _enter_danger(kind: String) -> void:
+	var was_safe := danger_kind.is_empty()
 	danger_kind = kind
 	danger_seconds_left = rescue_seconds
+	if was_safe:
+		_play_sfx(&"sfx.player.collision_alarm")
 	danger_changed.emit(true, danger_seconds_left)
 	_update_visual_feedback()
 

@@ -19,7 +19,7 @@ var _generation := 0
 var _tween: Tween
 
 @onready var _stage: Node2D = $Stage
-@onready var _foot: Sprite2D = $Stage/Foot
+@onready var _foot: AnimatedSprite2D = $Stage/Foot
 @onready var _snake_rig: Node2D = $Stage/SnakeRig
 @onready var _tongue: Sprite2D = $Stage/SnakeRig/Tongue
 
@@ -56,13 +56,18 @@ func play_once() -> void:
 	_tongue_progress = 0.0
 	_toe_spread = 0.0
 	_visible_amount = 0.0
+	_foot.stop()
+	_foot.frame = 0
 	_tween = create_tween()
 	_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_tween.tween_property(self, "_visible_amount", 1.0, 0.35)
 	_tween.tween_property(self, "_snake_position", Vector2(132, 362), 0.35)
 	_tween.tween_interval(0.18)
-	_tween.tween_callback(func(): cue.emit("contact"))
+	_tween.tween_callback(func():
+		cue.emit("contact")
+		_foot.play(&"foot_action")
+	)
 	_tween.parallel().tween_property(self, "_tongue_progress", 1.0, 0.32)
 	_tween.parallel().tween_property(self, "_toe_spread", 1.0, 0.18)
 	_tween.tween_callback(func(): cue.emit("reaction_peak"))
@@ -83,6 +88,8 @@ func cancel() -> void:
 	_tween = null
 	_running = false
 	set_process(false)
+	_foot.stop()
+	_foot.frame = 0
 	if was_running:
 		cancelled.emit()
 		completed.emit({"ok": true, "cancelled": true})
@@ -94,6 +101,8 @@ func _finish(run_id: int) -> void:
 		return
 	_running = false
 	set_process(false)
+	_foot.stop()
+	_foot.frame = 0
 	finished.emit()
 	completed.emit({"ok": true, "cancelled": false})
 
@@ -149,7 +158,6 @@ func _apply_variant() -> void:
 func _sync_visuals() -> void:
 	_stage.modulate.a = _visible_amount
 	_snake_rig.position = _snake_position - Vector2(88, 398)
-	_foot.frame = clampi(roundi(_toe_spread), 0, 2)
 	_tongue.visible = _tongue_progress > 0.01
 	if _tongue.visible:
 		var order_index := clampi(floori(_tongue_progress * TONGUE_FRAME_ORDER.size()), 0, TONGUE_FRAME_ORDER.size() - 1)

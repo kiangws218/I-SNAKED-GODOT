@@ -67,7 +67,7 @@
 - `done`：玩家三心、1 秒受伤无敌；敌方针刺命中头部，身体负责阻挡史莱姆和反射针刺。
 - `done`：NPC 进入/停留/离开/重入迟滞去重，对话前方向显式快照并在结束后恢复；豆伤害与药水治疗走真实 Area2D 路径。
 - `done`：普通/节点监狱 burst、DPS、重入冷却、多个节点监狱衰减，以及每秒最多一次节点啃咬。
-- `done`：蘑菇四帧待机、史莱姆四帧待机、NPC/敌方弹体代码绘制；`sfx.hurt`、`sfx.prison`、接触提示所需 `sfx.interact`。
+- `done`：蘑菇四帧待机、史莱姆四帧待机、NPC/敌方弹体代码绘制；`sfx.hurt`、`sfx.prison`、接触提示所需 `sfx.npc.contact`。
 - `deferred`：哥布林弓箭手仅在 N7 剧情洞窟需要，N3 不建立无实例使用者的通用骨架。
 - `deferred`：地图 NPC、胃袋、飞行投射物、骑乘者的唯一身份状态机随 N4 会话状态和 N7 角色流程实现。
 
@@ -92,7 +92,7 @@
 - `done`：原生 `DialogueRunner`、`StoryDirector`、右侧对话框、场景化开始/暂停/槽位/设置界面和 reason 集合；没有并行剧情解释器或插件依赖。
 - `done`：N6/N7 action 正例随真实序章与第一章实体和剧情状态接入；未知 action 返回 `UNKNOWN_COMMAND`。
 - `done`：稳定行 ID、条件选择、玩家姓名、speaker fallback、姓名/副标题、0.18 秒弹入与 0.12 秒弹出；弹入确认不跳首句。
-- `done`：中文像素字体、玩家头像、UI 面板/按钮与 `sfx.interact` 已实际接入。
+- `done`：中文像素字体、玩家头像、UI 面板/按钮与 `sfx.npc.contact` 已实际接入。
 - `done N7`：剑/药水/汤/阿见/营地/劫匪 action 的正例已随真实第一章实体实现；N5 不以空处理器伪造完成。
 
 ### N6：序章垂直切片
@@ -136,7 +136,7 @@
 - 制作人另行批准的限定角色接入：六人四方向移动已验收，地图小人、角色载荷和胃袋辨识图均已接入，标准导入可缓存重复调用；制作人批准与可蒂头像、本轮八项优化一起提交推送。专用倒地/尸体/攻击/骑乘美术未关账。入口与验证见 `NPC_ART_PIPELINE.md`，不扩展到N8其余任务。
 
 - 只处理已登记项：统一调色/像素尺度、蘑菇攻击/死亡动画、节点四状态、角色正式造型、Logo、桥桩色板。
-- 补专用豆反弹、监狱成立/解除音效；音乐若采用，必须先定义场景、循环/切换和音量验收。
+- `done audio architecture`：已定义四地图与标题稳定 music cue、双播放器跨淡入淡出、同曲不重启、分层 Bus 和音量验收；实际 BGM 素材尚未选定。现有音效已迁移到语义 ID 与池化播放，专用豆反弹/监狱解除素材仍待补。
 - 镜头、对话时序、混音、无障碍提示和难度打磨。
 - 全分支、长蛇、多弹体、反复换图/读档、未引用资源和性能审计。
 - Godot 4.7.2 官方模板生成 Windows 与 Web 学习构建并从零启动。
@@ -165,7 +165,7 @@
 | `sfx.node` | `godot/assets/audio/node.wav` | N2 |
 | `sfx.hurt` | `godot/assets/audio/hurt.wav` | N3 |
 | `sfx.prison` | `godot/assets/audio/prison.wav` | N3 |
-| `sfx.interact` | `godot/assets/audio/interact.wav` | N3 |
+| `sfx.npc.contact` | `assets/audio/npc_contact.ogg` | N3 |
 
 ### 已有候选，阶段内选择最小集合
 
@@ -208,7 +208,7 @@
 | `projectile.enemy_seed` | 代码绘制 | 蘑菇针刺弹 | deferred：N8 统一像素表现。 |
 | `sfx.hurt` | `assets/audio/hurt.wav` | 玩家受伤 | done |
 | `sfx.prison` | `assets/audio/prison.wav` | 监狱 burst | done |
-| `sfx.interact` | `assets/audio/interact.wav` | NPC 接触提示 | done |
+| `sfx.npc.contact` | `assets/audio/npc_contact.ogg` | NPC/道具互动接触提示 | done |
 
 ### N4 实际选定
 

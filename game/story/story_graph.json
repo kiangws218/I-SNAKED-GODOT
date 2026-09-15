@@ -2332,6 +2332,28 @@
         ]
       }
     },
+    "bandit_buck_unconscious": {
+      "id": "bandit_buck_unconscious",
+      "progress": {"chapter": "第一章", "step": 10, "total": 10},
+      "goal": {"kind": "text", "text": "继续探索"},
+      "dialogue": {
+        "speaker": "旁白",
+        "sub": "昏迷的巴克",
+        "pages": ["巴克倒在地上，已经失去意识。"],
+        "choices": [{"id": "leave", "label": "离开", "next": "chapter1_explore"}]
+      }
+    },
+    "bandit_miro_unconscious": {
+      "id": "bandit_miro_unconscious",
+      "progress": {"chapter": "第一章", "step": 10, "total": 10},
+      "goal": {"kind": "text", "text": "继续探索"},
+      "dialogue": {
+        "speaker": "旁白",
+        "sub": "昏迷的米罗",
+        "pages": ["米罗倒在地上，已经失去意识。"],
+        "choices": [{"id": "leave", "label": "离开", "next": "chapter1_explore"}]
+      }
+    },
     "bandit_resolved_buck": {
       "id": "bandit_resolved_buck",
       "progress": {
@@ -3658,7 +3680,11 @@
         "pages": [
           "刚才的尖叫传进洞穴深处。",
           "两名哥布林弓箭手从祭坛方向探出头，朝这里围了过来。",
-          "少女：它们回来了……！"
+          {
+            "speaker": "阿见",
+            "portrait": "ajian",
+            "text": "啊，他们回来了……！"
+          }
         ],
         "choices": [
           {

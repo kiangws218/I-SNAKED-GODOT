@@ -578,12 +578,14 @@ func _mount_ajian() -> Dictionary:
 	var player := _player()
 	if player == null or not is_instance_valid(npc):
 		return {"ok": false, "error": "AJIAN_UNAVAILABLE"}
+	player.set_movement_locked(true)
 	pause_requested.emit(&"cutscene", true)
 	if _has_item(&"ajian"):
 		# Transfer the one held actor to the world before showing the walk.
 		# Cinematic input is blocked; no save can capture both representations.
 		var held := player.consume_inventory_item(&"ajian")
 		if held.is_empty():
+			player.set_movement_locked(false)
 			pause_requested.emit(&"cutscene", false)
 			return {"ok": false, "error": "ACTOR_NOT_HELD"}
 		var carried_state := _actor_state(&"ajian")
@@ -599,10 +601,12 @@ func _mount_ajian() -> Dictionary:
 	if npc.has_method("walk_to_carrier"):
 		walked = await npc.walk_to_carrier(player)
 	if mount_epoch != flow_epoch or not walked or not is_instance_valid(npc) or not is_instance_valid(player):
+		player.set_movement_locked(false)
 		pause_requested.emit(&"cutscene", false)
 		return {"ok": false, "error": "MOUNT_CANCELLED"}
 	session.state.player["rider"] = "ajian"
 	_set_actor_status(&"ajian", &"riding", "rider")
+	player.set_movement_locked(false)
 	pause_requested.emit(&"cutscene", false)
 	return {"ok": true}
 
@@ -841,10 +845,17 @@ func _on_actor_event(actor_id: StringName, event: StringName) -> void:
 		session.state.flags.erase("keti_rescue_pending")
 		enter_node("keti_saved")
 		return
-	if actor_id in [&"buck", &"miro"] and event == &"interacted" and bool(session.state.flags.get("bandit_contact_pending", false)):
-		session.state.flags.erase("bandit_contact_pending")
-		enter_node("bandit_search")
-		return
+	if actor_id in [&"buck", &"miro"] and event == &"interacted":
+		# After the fight, defeated bandits remain in place as downed actors.
+		# Route this state before the old post-combat search dialogue so they
+		# cannot re-enter their normal hostile conversation.
+		if _actor_status(actor_id) in [&"downed", &"unconscious"]:
+			enter_node("bandit_buck_unconscious" if actor_id == &"buck" else "bandit_miro_unconscious")
+			return
+		if bool(session.state.flags.get("bandit_contact_pending", false)):
+			session.state.flags.erase("bandit_contact_pending")
+			enter_node("bandit_search")
+			return
 	if actor_id == &"keti" and current_id == "wilderness_keti_wait":
 		if event == &"died":
 			session.state.flags["keti_dead"] = true

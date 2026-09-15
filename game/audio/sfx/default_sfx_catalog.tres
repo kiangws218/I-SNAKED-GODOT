@@ -1,0 +1,188 @@
+[gd_resource type="Resource" script_class="SfxCatalog" load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://game/audio/sfx/sfx_definition.gd" id="1_definition"]
+[ext_resource type="Script" path="res://game/audio/sfx/sfx_catalog.gd" id="2_catalog"]
+[ext_resource type="AudioStream" path="res://assets/audio/spit.wav" id="3_spit"]
+[ext_resource type="AudioStream" path="res://assets/audio/pickup.wav" id="4_pickup"]
+[ext_resource type="AudioStream" path="res://assets/audio/node.wav" id="5_node"]
+[ext_resource type="AudioStream" path="res://assets/audio/hurt.wav" id="6_hurt"]
+[ext_resource type="AudioStream" path="res://assets/audio/eat.wav" id="7_eat"]
+[ext_resource type="AudioStream" path="res://assets/audio/node_place.ogg" id="8_node_place"]
+[ext_resource type="AudioStream" path="res://assets/audio/inventory_switch.ogg" id="9_inventory"]
+[ext_resource type="AudioStream" path="res://assets/audio/npc_contact.ogg" id="10_npc_contact"]
+[ext_resource type="AudioStream" path="res://assets/audio/collision_alarm.ogg" id="11_collision"]
+[ext_resource type="AudioStream" path="res://assets/audio/prison_form.ogg" id="12_prison_form"]
+[ext_resource type="AudioStream" path="res://assets/audio/ui_cancel.ogg" id="13_ui_cancel"]
+[ext_resource type="AudioStream" path="res://assets/audio/ui_choice.ogg" id="14_ui_choice"]
+[ext_resource type="AudioStream" path="res://assets/audio/ui_confirm.wav" id="15_ui_confirm"]
+[ext_resource type="AudioStream" path="res://assets/audio/click_002.ogg" id="16_click"]
+[ext_resource type="AudioStream" path="res://assets/audio/prison.wav" id="17_prison_legacy"]
+[ext_resource type="AudioStream" path="res://assets/audio/hurt_head.ogg" id="18_hurt_head"]
+[ext_resource type="AudioStream" path="res://assets/audio/drop_004.ogg" id="19_drop"]
+[ext_resource type="AudioStream" path="res://assets/audio/stone_gate.ogg" id="20_stone_gate"]
+
+[sub_resource type="Resource" id="Sfx_spit"]
+script = ExtResource("1_definition")
+id = &"sfx.player.spit"
+streams = Array[AudioStream]([ExtResource("3_spit")])
+volume_db_min = -7.76
+volume_db_max = -7.76
+
+[sub_resource type="Resource" id="Sfx_pickup"]
+script = ExtResource("1_definition")
+id = &"sfx.player.pickup"
+streams = Array[AudioStream]([ExtResource("4_pickup")])
+volume_db_min = -5.99
+volume_db_max = -5.99
+cooldown = 0.04
+
+[sub_resource type="Resource" id="Sfx_node_recover"]
+script = ExtResource("1_definition")
+id = &"sfx.player.node_recover"
+streams = Array[AudioStream]([ExtResource("5_node")])
+volume_db_min = -7.72
+volume_db_max = -7.72
+
+[sub_resource type="Resource" id="Sfx_hurt"]
+script = ExtResource("1_definition")
+id = &"sfx.player.hurt"
+streams = Array[AudioStream]([ExtResource("6_hurt")])
+volume_db_min = -0.37
+volume_db_max = -0.37
+
+[sub_resource type="Resource" id="Sfx_eat"]
+script = ExtResource("1_definition")
+id = &"sfx.player.eat"
+streams = Array[AudioStream]([ExtResource("7_eat")])
+volume_db_min = -0.55
+volume_db_max = -0.55
+cooldown = 0.04
+
+[sub_resource type="Resource" id="Sfx_node_place"]
+script = ExtResource("1_definition")
+id = &"sfx.player.node_place"
+streams = Array[AudioStream]([ExtResource("8_node_place")])
+volume_db_min = -0.14
+volume_db_max = -0.14
+
+[sub_resource type="Resource" id="Sfx_inventory_switch"]
+script = ExtResource("1_definition")
+id = &"sfx.ui.inventory_switch"
+bus = &"UI"
+streams = Array[AudioStream]([ExtResource("9_inventory")])
+volume_db_min = -0.05
+volume_db_max = -0.05
+cooldown = 0.05
+max_instances = 1
+
+[sub_resource type="Resource" id="Sfx_npc_contact"]
+script = ExtResource("1_definition")
+id = &"sfx.npc.contact"
+streams = Array[AudioStream]([ExtResource("10_npc_contact")])
+volume_db_min = -0.11
+volume_db_max = -0.11
+cooldown = 0.15
+max_instances = 1
+
+[sub_resource type="Resource" id="Sfx_collision_alarm"]
+script = ExtResource("1_definition")
+id = &"sfx.player.collision_alarm"
+streams = Array[AudioStream]([ExtResource("11_collision")])
+volume_db_min = -0.04
+volume_db_max = -0.04
+cooldown = 0.3
+max_instances = 1
+
+[sub_resource type="Resource" id="Sfx_prison_form"]
+script = ExtResource("1_definition")
+id = &"sfx.world.prison_form"
+streams = Array[AudioStream]([ExtResource("12_prison_form")])
+volume_db_min = -2.16
+volume_db_max = -2.16
+cooldown = 0.08
+max_instances = 2
+
+[sub_resource type="Resource" id="Sfx_cancel"]
+script = ExtResource("1_definition")
+id = &"sfx.ui.cancel"
+bus = &"UI"
+streams = Array[AudioStream]([ExtResource("13_ui_cancel")])
+volume_db_min = -12.58
+volume_db_max = -12.58
+cooldown = 0.05
+max_instances = 1
+
+[sub_resource type="Resource" id="Sfx_choice"]
+script = ExtResource("1_definition")
+id = &"sfx.ui.choice"
+bus = &"UI"
+streams = Array[AudioStream]([ExtResource("14_ui_choice")])
+volume_db_min = 0.35
+volume_db_max = 0.35
+cooldown = 0.04
+max_instances = 1
+
+[sub_resource type="Resource" id="Sfx_confirm"]
+script = ExtResource("1_definition")
+id = &"sfx.ui.confirm"
+bus = &"UI"
+streams = Array[AudioStream]([ExtResource("15_ui_confirm")])
+volume_db_min = 1.04
+volume_db_max = 1.04
+cooldown = 0.05
+max_instances = 1
+
+[sub_resource type="Resource" id="Sfx_dialogue_open"]
+script = ExtResource("1_definition")
+id = &"sfx.ui.dialogue_open"
+bus = &"UI"
+streams = Array[AudioStream]([ExtResource("16_click")])
+volume_db_min = -0.15
+volume_db_max = -0.15
+cooldown = 0.04
+max_instances = 1
+
+[sub_resource type="Resource" id="Sfx_dialogue_page"]
+script = ExtResource("1_definition")
+id = &"sfx.ui.dialogue_page"
+bus = &"UI"
+streams = Array[AudioStream]([ExtResource("16_click")])
+volume_db_min = -0.15
+volume_db_max = -0.15
+cooldown = 0.04
+max_instances = 1
+
+[sub_resource type="Resource" id="Sfx_prison_legacy"]
+script = ExtResource("1_definition")
+id = &"sfx.world.prison_legacy"
+streams = Array[AudioStream]([ExtResource("17_prison_legacy")])
+volume_db_min = -10.16
+volume_db_max = -10.16
+
+[sub_resource type="Resource" id="Sfx_hurt_head"]
+script = ExtResource("1_definition")
+id = &"sfx.player.hurt_head"
+streams = Array[AudioStream]([ExtResource("18_hurt_head")])
+volume_db_min = -4.11
+volume_db_max = -4.11
+
+[sub_resource type="Resource" id="Sfx_actor_drop"]
+script = ExtResource("1_definition")
+id = &"sfx.player.actor_drop"
+streams = Array[AudioStream]([ExtResource("19_drop")])
+volume_db_min = -0.14
+volume_db_max = -0.14
+cooldown = 0.04
+
+[sub_resource type="Resource" id="Sfx_stone_gate"]
+script = ExtResource("1_definition")
+id = &"sfx.world.stone_gate"
+streams = Array[AudioStream]([ExtResource("20_stone_gate")])
+volume_db_min = 13.35
+volume_db_max = 13.35
+cooldown = 0.1
+max_instances = 1
+
+[resource]
+script = ExtResource("2_catalog")
+definitions = Array[SfxDefinition]([SubResource("Sfx_spit"), SubResource("Sfx_pickup"), SubResource("Sfx_node_recover"), SubResource("Sfx_hurt"), SubResource("Sfx_eat"), SubResource("Sfx_node_place"), SubResource("Sfx_inventory_switch"), SubResource("Sfx_npc_contact"), SubResource("Sfx_collision_alarm"), SubResource("Sfx_prison_form"), SubResource("Sfx_cancel"), SubResource("Sfx_choice"), SubResource("Sfx_confirm"), SubResource("Sfx_dialogue_open"), SubResource("Sfx_dialogue_page"), SubResource("Sfx_prison_legacy"), SubResource("Sfx_hurt_head"), SubResource("Sfx_actor_drop"), SubResource("Sfx_stone_gate")])

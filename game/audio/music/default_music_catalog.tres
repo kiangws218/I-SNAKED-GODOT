@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="MusicCatalog" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://game/audio/music/music_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://game/audio/music/music_cue.gd" id="2_cue"]
+
+[sub_resource type="Resource" id="MusicCue_title"]
+script = ExtResource("2_cue")
+id = &"music.title"
+
+[sub_resource type="Resource" id="MusicCue_tutorial"]
+script = ExtResource("2_cue")
+id = &"music.tutorial"
+
+[sub_resource type="Resource" id="MusicCue_wilderness"]
+script = ExtResource("2_cue")
+id = &"music.wilderness"
+
+[sub_resource type="Resource" id="MusicCue_forest"]
+script = ExtResource("2_cue")
+id = &"music.forest"
+
+[sub_resource type="Resource" id="MusicCue_cave"]
+script = ExtResource("2_cue")
+id = &"music.cave"
+
+[resource]
+script = ExtResource("1_catalog")
+cues = [SubResource("MusicCue_title"), SubResource("MusicCue_tutorial"), SubResource("MusicCue_wilderness"), SubResource("MusicCue_forest"), SubResource("MusicCue_cave")]

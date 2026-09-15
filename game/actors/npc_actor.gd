@@ -175,6 +175,7 @@ func _begin_interaction() -> void:
 	interaction_count += 1
 	_saved_direction = player.direction
 	player.direction_queue.clear()
+	player.play_npc_contact_sfx()
 	interaction_requested.emit(self, player)
 
 

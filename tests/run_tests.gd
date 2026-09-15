@@ -201,7 +201,12 @@ func _test_project_contract() -> void:
 		check(ResourceLoader.exists(scene_path), "场景存在：%s" % scene_path)
 	for audio_path in [
 		"res://assets/audio/spit.wav", "res://assets/audio/pickup.wav", "res://assets/audio/node.wav",
-		"res://assets/audio/hurt.wav", "res://assets/audio/interact.wav", "res://assets/audio/prison.wav",
+		"res://assets/audio/hurt.wav", "res://assets/audio/prison.wav",
+		"res://assets/audio/collision_alarm.ogg", "res://assets/audio/eat.wav", "res://assets/audio/hurt_head.ogg",
+		"res://assets/audio/inventory_switch.ogg", "res://assets/audio/node_place.ogg", "res://assets/audio/npc_contact.ogg",
+		"res://assets/audio/prison_form.ogg", "res://assets/audio/ui_cancel.ogg", "res://assets/audio/ui_choice.ogg",
+		"res://assets/audio/ui_confirm.wav", "res://assets/audio/click_002.ogg", "res://assets/audio/drop_004.ogg",
+		"res://assets/audio/stone_gate.ogg",
 	]:
 		check(ResourceLoader.exists(audio_path), "N2/N3 音效存在：%s" % audio_path)
 	check(ResourceLoader.exists("res://assets/enemies/mushroom/idle.png"), "蘑菇待机素材存在")
@@ -212,7 +217,7 @@ func _test_project_contract() -> void:
 		if not file_name.ends_with(".import"):
 			production_audio.append(file_name)
 	production_audio.sort()
-	check(production_audio == ["hurt.wav", "interact.wav", "node.wav", "pickup.wav", "prison.wav", "spit.wav"], "N2/N3 只导入已选音效")
+	check(production_audio == ["click_002.ogg", "collision_alarm.ogg", "drop_004.ogg", "eat.wav", "hurt.wav", "hurt_head.ogg", "inventory_switch.ogg", "node.wav", "node_place.ogg", "npc_contact.ogg", "pickup.wav", "prison.wav", "prison_form.ogg", "spit.wav", "stone_gate.ogg", "ui_cancel.ogg", "ui_choice.ogg", "ui_confirm.wav"], "音效资源均已登记")
 
 
 func _test_body_chain() -> void:
@@ -596,9 +601,7 @@ func _test_n2_real_resource_input() -> void:
 	check(chain.collides_with_tail(Vector2(24, 0), 1.0, 4), "无节点时身体会自撞")
 	check(not chain.collides_with_tail(Vector2(24, 0), 1.0, 4, [Vector2(12, 12)], 1.15 * 24.0), "节点半径内身体段获得穿越豁免")
 	chain.queue_free()
-	player.spit_audio.stop()
-	player.pickup_audio.stop()
-	player.node_audio.stop()
+	arena.sfx_director.stop_all()
 	arena.queue_free()
 	await process_frame
 	await process_frame
@@ -637,8 +640,7 @@ func _test_n2_input_dispatch() -> void:
 	await process_frame
 	_send_key(KEY_F, false)
 	check(player.placed_nodes.size() == 1 and player.node_charges == 0, "SceneTree 分发真实 F 节点输入")
-	player.spit_audio.stop()
-	player.node_audio.stop()
+	arena.sfx_director.stop_all()
 	arena.queue_free()
 	await process_frame
 	await process_frame
@@ -670,8 +672,7 @@ func _test_n3_contract() -> void:
 func _test_n3_real_paths() -> void:
 	var arena: Node = load("res://game/test_arena.tscn").instantiate()
 	root.add_child(arena)
-	arena.get_node("InteractAudio").stream = null
-	arena.get_node("PrisonAudio").stream = null
+	arena.sfx_director.stop_all()
 	await physics_frame
 	var player: SnakePlayer = arena.get_node("SnakePlayer")
 	player.play_sfx = false
@@ -1033,9 +1034,9 @@ func _test_n5_n6_contract() -> void:
 	var runner := DialogueRunner.new()
 	var graph_result := runner.load_graph()
 	check(graph_result.ok, "N5 剧情图无悬空跳转")
-	check(graph_result.nodes == 140 and graph_result.actions == 58 and graph_result.conditions == 18, "N7 剧情图包含 139 原节点+营地后续节点/58 动作/18 条件")
+	check(graph_result.nodes == 142 and graph_result.actions == 58 and graph_result.conditions == 18, "N7 剧情图包含 142 节点/58 动作/18 条件")
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://game/story/story_manifest.json"))
-	check(manifest.nodes.size() == 140 and manifest.actions.size() == 58 and manifest.conditions.size() == 18 and manifest.flags.size() == 42, "N7 逐 ID 清单包含 140 节点/58 动作/18 条件/42 原迁移flag")
+	check(manifest.nodes.size() == 142 and manifest.actions.size() == 58 and manifest.conditions.size() == 18 and manifest.flags.size() == 42, "N7 逐 ID 清单包含 142 节点/58 动作/18 条件/42 原迁移flag")
 	var variables := {"flags": {}}
 	var first := runner.begin("dialogue_1", runner.nodes.dialogue_1.dialogue, variables, func(_name): return true)
 	check(first.line_id == "dialogue_1.page.0" and first.page_count == 3, "N5 对话稳定行 ID 与分页")
@@ -1182,7 +1183,7 @@ func _test_n5_n6_contract() -> void:
 	check(session.current_world.active_npc == restored_keti, "吐出的可蒂恢复真实 NPC 接触互动")
 	check(session.story.current_id == "keti_unconscious", "N7 可蒂在重载后仍能进入昏迷互动分支")
 	session.current_world.finish_actor_interaction()
-	session.dialogue.interact_audio.stop()
+	session.sfx_director.stop_all()
 	session.queue_free()
 	paused = false
 	await process_frame
@@ -1554,7 +1555,7 @@ func _test_n7_integrated_story_paths() -> void:
 	check(combat_session.story.current_id == "chapter1_explore" and String(combat_session.state.actors.buck.status) == "downed" and String(combat_session.state.actors.miro.status) == "downed", "N7 两名劫匪倒地后等待头触，不自动搜刮")
 	_head_touch_for_test(combat_session, combat_session.current_world.get_story_actor(&"buck"))
 	await process_frame
-	check(combat_session.story.current_id == "bandit_search", "N7 真实头触倒地劫匪后进入搜刮选择")
+	check(combat_session.story.current_id == "bandit_buck_unconscious", "N7 真实头触倒地劫匪后只显示昏迷描述")
 	combat_session.queue_free()
 	paused = false
 	await process_frame
@@ -1587,7 +1588,7 @@ func _test_n7_integrated_story_paths() -> void:
 	check(hostage_session.story.current_id == "chapter1_explore" and String(hostage_session.state.actors.buck.status) == "swallowed", "N7 剩余劫匪倒地后等待接触，保留胃袋人质状态")
 	_head_touch_for_test(hostage_session, miro)
 	await process_frame
-	check(hostage_session.story.current_id == "bandit_search", "N7 头触剩余倒地劫匪后继续剧情")
+	check(hostage_session.story.current_id == "bandit_miro_unconscious", "N7 头触剩余倒地劫匪后只显示昏迷描述")
 	hostage_session.queue_free()
 	paused = false
 	await process_frame
@@ -1691,7 +1692,7 @@ func _test_ui_hud_contract() -> void:
 	await process_frame
 
 	var player_scene: SnakePlayer = load("res://game/player/snake_player.tscn").instantiate()
-	check(player_scene.get_node("SpitAudio").bus == &"SFX" and player_scene.get_node("HurtAudio").bus == &"SFX", "HUD 音效节点统一路由到 SFX")
+	check(not player_scene.has_node("SpitAudio") and ResourceLoader.exists("res://game/audio/sfx/sfx_director.tscn"), "HUD 音效统一交由池化 SfxDirector")
 	player_scene.free()
 	if FileAccess.file_exists(settings_path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(settings_path))

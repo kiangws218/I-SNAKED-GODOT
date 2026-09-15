@@ -1,12 +1,18 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://game/session/game_session.gd" id="1_session"]
 [ext_resource type="PackedScene" path="res://game/ui/screen_transition.tscn" id="2_transition"]
 [ext_resource type="PackedScene" path="res://game/ui/game_hud.tscn" id="3_hud"]
 [ext_resource type="PackedScene" path="res://game/cg/cg_player.tscn" id="4_cg"]
+[ext_resource type="PackedScene" path="res://game/audio/music/music_director.tscn" id="5_music"]
+[ext_resource type="PackedScene" path="res://game/audio/sfx/sfx_director.tscn" id="6_sfx"]
 
 [node name="GameSession" type="Node"]
 script = ExtResource("1_session")
+
+[node name="MusicDirector" parent="." instance=ExtResource("5_music")]
+
+[node name="SfxDirector" parent="." instance=ExtResource("6_sfx")]
 
 [node name="WorldHost" type="Node2D" parent="."]
 
