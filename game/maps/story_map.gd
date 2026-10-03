@@ -10,6 +10,7 @@ signal story_trigger_entered(trigger_id: StringName)
 signal story_item_collected(item_id: StringName)
 signal story_item_interacted(item_id: StringName)
 signal story_actor_released(actor_id: StringName)
+signal story_actor_harmed(actor_id: StringName, was_hostile: bool, source: StringName)
 signal exit_blocked(message: String)
 
 const TILE_SIZE := 24.0
@@ -52,6 +53,12 @@ func setup(id: StringName, saved_flags: Dictionary, entry := &"", saved_items: D
 	for node in _layout_nodes():
 		if node is NpcActor: node.configure_pair_roam()
 	_spawn_automatic_enemies()
+	if map_id == &"chapter2_slice":
+		# A previous chapter's actual passenger is carried through, never replaced.
+		for actor_id in actor_states:
+			var state: Dictionary = actor_states[actor_id]
+			if state.get("status", "") == "riding" and get_story_actor(StringName(actor_id)) == null:
+				spawn_npc(StringName(actor_id), player.global_position)
 
 func _build_layers() -> void:
 	var layout_scene: PackedScene = load(String(data.scene))
@@ -93,6 +100,9 @@ func _on_map_bean_collected(_payload: Dictionary, item_key: String) -> void:
 
 func _on_gate_opened(id: StringName) -> void:
 	flags[String(id)] = true
+	for node in _layout_nodes():
+		if node is MapExit and node.required_flag == id and node.has_method("recheck_after_unlock"):
+			node.recheck_after_unlock()
 	mechanism_changed.emit(id, true)
 
 func step_pillar(delta: float, blocked: Dictionary) -> void:
@@ -147,12 +157,20 @@ func _on_player_actor_released(payload: Dictionary, at_position: Vector2) -> voi
 	if actor_id.is_empty() or actor_id == &"bean":
 		return
 	var npc := spawn_npc(actor_id, at_position)
+	if map_id == &"chapter2_slice": npc.defeat_mode = "downed"
 	npc.restore_from_payload(payload)
-	actor_states[String(actor_id)] = {
+	var released: Dictionary = Dictionary(actor_states.get(String(actor_id), {})).duplicate(true) if map_id == &"chapter2_slice" else {}
+	released.merge({
 		"status": "critical" if bool(metadata.get("critical", false)) else "unconscious",
 		"location": String(map_id), "hp": npc.hp, "max_hp": npc.max_hp,
 		"position": [at_position.x, at_position.y], "met": true,
-	}
+	}, true)
+	if map_id == &"chapter2_slice":
+		released["status"] = "unconscious"
+		released["damageable"] = true
+		released["defeat_mode"] = "downed"
+		npc.restore_persistent_state({"hp": npc.hp, "active": true, "damageable": true, "is_downed": true, "is_dead": false, "hostile": bool(released.get("hostile", false))})
+	actor_states[String(actor_id)] = released
 	_discard_actor_projectile(actor_id, at_position)
 	story_actor_released.emit(actor_id)
 
@@ -318,6 +336,15 @@ func _bind_npc(npc: NpcActor) -> void:
 		npc.defeated.connect(_on_npc_defeated)
 	if not npc.downed.is_connected(_on_npc_defeated):
 		npc.downed.connect(_on_npc_defeated)
+	if not npc.harmed.is_connected(_on_npc_harmed):
+		npc.harmed.connect(_on_npc_harmed)
+	if map_id == &"chapter2_slice":
+		npc.defeat_mode = "downed"
+		npc.damageable = true
+		npc.allow_hostile_interaction = true
+
+func _on_npc_harmed(npc: NpcActor, was_hostile: bool, source: StringName) -> void:
+	story_actor_harmed.emit(npc.npc_id, was_hostile, source)
 
 func _bind_enemy(enemy: EnemyActor) -> void:
 	enemy.setup(player)
@@ -397,6 +424,7 @@ func capture_actor_states() -> void:
 			state["max_hp"] = node.max_hp
 			state["damageable"] = node.damageable
 			state["hostile"] = node.hostile
+			if map_id == &"chapter2_slice": state["defeat_mode"] = "downed"
 			state["position"] = [node.global_position.x, node.global_position.y]
 		actor_states[key] = state
 
@@ -432,6 +460,7 @@ func _restore_actor_state(npc: NpcActor) -> void:
 		"max_hp": float(state.get("max_hp", npc.max_hp)), "hp": float(state.get("hp", npc.max_hp)),
 		"damageable": bool(state.get("damageable", false)),
 		"hostile": bool(state.get("hostile", false)),
+		"defeat_mode": "downed" if map_id == &"chapter2_slice" else String(state.get("defeat_mode", npc.defeat_mode)),
 		"active": status not in ["dead", "swallowed", "riding", "left"],
 		"is_dead": status == "dead", "is_downed": status in ["downed", "unconscious"],
 	})

@@ -60,6 +60,10 @@ func play_presentation(presentation: Dictionary) -> Dictionary:
 	match variant_id:
 		"female", "human_female", "lisi_foot":
 			selected = LickCgVariant.human_female()
+		"ajie", "ajie_foot":
+			selected = LickCgVariant.ajie_foot()
+		"keti", "keti_foot":
+			selected = LickCgVariant.keti_foot()
 		"ajian", "ajian_foot":
 			selected = LickCgVariant.ajian_foot()
 		"monster", "monster_foot":

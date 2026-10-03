@@ -42,6 +42,7 @@ var combat_kind := StringName()
 var encounter_expected := 0
 var pending_map_node := ""
 var flow_epoch := 0
+var chapter_two: Node
 
 ## Invalidate delayed story work when replacing the active session/world.
 func cancel_pending_flow() -> void:
@@ -60,6 +61,9 @@ func setup(owner_session: GameSession, dialogue_panel: DialoguePanel) -> Diction
 	panel.name_submitted.connect(_on_name_submitted)
 	var result := runner.load_graph()
 	nodes = runner.nodes
+	chapter_two = preload("res://game/story/chapter_two_flow.gd").new()
+	add_child(chapter_two)
+	chapter_two.setup(self)
 	return result
 
 func start(id := "prologue_start") -> void:
@@ -74,6 +78,9 @@ func start(id := "prologue_start") -> void:
 
 func resume() -> void:
 	cancel_pending_flow()
+	if session.state.current_map == &"chapter2_slice":
+		chapter_two.resume()
+		return
 	# Older saves predate the completion latch; a named prologue stays complete.
 	if bool(session.state.flags.get("prologue_complete", false)):
 		session.state.flags["keti_event_complete"] = true
@@ -101,6 +108,8 @@ func bind_world(world: StoryMap) -> void:
 	world.story_actor_interacted.connect(func(id: StringName): _on_actor_event(id, &"interacted"))
 	world.story_actor_defeated.connect(func(id: StringName): _on_actor_event(id, &"died"))
 	world.story_actor_released.connect(_on_story_actor_released)
+	world.story_actor_harmed.connect(func(actor_id: StringName, was_hostile: bool, source: StringName):
+		if session.state.current_map == &"chapter2_slice": chapter_two.on_harmed(actor_id, was_hostile, source))
 	world.story_enemy_defeated.connect(func(_kind: StringName):
 		enemies_left = maxi(0, enemies_left - 1)
 		if combat_kind == &"goblin": session.state.encounters["cave_goblins_remaining"] = enemies_left
@@ -110,6 +119,9 @@ func bind_world(world: StoryMap) -> void:
 		world.connect("story_item_interacted", _on_story_item_interacted)
 	if world.has_signal("story_item_collected"):
 		world.story_item_collected.connect(_on_story_item_collected)
+	if world.map_id == &"chapter2_slice":
+		chapter_two.bind_world(world)
+		return
 	if not pending_map_node.is_empty():
 		var next := pending_map_node
 		pending_map_node = ""
@@ -751,6 +763,9 @@ func _show_dialogue(id: String, dialogue: Dictionary) -> void:
 	pause_requested.emit(&"dialogue", true)
 
 func _on_choice(choice_id: String) -> void:
+	if session.state.current_map == &"chapter2_slice":
+		await chapter_two.choose(choice_id)
+		return
 	var choice_epoch := flow_epoch
 	var result := runner.choose(choice_id)
 	if not result.ok: return
@@ -759,18 +774,25 @@ func _on_choice(choice_id: String) -> void:
 	if has_presentation:
 		panel.set_input_locked(true)
 		panel.set_presentation_expression(String(presentation.get("portrait_expression", "")), String(presentation.get("portrait_id", String(presentation.get("variant", "")).trim_suffix("_foot"))))
-	if not has_presentation:
-		panel.close()
-		pause_requested.emit(&"dialogue", false)
-		_finish_world_interaction()
 	var action := String(result.get("action", ""))
 	if not action.is_empty():
 		var command := await _run_action(action, result.choice, current_id)
 		if choice_epoch != flow_epoch: return
-		if action == "waitForWall" or action == "waitForExit": return
+		if action == "waitForWall" or action == "waitForExit":
+			if not has_presentation:
+				panel.close()
+				pause_requested.emit(&"dialogue", false)
+				_finish_world_interaction()
+			return
 		if not command.ok:
 			if has_presentation: panel.set_input_locked(false)
+			else:
+				status_changed.emit("胃袋已满，请先吐出物品或角色" if command.get("error", "") == "STOMACH_FULL" else "这个选择暂时无法完成")
 			return
+	if not has_presentation:
+		panel.close()
+		pause_requested.emit(&"dialogue", false)
+		_finish_world_interaction()
 	if has_presentation:
 		var cg_result: Dictionary = {"ok": true, "skipped": true}
 		if is_instance_valid(session):
@@ -835,6 +857,9 @@ func _rearm_actor_contact(actor_id: StringName) -> void:
 		npc.rearm_interaction()
 
 func _on_actor_event(actor_id: StringName, event: StringName) -> void:
+	if session.state.current_map == &"chapter2_slice":
+		if event == &"interacted": chapter_two.interact_actor(actor_id)
+		return
 	if actor_id == &"keti" and event == &"interacted" and not bool(session.state.flags.get("keti_event_complete", false)) and bool(session.state.flags.get("prologue_complete", false)) and _actor_status(&"keti") == &"alive" and current_id in ["prologue_complete", "free_explore", "chapter1_explore"]:
 		_show_completed_keti_dialogue()
 		return
@@ -905,6 +930,7 @@ func _on_actor_event(actor_id: StringName, event: StringName) -> void:
 		_finish_world_interaction()
 
 func _on_story_trigger(trigger_id: StringName) -> void:
+	if session.state.current_map == &"chapter2_slice": return
 	if current_id != "chapter1_explore":
 		return
 	match trigger_id:
@@ -919,6 +945,9 @@ func _on_story_trigger(trigger_id: StringName) -> void:
 				status_changed.emit("吊桥被收起了。围住桥桩并持续充能；环形节点在洞窟深处。")
 
 func _on_story_item_interacted(item_id: StringName) -> void:
+	if session.state.current_map == &"chapter2_slice":
+		chapter_two.interact_item(item_id)
+		return
 	if current_id != "chapter1_explore" and current_id != "cave_explore":
 		return
 	var id := String(item_id).to_lower()
@@ -1123,6 +1152,7 @@ func _bandit_hostage_held() -> bool:
 	return _actor_status(&"buck") == &"swallowed" or _actor_status(&"miro") == &"swallowed" or _has_item(&"buck") or _has_item(&"miro")
 
 func _on_story_actor_released(actor_id: StringName) -> void:
+	if session.state.current_map == &"chapter2_slice": return
 	if actor_id == &"keti":
 		session.remember_checkpoint(&"wilderness")
 		return

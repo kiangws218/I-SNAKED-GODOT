@@ -25,9 +25,57 @@ var actors: Dictionary = {
 	"miro": {"status": "alive", "location": "forest", "hp": 8.0, "max_hp": 8.0, "met": false, "damageable": false},
 }
 var gold := 0
+var social: Dictionary = {"enabled": false, "reputation": 0, "fear": 0, "applied_events": {}}
+var chapter_two: Dictionary = {}
+
+func _normalise_social() -> void:
+	# JSON numbers return as floats; counters remain integers in game state.
+	social["reputation"] = clampi(int(social.get("reputation", 0)), 0, 100)
+	social["fear"] = clampi(int(social.get("fear", 0)), 0, 100)
+
+func apply_social_event(event_id: String, reputation_delta: int, fear_delta: int) -> bool:
+	if current_map != &"chapter2_slice" or not bool(social.get("enabled", false)) or event_id.is_empty():
+		return false
+	var applied: Dictionary = social.get("applied_events", {})
+	if applied.has(event_id): return false
+	social["reputation"] = clampi(int(social.get("reputation", 0)) + maxi(0, reputation_delta), 0, 100)
+	social["fear"] = clampi(int(social.get("fear", 0)) + maxi(0, fear_delta), 0, 100)
+	applied[event_id] = true
+	social["applied_events"] = applied
+	return true
+
+func prepare_chapter_two() -> bool:
+	if bool(chapter_two.get("initialized", false)): return true
+	var keti: Dictionary = Dictionary(actors.get("keti", {})).duplicate(true)
+	if String(keti.get("status", "dead")) in ["dead", "left"]: return false
+	var carried := String(keti.get("status", "")) in ["swallowed", "riding"] or _player_inventory_has(&"keti")
+	if not carried:
+		keti.merge({"status": "unconscious", "location": "chapter2_slice", "hp": 0.0, "position": [552.0, 324.0]}, true)
+	keti["damageable"] = true
+	keti["defeat_mode"] = "downed"
+	actors["keti"] = keti
+	for actor_id in ["buck", "miro"]:
+		var actor: Dictionary = Dictionary(actors.get(actor_id, {})).duplicate(true)
+		# Legacy chapter-one saves did not mark these actors met. Resolving their
+		# shared encounter is existing evidence that the player spoke to the pair.
+		var known: bool = bool(actor.get("met", false)) or bool(flags.get("banditResolved", false))
+		if actor.get("status", "") != "alive" or bool(actor.get("hostile", false)) or not known or _player_inventory_has(StringName(actor_id)):
+			continue
+		actor["met"] = true
+		actor["location"] = "chapter2_slice"
+		actor["position"] = [252.0, 504.0] if actor_id == "buck" else [348.0, 504.0]
+		actor["damageable"] = true
+		actor["defeat_mode"] = "downed"
+		actor.erase("spawn_anchor")
+		actors[actor_id] = actor
+	for actor_id in ["caravan_merchant", "ferryman"]:
+		actors[actor_id] = {"status": "alive", "location": "chapter2_slice", "hp": 8.0, "max_hp": 8.0, "damageable": true, "defeat_mode": "downed", "met": false, "hostile": false}
+	chapter_two = {"initialized": true, "outer_lock": carried, "inner_latch": carried, "settled": false, "duo": false, "stretcher": ""}
+	social["enabled"] = true
+	return true
 
 func to_dictionary() -> Dictionary:
-	return {"current_map": String(current_map), "checkpoint_map": String(checkpoint_map), "checkpoint_entry": String(checkpoint_entry), "checkpoint_snapshot": checkpoint_snapshot.duplicate(true), "flags": flags.duplicate(true), "player": player.duplicate(true), "story": story.duplicate(true), "inventory": inventory.duplicate(true), "body": body.duplicate(true), "mechanisms": mechanisms.duplicate(true), "rewards": rewards.duplicate(true), "encounters": encounters.duplicate(true), "items": items.duplicate(true), "actors": actors.duplicate(true), "gold": gold}
+	return {"current_map": String(current_map), "checkpoint_map": String(checkpoint_map), "checkpoint_entry": String(checkpoint_entry), "checkpoint_snapshot": checkpoint_snapshot.duplicate(true), "flags": flags.duplicate(true), "player": player.duplicate(true), "story": story.duplicate(true), "inventory": inventory.duplicate(true), "body": body.duplicate(true), "mechanisms": mechanisms.duplicate(true), "rewards": rewards.duplicate(true), "encounters": encounters.duplicate(true), "items": items.duplicate(true), "actors": actors.duplicate(true), "gold": gold, "social": social.duplicate(true), "chapter_two": chapter_two.duplicate(true)}
 
 func load_dictionary(data: Dictionary) -> Dictionary:
 	var map_id := StringName(data.get("current_map", DEFAULT_MAP))
@@ -49,6 +97,9 @@ func load_dictionary(data: Dictionary) -> Dictionary:
 	items = Dictionary(data.get("items", {})).duplicate(true)
 	actors = Dictionary(data.get("actors", actors)).duplicate(true)
 	gold = int(data.get("gold", 0))
+	social = Dictionary(data.get("social", {"enabled": false, "reputation": 0, "fear": 0, "applied_events": {}})).duplicate(true)
+	_normalise_social()
+	chapter_two = Dictionary(data.get("chapter_two", {})).duplicate(true)
 	return {"ok": true}
 
 func remember_checkpoint() -> void:
@@ -56,6 +107,7 @@ func remember_checkpoint() -> void:
 		"player": player.duplicate(true), "flags": flags.duplicate(true), "mechanisms": mechanisms.duplicate(true),
 		"rewards": rewards.duplicate(true), "encounters": encounters.duplicate(true), "items": items.duplicate(true),
 		"inventory": inventory.duplicate(true), "body": body.duplicate(true), "actors": actors.duplicate(true), "gold": gold,
+		"social": social.duplicate(true), "chapter_two": chapter_two.duplicate(true),
 	}
 
 func restore_checkpoint() -> void:
@@ -71,6 +123,9 @@ func restore_checkpoint() -> void:
 	body = Dictionary(checkpoint_snapshot.get("body", body)).duplicate(true)
 	actors = Dictionary(checkpoint_snapshot.get("actors", actors)).duplicate(true)
 	gold = int(checkpoint_snapshot.get("gold", gold))
+	social = Dictionary(checkpoint_snapshot.get("social", social)).duplicate(true)
+	_normalise_social()
+	chapter_two = Dictionary(checkpoint_snapshot.get("chapter_two", chapter_two)).duplicate(true)
 
 func prepare_released_pair_forest_return(from_cave := false) -> bool:
 	var ajian_rescue_return := from_cave and not bool(flags.get("rescuePairReturnedToCamp", false)) and (_actor_status(&"ajian") == &"riding" or _player_inventory_has(&"ajian") or bool(flags.get("ajianFound", false)) and bool(flags.get("goblinsDefeated", false)))

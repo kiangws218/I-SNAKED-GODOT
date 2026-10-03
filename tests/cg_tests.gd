@@ -30,12 +30,18 @@ func _run() -> void:
 
 	# Variant resources are data-only and must actually alter the same scene.
 	var female := LickCgVariant.human_female()
+	var ajie := LickCgVariant.ajie_foot()
 	var ajian := LickCgVariant.ajian_foot()
 	var monster := LickCgVariant.monster()
 	var lisi_preset := load("res://game/cg/variants/lisi_foot.tres") as LickCgVariant
+	var ajie_preset := load("res://game/cg/variants/ajie_foot.tres") as LickCgVariant
 	var ajian_preset := load("res://game/cg/variants/ajian_foot.tres") as LickCgVariant
-	_check(lisi_preset != null and ajian_preset != null and lisi_preset.resource_path != ajian_preset.resource_path, "丽丝与阿见使用独立可编辑角色预设")
+	_check(lisi_preset != null and ajie_preset != null and ajian_preset != null and lisi_preset.resource_path != ajie_preset.resource_path and ajie_preset.resource_path != ajian_preset.resource_path, "丽丝、阿杰与阿见使用独立可编辑角色预设")
 	_check(female.foot_scale != ajian.foot_scale and female.foot_tint != ajian.foot_tint, "角色预设可独立调整脚部大小与颜色")
+	var ajie_result: Dictionary = await host.play_presentation({"cg_id": "lick.foot", "variant": "ajie_foot"})
+	_check(bool(ajie_result.get("ok", false)) and bool(ajie_result.get("accepted", false)), "阿杰舔脚 CG 变体可被播放器接受")
+	finished_count = 0
+	cue_names.clear()
 	host.play_lick(female)
 	await _frames(8)
 	_check(host.visible and host.lick.variant == female, "女性脚变体应用到同一舔舐场景")
@@ -96,6 +102,18 @@ func _run() -> void:
 		for choice in node.get("dialogue", {}).get("choices", []):
 			if String(choice.get("id", "")) == "foot": foot_choice = choice
 		_check(String(foot_choice.get("presentation", {}).get("variant", "")) == "ajian_foot", "%s 的舔脚唤醒选项声明阿见 CG" % node_id)
+	var missing_lick_presentations: Array[String] = []
+	for node_id in nodes.keys():
+		var node_data: Dictionary = nodes[node_id]
+		var dialogue_data: Dictionary = node_data.get("dialogue", {})
+		for choice_data in dialogue_data.get("choices", []):
+			var label := String(choice_data.get("label", ""))
+			if not (label.contains("舔") and label.contains("脚")):
+				continue
+			var presentation_data: Dictionary = choice_data.get("presentation", {})
+			if String(presentation_data.get("cg_id", "")) != "lick.foot" or String(presentation_data.get("variant", "")).is_empty():
+				missing_lick_presentations.append("%s/%s" % [node_id, choice_data.get("id", "")])
+	_check(missing_lick_presentations.is_empty(), "所有舔脚选项都声明舔脚 CG: %s" % ", ".join(missing_lick_presentations))
 
 	# The dialogue contract keeps its visible choice but disables it for the
 	# presentation lifetime, preventing double commits from mouse or keyboard.

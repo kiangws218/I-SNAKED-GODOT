@@ -26,6 +26,12 @@ static func monster() -> LickCgVariant:
 static func ajian_foot() -> LickCgVariant:
 	return _load_preset("res://game/cg/variants/ajian_foot.tres")
 
+static func ajie_foot() -> LickCgVariant:
+	return _load_preset("res://game/cg/variants/ajie_foot.tres")
+
+static func keti_foot() -> LickCgVariant:
+	return _load_preset("res://game/cg/variants/keti_foot.tres")
+
 static func _load_preset(path: String) -> LickCgVariant:
 	var preset := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REUSE) as LickCgVariant
 	assert(preset != null, "Missing lick CG variant: %s" % path)

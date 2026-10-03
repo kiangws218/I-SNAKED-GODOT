@@ -986,6 +986,11 @@
             "label": "舔他的脚",
             "when": "lickWakeLearned",
             "action": "wakeAjieFoot",
+            "presentation": {
+              "cg_id": "lick.foot",
+              "variant": "ajie_foot",
+              "portrait_expression": "surprised"
+            },
             "next": "chapter1_ajie_woken_foot"
           },
           {
@@ -1089,6 +1094,11 @@
             "label": "舔她的脚",
             "when": "lickWakeLearned",
             "action": "wakeLisiFoot",
+            "presentation": {
+              "cg_id": "lick.foot",
+              "variant": "lisi_foot",
+              "portrait_expression": "surprised"
+            },
             "next": "chapter1_lisi_woken_foot"
           },
           {
@@ -2616,6 +2626,11 @@
             "label": "舔一下阿杰的脚",
             "when": "ajieAlive",
             "action": "claimCampLick",
+            "presentation": {
+              "cg_id": "lick.foot",
+              "variant": "ajie_foot",
+              "portrait_expression": "blushing"
+            },
             "next": "camp_lick_ajie"
           },
           {
@@ -2728,6 +2743,11 @@
             "id": "lick",
             "label": "舔一下阿杰的脚",
             "action": "claimCampLick",
+            "presentation": {
+              "cg_id": "lick.foot",
+              "variant": "ajie_foot",
+              "portrait_expression": "blushing"
+            },
             "next": "camp_lick_ajie_alone"
           },
           {

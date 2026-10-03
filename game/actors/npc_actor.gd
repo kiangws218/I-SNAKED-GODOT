@@ -5,6 +5,7 @@ signal interaction_requested(npc: NpcActor, player: SnakePlayer)
 signal health_changed(current: float, maximum: float)
 signal defeated(npc: NpcActor)
 signal downed(npc: NpcActor)
+signal harmed(npc: NpcActor, was_hostile: bool, source: StringName)
 
 const TILE_SIZE := 24.0
 const ENTER_RADIUS := 1.1 * TILE_SIZE
@@ -35,6 +36,7 @@ const PLACEHOLDER_TEXTURES := {
 @export_category("Combat")
 @export var combat_speed_tiles := 2.2
 @export var contact_damage := 1
+@export var allow_hostile_interaction := false
 @export_category("Pair roaming")
 @export var roam_partner_id: StringName
 @export var roam_radius := 72.0
@@ -72,7 +74,7 @@ func _ready() -> void:
 	hp = max_hp
 	if persistent_state_id.is_empty():
 		persistent_state_id = npc_id
-	placeholder_sprite.texture = PLACEHOLDER_TEXTURES.get(npc_id) as Texture2D
+	placeholder_sprite.texture = PLACEHOLDER_TEXTURES.get(npc_id, PLACEHOLDER_TEXTURES[&"buck"]) as Texture2D
 	var frames := CHARACTER_FRAMES.get(npc_id) as SpriteFrames
 	character_sprite.visible = frames != null
 	placeholder_sprite.visible = frames == null
@@ -125,6 +127,11 @@ func _physics_process(delta: float) -> void:
 	var swept_head := Geometry2D.get_closest_point_to_segment(global_position, _previous_head_position, player.global_position)
 	_previous_head_position = player.global_position
 	if hostile and not is_downed and not is_dead:
+		if allow_hostile_interaction and swept_head.distance_to(global_position) < ENTER_RADIUS and _contact_armed:
+			_contact_armed = false
+			_begin_interaction()
+			return
+		if distance > ENTER_RADIUS: _contact_armed = true
 		if distance > ENTER_RADIUS:
 			global_position += global_position.direction_to(player.global_position) * combat_speed_tiles * TILE_SIZE * minf(delta, 0.05)
 		elif contact_damage > 0 and _attack_cooldown_left <= 0.0:
@@ -246,7 +253,9 @@ func take_damage(amount: float, _source := &"projectile") -> float:
 	if is_dead or is_downed or not damageable or amount <= 0.0 or hp <= 0.0:
 		return 0.0
 	var applied := minf(hp, amount)
+	var was_hostile := hostile
 	hp -= applied
+	harmed.emit(self, was_hostile, _source)
 	health_changed.emit(hp, max_hp)
 	queue_redraw()
 	if hp <= 0.0:

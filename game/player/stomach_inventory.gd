@@ -13,6 +13,8 @@ const DEFINITIONS := {
 	&"keti": {"length": 2, "weight": 3, "actor": true, "stackable": false},
 	&"buck": {"length": 1, "weight": 3, "actor": true, "stackable": false},
 	&"miro": {"length": 1, "weight": 3, "actor": true, "stackable": false},
+	&"caravan_merchant": {"length": 1, "weight": 3, "actor": true, "stackable": false},
+	&"ferryman": {"length": 1, "weight": 3, "actor": true, "stackable": false},
 	&"character_bones": {"length": 1, "weight": 1, "damage": 2, "stackable": false},
 	&"keti_corpse": {"length": 2, "weight": 3, "stackable": false},
 }

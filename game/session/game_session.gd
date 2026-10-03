@@ -107,11 +107,21 @@ func continue_game(slot: int) -> void:
 
 func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_current := true) -> bool:
 	if not StoryMapCatalog.is_valid(map_id) or map_transition_active: return false
+	if map_id != &"chapter2_slice":
+		hud.get_node("SafeArea/SocialScore").visible = false
+		status_label.visible = false
 	var source_map := state.current_map
 	map_transition_active = true
 	await screen_transition.fade_out()
 	sfx_director.stop_all()
 	if capture_current: _capture_player()
+	# Capture source entities before relocating them to the next chapter.
+	if map_id == &"chapter2_slice" and not state.prepare_chapter_two():
+		await screen_transition.fade_in()
+		map_transition_active = false
+		status_label.visible = true
+		status_label.text = "这份旧存档中的可蒂已经死亡，不能进入本营救试玩。"
+		return false
 	if map_id == &"forest" and source_map != &"forest":
 		state.prepare_released_pair_forest_return(source_map == &"cave")
 	if is_instance_valid(current_world):
@@ -320,6 +330,10 @@ func _on_story_goal_changed(text: String) -> void:
 	call_deferred("_refresh_quest_hud")
 
 func _refresh_quest_hud() -> void:
+	if state.current_map == &"chapter2_slice":
+		var quest_display := hud.get_node("SafeArea/TopLeft/Quest") as QuestDisplay
+		quest_display.set_quest(hint_label.text, true)
+		return
 	var quests: Dictionary = state.story.get("quests", {})
 	var quest: Dictionary = quests.get("findAjian", {})
 	var accepted := bool(state.flags.get("findAjianAccepted", false)) or not quest.is_empty()
@@ -332,4 +346,5 @@ func _item_name(item_id: StringName) -> String:
 		&"keti": "可蒂", &"keti_corpse": "可蒂的尸体", &"iron_sword": "铁剑",
 		&"healing_potion": "治疗药水", &"ajie": "阿杰", &"lisi": "丽丝",
 		&"ajian": "阿见", &"buck": "巴克", &"miro": "米洛", &"character_bones": "角色遗骨",
+		&"caravan_merchant": "商人", &"ferryman": "船夫",
 	}.get(item_id, String(item_id))

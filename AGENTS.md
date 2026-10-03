@@ -65,3 +65,5 @@
 ## 当前阶段
 
 N7 与正式 UI/HUD 实现、自动门禁均已完成。六名NPC移动已验收；制作人批准动画、可蒂头像与八项试玩优化一起提交推送，收口后等待试玩审阅；不代表批准N8全局音效、其他美术打磨或学习构建。当前本机唯一开发目录为I-SNAKED-GODOT，资产入口见NPC_ART_PIPELINE.md，反馈见PLAYTEST_FEEDBACK_REVIEW.md。
+
+2026-10-03 制作人批准 C2A 第二章最小主线灰盒。当前实际工程为 `I SNAKED-GODOT`，审阅分支 `codex/chapter2-mainline-slice`，范围与停止线见 `CHAPTER2_IMPLEMENTATION.md`、`CHAPTER2_REVIEW.md`。只推进已批准主线切片，完成门禁后等待试玩，不自动进入支线、完整地图或 N8。

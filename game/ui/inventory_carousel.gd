@@ -13,9 +13,12 @@ const ICONS := {
 	&"ajian": preload("res://assets/characters/ajian/idle.png"),
 	&"buck": preload("res://assets/characters/buck/idle.png"),
 	&"miro": preload("res://assets/characters/miro/idle.png"),
+	&"caravan_merchant": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/buck.png"),
+	&"ferryman": preload("res://assets/placeholders/kenney/tiny_dungeon/characters/miro.png"),
 }
 
 const NAMES := {
+	&"caravan_merchant": "商人", &"ferryman": "船夫",
 	&"bean": "豆子", &"iron_sword": "铁剑", &"healing_potion": "治疗药水",
 	&"keti": "可蒂", &"keti_corpse": "可蒂", &"ajie": "阿杰", &"lisi": "丽丝",
 	&"ajian": "阿见", &"buck": "巴克", &"miro": "米洛", &"character_bones": "遗骨",

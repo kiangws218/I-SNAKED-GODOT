@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="LickCgVariant" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/cg/lick_cg_variant.gd" id="1_variant"]
+
+[resource]
+script = ExtResource("1_variant")
+display_name = "可蒂的脚（共用人类脚占位）"
+foot_asset_id = &"human_female"

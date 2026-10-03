@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="LickCgVariant" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/cg/lick_cg_variant.gd" id="1_variant"]
+
+[resource]
+script = ExtResource("1_variant")
+foot_asset_id = &"human_female"
+foot_tint = Color(1, 0.97, 0.95, 1)

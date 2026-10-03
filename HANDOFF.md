@@ -6,13 +6,14 @@
 
 - 主分支：`main`
 - 远端：`https://github.com/kiangws218/I-SNAKED-GODOT`
-- 当前阶段：N7 与正式 UI/HUD 实现均已完成；制作人另行批准的 CG 占位试验切片已完成，等待构图与节奏审阅。
-- 停止线：六名NPC移动动画已验收合格；本次批准六人动画、可蒂头像与八项试玩优化一起提交推送。反馈收口后等待试玩审阅，不进入N8全局音效或学习构建。
+- 当前阶段：2026-10-03 制作人批准 C2A 第二章最小主线切片。已实现灰盒、统一 NPC 交互、声望/恐惧与营救结伴，验证通过，等待试玩。
+- 当前审阅分支：`codex/chapter2-mainline-slice`；基线 `origin/main` 为 `9347a86`。不把审阅分支描述为已合入主线。
+- 停止线：本轮止于 C2A，不进入支线、完整地图、其他两条营救路线或 N8。规格与证据见 `CHAPTER2_IMPLEMENTATION.md`、`CHAPTER2_REVIEW.md`。
 - 当前可玩与验证证据：序章见 `N5_N6_REVIEW.md`，N7 见 `N7_REVIEW.md`。
-- 下一工作：按 `PLAYTEST_FEEDBACK_ROUND3.md` 复核可蒂濒死、导出长选项与劫匪搜刮；CG视觉方向仍见 `CG_REVIEW.md`，上一轮优化见 `PLAYTEST_FEEDBACK_ROUND2.md`。
+- 下一工作：等待制作人试玩 `game/chapter2_preview.tscn`；接力续跑判定先读 `CHAPTER2_PROGRESS.md`。本轮未因额度中断，00:37 检查不能越过试玩停止线。
 - 2026-09-14美术增量：在公司012cada基础上合并五人透明九表情，标注327条故事台词及两条动态可蒂对白，补齐CG真实头像临时表情接口。验证与审阅见 `DIALOGUE_EMOTIONS_REVIEW.md`；保持公司CG/玩法，等待制作人审阅。
-- 本机工程：remote-review已提升并更名为I-SNAKED-GODOT；原工程及其未提交修改已退役保存在工程外_project_backups。本轮反馈提交纳入角色接入、头像和管线；实际同步以git log与origin/main核对为准。
-- 同步状态：本次交接完成后，本地 `main` 与 `origin/main` 应指向同一提交；接手时仍需用 `git status`、`git log -1 --oneline` 验证。
+- 本机工程：`C:\Users\86135\OneDrive\文档\ChatGPT\New project\I SNAKED-GODOT`。2026-10-03 已同步 `9347a86` 并保留前轮八项反馈合并；退役备份在上级 `_project_backups`。已有 CG、出口与搜刮反馈和本轮 C2A 一起保存。
+- 同步状态：接手核对当前审阅分支、`git status` 与 `git log -1 --oneline`，不要把新分支误当成 `main`。只有实际成功推送的提交才是跨机器接力事实。
 - 素材状态：本机 `D:\Kenney_CC0_2D_Library` 保存 Kenney 官方 2D 分类的 145 个完整包、CSV/JSON 索引与同步脚本；仓库只保存当前实际引用的 Tiny Dungeon 最小副本，映射见 `assets/placeholders/kenney/README.md`。
 - 历史门禁说明：远端素材提交曾记录跨图环形节点失败；后续 N7 状态修复已解决，本次合并后的完整回归重新通过。
 

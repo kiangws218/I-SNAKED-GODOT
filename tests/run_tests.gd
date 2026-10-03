@@ -877,7 +877,7 @@ func _test_n3_real_paths() -> void:
 
 
 func _test_n4_contract() -> void:
-	check(StoryMapCatalog.ORDER == [&"prologue_tutorial", &"wilderness", &"forest", &"cave"], "N4 四张剧情地图顺序固定")
+	check(StoryMapCatalog.ORDER.slice(0, 4) == [&"prologue_tutorial", &"wilderness", &"forest", &"cave"], "N4 四张既有剧情地图顺序固定")
 	check(StoryMapCatalog.MAPS[&"prologue_tutorial"].size == Vector2i(72, 48), "教学地图 72×48")
 	var forest_layout: Node = load("res://game/maps/levels/forest.tscn").instantiate()
 	check(forest_layout.get_node("Triggers/ExitToCave") is MapExit, "森林洞口是编辑器可摆放的 MapExit")

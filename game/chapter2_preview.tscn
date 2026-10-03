@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://game/main.tscn" id="1_main"]
+[ext_resource type="Script" path="res://game/chapter2_preview.gd" id="2_preview"]
+
+[node name="ChapterTwoPreview" instance=ExtResource("1_main")]
+script = ExtResource("2_preview")
