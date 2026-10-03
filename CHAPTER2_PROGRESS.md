@@ -9,7 +9,7 @@
 ## 已核对
 
 - 本机 Godot 项目：本文件所在目录 `I SNAKED-GODOT`。
-- 远端 `origin/main` 与本地 HEAD 均为 `9347a86`；代理 `127.0.0.1:7890`。
+- 开始同步时本地 `main` 与 `origin/main` 均为 `9347a86`；代理 `127.0.0.1:7890`。随后在独立审阅分支开发。
 - 前轮八项反馈合并留下的十个文件变更仍在，不重置、不丢弃。
 - GDA 0.17.0、Godot 4.7.2 可用；基线 `tests/run_tests.gd` 通过，脚本诊断为空。
 - 只读集成审计完成：NPC 唤醒清敌意、吐出覆盖历史字段、第二章读档回落序章是需要处理的真实风险。
@@ -23,6 +23,8 @@
 
 ## 下一动作
 
-等待制作人试玩 `game/chapter2_preview.tscn` 并反馈。范围、启动和验证详见 `CHAPTER2_REVIEW.md`；规格见 `CHAPTER2_IMPLEMENTATION.md`。第二章检查已扩展至 135 项（含旧档相识兼容），旧章回归、合并反馈、CG、88 个脚本校验及地图/试玩场景 preflight 已通过，原生截图已检查。
+等待制作人试玩 `game/chapter2_preview.tscn` 并反馈。范围、启动和验证详见 `CHAPTER2_REVIEW.md`；规格见 `CHAPTER2_IMPLEMENTATION.md`。第二章 135 项检查（含旧档相识兼容）、旧章回归、合并反馈、CG、88 个脚本校验及地图/试玩场景 preflight 已通过，原生截图已检查。
 
 接力分支为 `codex/chapter2-mainline-slice`。现有反馈合并与本轮 C2A 一起保存，不覆盖 `origin/main`。
+
+代码提交 `09549dd` 已于 2026-10-04 成功推送到同名远端分支。普通沙盒内推送无响应，取消后经权限审查允许的执行成功；没有绕过 TLS 验证。文档收口提交位于其后，以实际 `git log` 为准。

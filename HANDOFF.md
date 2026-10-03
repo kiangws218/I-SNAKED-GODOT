@@ -8,6 +8,7 @@
 - 远端：`https://github.com/kiangws218/I-SNAKED-GODOT`
 - 当前阶段：2026-10-03 制作人批准 C2A 第二章最小主线切片。已实现灰盒、统一 NPC 交互、声望/恐惧与营救结伴，验证通过，等待试玩。
 - 当前审阅分支：`codex/chapter2-mainline-slice`；基线 `origin/main` 为 `9347a86`。不把审阅分支描述为已合入主线。
+- 跨机接力：代码提交 `09549dd` 于 2026-10-04 已成功推送到同名远端分支；文档收口提交位于其后，最新位置以 `git log` 为准。第二章 135 项检查和其他门禁通过。
 - 停止线：本轮止于 C2A，不进入支线、完整地图、其他两条营救路线或 N8。规格与证据见 `CHAPTER2_IMPLEMENTATION.md`、`CHAPTER2_REVIEW.md`。
 - 当前可玩与验证证据：序章见 `N5_N6_REVIEW.md`，N7 见 `N7_REVIEW.md`。
 - 下一工作：等待制作人试玩 `game/chapter2_preview.tscn`；接力续跑判定先读 `CHAPTER2_PROGRESS.md`。本轮未因额度中断，00:37 检查不能越过试玩停止线。
