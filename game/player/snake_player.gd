@@ -130,7 +130,7 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("place_node"):
 		place_node()
 	elif event.is_action_pressed("interact"):
-		_interact_with_nearest_actor()
+		if _interact_with_nearest_actor(): get_viewport().set_input_as_handled()
 
 
 func reset_at(spawn_position: Vector2, spawn_direction := Vector2.RIGHT) -> void:
@@ -471,6 +471,10 @@ func play_pickup_sfx() -> void:
 
 
 func _interact_with_nearest_actor() -> bool:
+	# A passenger has no contact collision; Enter is its explicit interaction.
+	for child in get_children():
+		if child is NpcActor and child.is_riding() and child.visible:
+			return child.request_interaction()
 	var nearest: BeanProjectile
 	var nearest_distance := INF
 	for child in get_parent().get_children():

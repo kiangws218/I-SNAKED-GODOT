@@ -422,5 +422,5 @@ func _test_route_matrix(approach: String, transfer: String, timing: String, wake
 	if transfer == "spit" and timing == "early": expected_fear += 3
 	if timing == "again" or (timing == "early" and transfer == "protect"): expected_fear += 1
 	check(session.state.social.fear == expected_fear, "成功行为才结算恐惧：" + label)
-	check(session.state.player.rider == "" and session.state.chapter_two.stretcher == "" and world.player.inventory.count_item(&"keti") == 0, "结束不残留承载关系：" + label)
+	check(session.state.player.rider == "keti" and world.get_story_actor(&"keti").is_riding() and session.state.chapter_two.stretcher == "" and world.player.inventory.count_item(&"keti") == 0, "结束时唯一可蒂由运输切换为骑乘同行：" + label)
 	session.store.delete_slot(1)

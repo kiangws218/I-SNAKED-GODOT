@@ -1,0 +1,28 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://game/boss/boss_bean_pickup.gd" id="1_pickup"]
+[ext_resource type="Texture2D" path="res://assets/items/bean.svg" id="2_bean"]
+
+[sub_resource type="CircleShape2D" id="BeanPickupShape"]
+radius = 10.0
+
+[node name="BossBeanPickup" type="Area2D"]
+collision_layer = 0
+collision_mask = 4
+script = ExtResource("1_pickup")
+length_amount = 1
+respawn_seconds = 3.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("BeanPickupShape")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Sprite2D" type="Sprite2D" parent="Visual"]
+texture = ExtResource("2_bean")
+scale = Vector2(1.2, 1.2)
+
+[node name="Glow" type="Polygon2D" parent="Visual"]
+z_index = -1
+polygon = PackedVector2Array(-8, 0, -4, -7, 4, -7, 8, 0, 4, 7, -4, 7)
+color = Color(0.88, 0.74, 0.31, 0.35)

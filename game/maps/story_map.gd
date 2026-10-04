@@ -53,7 +53,7 @@ func setup(id: StringName, saved_flags: Dictionary, entry := &"", saved_items: D
 	for node in _layout_nodes():
 		if node is NpcActor: node.configure_pair_roam()
 	_spawn_automatic_enemies()
-	if map_id == &"chapter2_slice":
+	if not actor_states.is_empty():
 		# Restore actual carried/released visitors too, not just authored NPCs.
 		for actor_id in actor_states:
 			var state: Dictionary = actor_states[actor_id]
@@ -166,9 +166,10 @@ func _on_player_actor_released(payload: Dictionary, at_position: Vector2) -> voi
 	var actor_id := StringName(metadata.get("actor_id", payload.get("id", "")))
 	if actor_id.is_empty() or actor_id == &"bean":
 		return
-	var released: Dictionary = Dictionary(actor_states.get(String(actor_id), {})).duplicate(true) if map_id == &"chapter2_slice" else {}
+	var downed_rules := _uses_downed_rules(actor_id)
+	var released: Dictionary = Dictionary(actor_states.get(String(actor_id), {})).duplicate(true) if downed_rules else {}
 	var npc := spawn_npc(actor_id, at_position)
-	if map_id == &"chapter2_slice":
+	if downed_rules:
 		npc.defeat_mode = "downed"
 		npc.max_hp = float(released.get("max_hp", npc.max_hp))
 	npc.restore_from_payload(payload)
@@ -177,7 +178,7 @@ func _on_player_actor_released(payload: Dictionary, at_position: Vector2) -> voi
 		"location": String(map_id), "hp": npc.hp, "max_hp": npc.max_hp,
 		"position": [at_position.x, at_position.y], "met": true,
 	}, true)
-	if map_id == &"chapter2_slice":
+	if downed_rules:
 		released["status"] = "unconscious"
 		released["damageable"] = true
 		released["defeat_mode"] = "downed"
@@ -350,10 +351,13 @@ func _bind_npc(npc: NpcActor) -> void:
 		npc.downed.connect(_on_npc_defeated)
 	if not npc.harmed.is_connected(_on_npc_harmed):
 		npc.harmed.connect(_on_npc_harmed)
-	if map_id == &"chapter2_slice":
+	if _uses_downed_rules(npc.npc_id):
 		npc.defeat_mode = "downed"
 		npc.damageable = true
 		npc.allow_hostile_interaction = true
+
+func _uses_downed_rules(actor_id: StringName) -> bool:
+	return map_id == &"chapter2_slice" or (actor_id == &"keti" and String(actor_states.get("keti", {}).get("defeat_mode", "")) == "downed")
 
 func _on_npc_harmed(npc: NpcActor, was_hostile: bool, source: StringName) -> void:
 	story_actor_harmed.emit(npc.npc_id, was_hostile, source)
@@ -439,7 +443,7 @@ func capture_actor_states() -> void:
 			if map_id == &"chapter2_slice": state["defeat_mode"] = "downed"
 			state["position"] = [node.global_position.x, node.global_position.y]
 		actor_states[key] = state
-	if map_id == &"chapter2_slice":
+	if map_id == &"chapter2_slice" or _uses_downed_rules(&"keti"):
 		# In-flight NPCs have already left the stomach but do not yet have a
 		# world entity. Project them as downed at their current position in the
 		# save snapshot; do not stop or duplicate their live flight.
@@ -448,6 +452,7 @@ func capture_actor_states() -> void:
 			var metadata: Dictionary = child.payload.get("metadata", {})
 			if not bool(child.payload.get("actor", false)) and not metadata.has("actor_id"): continue
 			var actor_id := String(metadata.get("actor_id", child.payload.get("id", "")))
+			if not _uses_downed_rules(StringName(actor_id)): continue
 			if not actor_states.has(actor_id): continue
 			var actor: Dictionary = actor_states[actor_id]
 			actor.merge({"status": "unconscious", "location": String(map_id), "hp": float(metadata.get("hp", actor.get("hp", 0.0))), "position": [child.global_position.x, child.global_position.y], "damageable": true, "defeat_mode": "downed"}, true)

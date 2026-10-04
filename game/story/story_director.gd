@@ -49,6 +49,7 @@ func cancel_pending_flow() -> void:
 	flow_epoch += 1
 	memory_timer_started = false
 	pending_map_node = ""
+	pause_requested.emit(&"cutscene", false)
 	if is_instance_valid(session):
 		session.cancel_cg()
 	if is_instance_valid(panel):
@@ -82,7 +83,7 @@ func resume() -> void:
 		chapter_two.resume()
 		return
 	# Older saves predate the completion latch; a named prologue stays complete.
-	if bool(session.state.flags.get("prologue_complete", false)):
+	if bool(session.state.flags.get("prologue_complete", false)) and not bool(session.state.chapter_two.get("duo", false)):
 		session.state.flags["keti_event_complete"] = true
 		var keti_state := _actor_state(&"keti")
 		keti_state["damageable"] = false
@@ -763,7 +764,7 @@ func _show_dialogue(id: String, dialogue: Dictionary) -> void:
 	pause_requested.emit(&"dialogue", true)
 
 func _on_choice(choice_id: String) -> void:
-	if session.state.current_map == &"chapter2_slice":
+	if session.state.current_map == &"chapter2_slice" or (current_id.begins_with("ch2_") and bool(session.state.chapter_two.get("duo", false))):
 		await chapter_two.choose(choice_id)
 		return
 	var choice_epoch := flow_epoch
@@ -857,7 +858,7 @@ func _rearm_actor_contact(actor_id: StringName) -> void:
 		npc.rearm_interaction()
 
 func _on_actor_event(actor_id: StringName, event: StringName) -> void:
-	if session.state.current_map == &"chapter2_slice":
+	if session.state.current_map == &"chapter2_slice" or (actor_id == &"keti" and bool(session.state.chapter_two.get("duo", false))):
 		if event == &"interacted": chapter_two.interact_actor(actor_id)
 		return
 	if actor_id == &"keti" and event == &"interacted" and not bool(session.state.flags.get("keti_event_complete", false)) and bool(session.state.flags.get("prologue_complete", false)) and _actor_status(&"keti") == &"alive" and current_id in ["prologue_complete", "free_explore", "chapter1_explore"]:

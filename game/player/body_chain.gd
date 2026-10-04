@@ -13,6 +13,8 @@ var feedback_color := Color.TRANSPARENT
 
 func _ready() -> void:
 	top_level = true
+	# Segment samples already use world coordinates, including authored spawns.
+	global_transform = Transform2D.IDENTITY
 
 
 func reset(head: Vector2, direction: Vector2) -> void:

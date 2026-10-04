@@ -43,6 +43,7 @@ func resume() -> void:
 		show("intro")
 
 func _refresh_goal() -> void:
+	if state().current_map != MAP: return
 	var progress := state().chapter_two
 	var goal := "打开车厢，找到可蒂"
 	if bool(progress.get("inner_latch", false)): goal = "带可蒂到右边的渡口休息台"
@@ -67,6 +68,8 @@ func show(dialogue_id: String, actor_id := StringName()) -> void:
 		if action in ["negotiate", "key"] and bool(state().chapter_two.get("outer_lock", false)): continue
 		if action == "lever" and bool(state().chapter_two.get("inner_latch", false)): continue
 		if action == "duo" and bool(state().chapter_two.get("duo", false)): continue
+		if action == "dismount" and dialogue_id.begins_with("keti_") and (not bool(state().chapter_two.get("duo", false)) or String(state().player.get("rider", "")) != "keti"): continue
+		if action == "ride" and (not bool(state().chapter_two.get("duo", false)) or String(state().player.get("rider", "")) == "keti"): continue
 		available.append(choice)
 	dialogue["choices"] = available
 	director._show_dialogue(director.current_id, dialogue)
@@ -104,7 +107,7 @@ func _keti_dialogue(npc: NpcActor) -> String:
 func interact_actor(actor_id: StringName) -> void:
 	var npc := world().get_story_actor(actor_id)
 	if not is_instance_valid(npc) or not npc.visible: return
-	if actor_id == &"keti" and not bool(state().chapter_two.get("inner_latch", false)):
+	if actor_id == &"keti" and not bool(state().chapter_two.get("duo", false)) and not bool(state().chapter_two.get("inner_latch", false)):
 		show("locked")
 		return
 	var actor := Dictionary(state().actors.get(String(actor_id), {}))
@@ -136,6 +139,7 @@ func interact_item(item_id: StringName) -> void:
 		&"ch2_cot": show("cot_done" if bool(state().chapter_two.get("duo", false)) else "cot")
 
 func _sync_cart() -> void:
+	if state().current_map != MAP: return
 	# The scene gate flag is a projection of chapter progress, never a second fact.
 	var opened := bool(state().chapter_two.get("inner_latch", false))
 	state().flags["ch2_cart_open"] = opened
@@ -190,10 +194,41 @@ func choose(choice_id: String) -> void:
 func _fail(message: String) -> Dictionary:
 	return {"ok": false, "message": message}
 
+func _board_keti(keti: NpcActor) -> bool:
+	var active_world := world()
+	var player := active_world.player
+	if not is_instance_valid(keti) or not is_instance_valid(player) or player.is_dead:
+		return false
+	var original_position := keti.global_position
+	if String(state().player.get("rider", "")) == "keti":
+		return keti.is_riding()
+	if not String(state().player.get("rider", "")).is_empty() or not keti.can_attach_to_carrier(player):
+		return false
+	var boarding_epoch: int = director.flow_epoch
+	var boarding_map: StringName = state().current_map
+	player.set_movement_locked(true)
+	director.pause_requested.emit(&"cutscene", true)
+	var boarded: bool = await keti.walk_to_carrier(player)
+	var still_current: bool = boarding_epoch == director.flow_epoch and state().current_map == boarding_map and director.session.current_world == active_world and is_instance_valid(player) and is_instance_valid(keti)
+	if boarded and not still_current and is_instance_valid(keti) and keti.is_riding():
+		keti.detach_from_carrier(original_position)
+	if still_current and boarded:
+		state().player["rider"] = "keti"
+		var actor: Dictionary = state().actors["keti"]
+		actor.merge({"status": "riding", "location": "rider", "hp": keti.hp}, true)
+		actor.erase("transport_down")
+		state().actors["keti"] = actor
+	if is_instance_valid(player): player.set_movement_locked(false)
+	if boarding_epoch == director.flow_epoch:
+		director.pause_requested.emit(&"cutscene", false)
+	return still_current and boarded
+
 func execute(action: String, actor_id: StringName) -> Dictionary:
-	if state().current_map != MAP or not is_instance_valid(world()): return _fail("已经离开这张地图。")
-	var npc := world().get_story_actor(actor_id) if not actor_id.is_empty() else null
 	var progress := state().chapter_two
+	var companion_action := actor_id == &"keti" and bool(progress.get("duo", false)) and action in ["ride", "dismount", "eat", "attack", "face", "foot", "leave", ""]
+	if not is_instance_valid(world()): return _fail("已经离开这张地图。")
+	if state().current_map != MAP and not companion_action: return _fail("已经离开这张地图。")
+	var npc := world().get_story_actor(actor_id) if not actor_id.is_empty() else null
 	match action:
 		"intro": progress["intro_seen"] = true
 		"negotiate", "threat":
@@ -242,6 +277,7 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 			actor["status"] = "alive"
 			actor["hp"] = npc.hp
 			actor["hostile"] = previous_hostile
+			actor["location"] = String(state().current_map)
 			actor["damageable"] = true
 			actor.erase("transport_down")
 			state().actors[String(actor_id)] = actor
@@ -260,6 +296,10 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 			actor["status"] = "riding"
 			actor["location"] = "rider"
 			actor["transport_down"] = npc.is_downed
+		"ride":
+			if actor_id != &"keti" or not bool(progress.get("duo", false)) or not is_instance_valid(npc) or not npc.visible or npc.is_dead or npc.is_downed: return _fail("可蒂现在无法上蛇。先让她醒来。")
+			if not String(state().player.get("rider", "")).is_empty(): return _fail("蛇背上已经有乘客，请先让他下来，再叫可蒂上蛇。")
+			if not await _board_keti(npc): return _fail("可蒂没能上蛇，走近她后可以再试一次。")
 		"settle":
 			if not bool(progress.get("inner_latch", false)): return _fail("先打开车门，把可蒂带出来。")
 			if world().player.global_position.distance_to(Vector2(1008, 420)) > 80: return _fail("先到渡口的休息台旁边。")
@@ -288,10 +328,16 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 			if passenger_id.is_empty(): passenger_id = StringName(progress.get("stretcher", ""))
 			var passenger := world().get_story_actor(passenger_id)
 			if passenger_id.is_empty() or not is_instance_valid(passenger) or not passenger.is_riding(): return _fail("蛇背上现在没有乘客。")
-			if world().player.global_position.distance_to(Vector2(1008, 420)) > 80: return _fail("先到渡口的休息台旁边。")
-			if not passenger.detach_from_carrier(COT + Vector2(0, 96)): return _fail("现在无法放下乘客。")
+			var direct_rider_interaction := actor_id == passenger_id and passenger_id == &"keti" and bool(progress.get("duo", false))
+			if not direct_rider_interaction and world().player.global_position.distance_to(Vector2(1008, 420)) > 80: return _fail("先到渡口的休息台旁边。")
+			var landing := COT + Vector2(0, 96)
+			if direct_rider_interaction:
+				landing = world().player.body_chain.segments[1] + world().player.direction.orthogonal().normalized() * 36.0
+			if not passenger.detach_from_carrier(landing): return _fail("现在无法放下乘客。")
 			var actor: Dictionary = state().actors[String(passenger_id)]
-			actor.merge({"status": "unconscious" if passenger.is_downed else "alive", "location": String(MAP), "position": [passenger.global_position.x, passenger.global_position.y], "hp": passenger.hp, "damageable": true, "defeat_mode": "downed"}, true)
+			var wake_hostile := bool(actor.get("wake_hostile", actor.get("hostile", passenger.hostile)))
+			passenger.restore_persistent_state({"hp": passenger.hp, "active": true, "damageable": true, "is_dead": false, "is_downed": passenger.is_downed, "defeat_mode": "downed", "hostile": wake_hostile})
+			actor.merge({"status": "unconscious" if passenger.is_downed else "alive", "location": String(state().current_map), "position": [passenger.global_position.x, passenger.global_position.y], "hp": passenger.hp, "damageable": true, "defeat_mode": "downed"}, true)
 			actor.erase("transport_down")
 			state().actors[String(passenger_id)] = actor
 			state().player["rider"] = ""
@@ -300,9 +346,14 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 			var keti := world().get_story_actor(&"keti")
 			if actor_id != &"keti" or not bool(progress.get("settled", false)) or not is_instance_valid(keti) or not keti.visible or keti.is_downed or keti.is_riding() or keti.global_position.distance_to(COT) > 100 or world().player.inventory.count_item(&"keti") > 0: return _fail("先把可蒂安置在渡口，再叫醒她。")
 			if bool(progress.get("duo", false)): return {"ok": true, "next": _keti_dialogue(keti)}
+			var seat_available := String(state().player.get("rider", "")).is_empty() and keti.can_attach_to_carrier(world().player)
+			if seat_available and not await _board_keti(keti): return _fail("可蒂没能上蛇，走近她后可以再试一次。")
 			progress["duo"] = true
+			if seat_available:
+				state().actors["keti"]["status"] = "riding"
+				state().actors["keti"]["location"] = "rider"
 			state().apply_social_event("ch2:quest:reunite_keti", 3, 0)
-			return {"ok": true, "next": "ending"}
+			return {"ok": true, "next": "ending" if seat_available else "ending_occupied"}
 		"", "leave": pass
 		_: return _fail("未知的第二章行动。")
 	return {"ok": true}

@@ -324,7 +324,7 @@ func _restore_player() -> void:
 		var rider := current_world.get_story_actor(rider_id)
 		if is_instance_valid(rider):
 			var rider_state: Dictionary = state.actors.get(String(rider_id), {})
-			var down: bool = state.current_map == &"chapter2_slice" and (bool(rider_state.get("transport_down", false)) or float(rider_state.get("hp", rider.hp)) <= 0.0)
+			var down: bool = bool(rider_state.get("transport_down", false)) or float(rider_state.get("hp", rider.hp)) <= 0.0
 			rider.restore_persistent_state({"hp": float(rider_state.get("hp", rider.hp)), "max_hp": float(rider_state.get("max_hp", rider.max_hp)), "damageable": false, "active": false, "is_dead": false, "is_downed": down, "hostile": bool(rider_state.get("wake_hostile", rider_state.get("hostile", false)))})
 			rider.attach_to_carrier(v, Vector2.ZERO)
 	v.resources_changed.emit()

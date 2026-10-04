@@ -1,0 +1,44 @@
+[gd_scene load_steps=3 format=3]
+
+[sub_resource type="RectangleShape2D" id="RockShape"]
+size = Vector2(48, 48)
+
+[sub_resource type="StyleBoxFlat" id="RockFace"]
+bg_color = Color(0.24, 0.3, 0.29, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.43, 0.49, 0.44, 1)
+
+[node name="RockObstacle" type="StaticBody2D"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RockShape")
+
+[node name="RockVisual" type="Node2D" parent="."]
+
+[node name="Face" type="Polygon2D" parent="RockVisual"]
+polygon = PackedVector2Array(-22, -16, -13, -23, 8, -22, 22, -11, 21, 13, 10, 22, -13, 20, -23, 7)
+color = Color(0.24, 0.3, 0.29, 1)
+
+[node name="Rim" type="Line2D" parent="RockVisual"]
+points = PackedVector2Array(-22, -16, -13, -23, 8, -22, 22, -11, 21, 13, 10, 22, -13, 20, -23, 7, -22, -16)
+width = 3.0
+default_color = Color(0.49, 0.56, 0.48, 1)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Crack" type="Line2D" parent="RockVisual"]
+position = Vector2(-7, -4)
+points = PackedVector2Array(0, 0, 5, 7, 2, 15)
+width = 2.0
+default_color = Color(0.12, 0.19, 0.2, 1)
+
+[node name="Chip" type="Polygon2D" parent="RockVisual"]
+position = Vector2(10, -10)
+polygon = PackedVector2Array(-4, -3, 3, -5, 5, 2, -2, 4)
+color = Color(0.57, 0.61, 0.51, 1)

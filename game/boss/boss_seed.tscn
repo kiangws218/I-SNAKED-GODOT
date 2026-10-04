@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/boss/boss_seed.gd" id="1_seed"]
+
+[sub_resource type="CircleShape2D" id="SeedShape"]
+radius = 6.0
+
+[node name="BossSeed" type="CharacterBody2D"]
+collision_layer = 64
+collision_mask = 1
+script = ExtResource("1_seed")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("SeedShape")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="SeedCore" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(0, -8, 6, -3, 7, 3, 0, 8, -7, 3, -6, -3)
+color = Color(0.87, 0.46, 0.23, 1)
+
+[node name="SeedGlow" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(0, -4, 3, 0, 0, 4, -3, 0)
+color = Color(1, 0.87, 0.51, 1)

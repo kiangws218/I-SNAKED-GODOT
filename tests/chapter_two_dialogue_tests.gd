@@ -37,6 +37,10 @@ func _choose(id: String) -> void:
 		await _tap(KEY_DOWN)
 	await _tap(KEY_ENTER)
 	for frame in range(8): await process_frame
+	for frame in range(400):
+		if not panel.input_locked: break
+		await create_timer(0.016, true).timeout
+	check(not panel.input_locked, "结果动画完成：" + id)
 
 func _new_session() -> void:
 	session = load("res://game/main.tscn").instantiate() as GameSession
@@ -63,6 +67,11 @@ func _cleanup() -> void:
 func _contact(actor_id: StringName) -> void:
 	var world := session.current_world
 	var npc := world.get_story_actor(actor_id)
+	if npc.is_riding():
+		npc.finish_interaction()
+		await _tap(KEY_ENTER)
+		check(session.pause_reasons.has(&"dialogue"), "确认键与骑乘角色交互：%s" % actor_id)
+		return
 	world.player.reset_at(npc.global_position - Vector2(48, 0), Vector2.RIGHT)
 	# Set up a local approach, rather than a swept contact across a fixture teleport.
 	for node in get_nodes_in_group(&"npc"):
@@ -167,6 +176,7 @@ func _test_keti() -> void:
 	await _contact(&"keti")
 	_expect("keti_duo", ["duo"])
 	await _choose("leave")
+	check((await flow.execute("dismount", &"keti")).ok, "结伴后先下蛇再测试击晕")
 	await flow.execute("attack", &"keti")
 	var wake: Dictionary = await flow.execute("face", &"keti")
 	check(wake.get("next", "") == "keti_rewake_reply", "再次叫醒不重演首次重逢")

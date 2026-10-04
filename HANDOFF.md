@@ -6,13 +6,13 @@
 
 - 主分支：`main`
 - 远端：`https://github.com/kiangws218/I-SNAKED-GODOT`
-- 当前阶段：2026-10-03 制作人批准 C2A 第二章最小主线切片。已实现灰盒、统一 NPC 交互、声望/恐惧与营救结伴，验证通过，等待试玩。
+- 当前阶段：2026-10-04 制作人批准可蒂常态骑乘与磐的独立原生 Boss 地图。C2A 营救灰盒基础保留；本次实现、编辑入口与验证见 `COMPANION_BOSS_REVIEW.md`，等待试玩。
 - 当前审阅分支：`codex/chapter2-mainline-slice`；基线 `origin/main` 为 `9347a86`。不把审阅分支描述为已合入主线。
 - 跨机接力：首轮代码提交 `09549dd` 于 2026-10-04 已成功推送到同名远端分支；文档及闭环修复提交位于其后，最新位置以实际 `git log` 与远端为准。最新第二章 1579 项分支检查、157 项主线检查和其他门禁通过。
-- 停止线：本轮止于 C2A，不进入支线、完整地图、其他两条营救路线或 N8。规格与证据见 `CHAPTER2_IMPLEMENTATION.md`、`CHAPTER2_REVIEW.md`。
-- 后续同行方向：2026-10-04 制作人明确可蒂常态骑行在蛇背上。已记录为设计要求，常态同行尚待后续阶段实现。
+- 停止线：本轮只增加已授权骑乘与指定 Boss 独立地图，不进入支线、完整剧情地图、其他营救路线、其他 Boss 或 N8。
+- 可蒂同行已实现：空座结伴默认上蛇，满座不替换已有乘客；Enter 对话、主动上下蛇、唤醒恢复与跨图存读档保留实际状态。
 - 当前可玩与验证证据：序章见 `N5_N6_REVIEW.md`，N7 见 `N7_REVIEW.md`。
-- 下一工作：等待制作人试玩 `game/chapter2_preview.tscn`；2026-10-04 分支闭环修复 `bf9ea65` 已推送，后续按试玩反馈修复重复对白，最新证据见 `CHAPTER2_DIALOGUE_FEEDBACK.md`（220 项对白检查、90 脚本校验）。接力判定先读 `CHAPTER2_PROGRESS.md`；原 00:37 续跑检查已完成并停用，不得越过试玩停止线。
+- 下一工作：等待制作人试玩 `game/chapter2_preview.tscn` 的结伴骑乘与 `game/boss/boss_arena.tscn`（F6 独立运行）。本轮进度/停止线以 `COMPANION_BOSS_PROGRESS.md` 为准，原营救阶段历史见 `CHAPTER2_PROGRESS.md`；原 00:37 续跑检查已停用。当前 100 脚本编译、209 项主线、279 项对白、1579 项分支、61 项骑乘、46 项 Boss 及原回归通过。
 - 2026-09-14美术增量：在公司012cada基础上合并五人透明九表情，标注327条故事台词及两条动态可蒂对白，补齐CG真实头像临时表情接口。验证与审阅见 `DIALOGUE_EMOTIONS_REVIEW.md`；保持公司CG/玩法，等待制作人审阅。
 - 本机工程：`C:\Users\86135\OneDrive\文档\ChatGPT\New project\I SNAKED-GODOT`。2026-10-03 已同步 `9347a86` 并保留前轮八项反馈合并；退役备份在上级 `_project_backups`。已有 CG、出口与搜刮反馈和本轮 C2A 一起保存。
 - 同步状态：接手核对当前审阅分支、`git status` 与 `git log -1 --oneline`，不要把新分支误当成 `main`。只有实际成功推送的提交才是跨机器接力事实。
@@ -58,10 +58,10 @@
 
 ## 本机配置提示
 
-- 当前电脑使用：`D:\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64_console.exe`。
+- 当前电脑使用：`D:\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe`。
 - 家庭电脑可把 Godot 4.7.2 控制台程序加入 `PATH`，或在命令中使用自己的绝对路径。
 - GDA 可用时所有命令传 `--json`；不可用时直接使用 Godot 4.7.2 headless 和 TestArena。
-- 本机当前未安装可调用的 GDA，因此最近一次交付以 Godot 4.7.2 headless 完整测试作为验证证据。
+- 本机已安装 `D:\CodexTools\gda\bin\gda.exe`（0.17.0）；本轮使用 GDA 编译、场景校验、preflight 和 Godot 原生输入测试，完整结果见 `COMPANION_BOSS_REVIEW.md`。此 Windows 不支持 GDA live daemon。
 - 导出模板到 N8 才是必需项，每台机器可独立安装，不提交到仓库。
 - 旧 `IM-SNAKE` 只读参考通常位于仓库同级目录；家庭电脑没有该目录时，以本仓库 `GDD.md` 和已经提交的审计结论为准，不因此阻断已明确的工作。
 

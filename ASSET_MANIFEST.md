@@ -87,6 +87,8 @@
 
 ## 5. 交接者核对方法
 
+2026-10-04 指定 Boss 增量的场景与素材：`game/boss/rock_cocoon_boss.tscn`、`blue_crystal_stake.tscn`、`boss_seed.tscn`、`rock_obstacle.tscn` 使用可编辑的原生 Polygon2D/Line2D 图形占位；豆复用已有 `assets/items/bean.svg`，召唤史莱姆复用现有角色场景。可蒂骑乘复用现有角色帧与乘客显示，没有新增骑乘姿势贴图。截图与编辑入口见 `COMPANION_BOSS_REVIEW.md`；本次没有引入外部 Boss 图片。
+
 1. 拉取 `origin/main` 后，用 Godot 4.7.2 打开 `project.godot`，等待首次导入完成。
 2. 打开 `game/maps/levels/` 的四张地图，确认 `Ground` / `Collision` 使用 `story_tileset.tres`，预摆对象可在 2D 编辑器移动。
 3. 运行 `godot --headless --path . --script res://tests/run_tests.gd`，资源存在性和 TileSet 测试应通过。

@@ -1,0 +1,544 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://game/boss/boss_arena.gd" id="1_arena"]
+[ext_resource type="PackedScene" path="res://game/player/snake_player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://game/boss/rock_cocoon_boss.tscn" id="3_boss"]
+[ext_resource type="PackedScene" path="res://game/boss/blue_crystal_stake.tscn" id="4_stake"]
+[ext_resource type="PackedScene" path="res://game/boss/boss_bean_pickup.tscn" id="5_bean"]
+[ext_resource type="PackedScene" path="res://game/boss/rock_obstacle.tscn" id="6_rock"]
+[ext_resource type="Script" path="res://game/systems/prison_controller.gd" id="7_prison"]
+[ext_resource type="Theme" path="res://game/ui/fantasy_ui_theme.tres" id="8_theme"]
+
+[sub_resource type="RectangleShape2D" id="HorizontalWall"]
+size = Vector2(1728, 24)
+
+[sub_resource type="RectangleShape2D" id="VerticalWall"]
+size = Vector2(24, 1152)
+
+[sub_resource type="StyleBoxFlat" id="PanelStyle"]
+bg_color = Color(0.035, 0.075, 0.08, 0.96)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.38, 0.66, 0.65, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="HudPanelStyle"]
+bg_color = Color(0.025, 0.055, 0.065, 0.88)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.27, 0.5, 0.5, 0.95)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="HealthBackStyle"]
+bg_color = Color(0.08, 0.1, 0.1, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="HealthFillStyle"]
+bg_color = Color(0.77, 0.21, 0.19, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="ShieldFillStyle"]
+bg_color = Color(0.2, 0.72, 0.9, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="BossArena" type="Node2D"]
+process_mode = 3
+script = ExtResource("1_arena")
+initial_length = 24
+initial_hearts = 3
+node_charges = 3
+stakes_follow_boss_on_activation = true
+
+[node name="Battle" type="Node2D" parent="."]
+process_mode = 1
+
+[node name="Ground" type="Polygon2D" parent="Battle"]
+z_index = -10
+polygon = PackedVector2Array(0, 0, 1728, 0, 1728, 1152, 0, 1152)
+color = Color(0.075, 0.12, 0.12, 1)
+
+[node name="GroundDetails" type="Node2D" parent="Battle"]
+z_index = -9
+
+[node name="InnerBorder" type="Line2D" parent="Battle/GroundDetails"]
+position = Vector2(24, 24)
+points = PackedVector2Array(0, 0, 1680, 0, 1680, 1104, 0, 1104, 0, 0)
+width = 4.0
+default_color = Color(0.24, 0.39, 0.35, 0.9)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="NorthSigil" type="Polygon2D" parent="Battle/GroundDetails"]
+position = Vector2(864, 106)
+polygon = PackedVector2Array(0, -24, 16, 0, 0, 24, -16, 0)
+color = Color(0.28, 0.5, 0.47, 0.36)
+
+[node name="SouthSigil" type="Polygon2D" parent="Battle/GroundDetails"]
+position = Vector2(864, 1046)
+polygon = PackedVector2Array(0, -24, 16, 0, 0, 24, -16, 0)
+color = Color(0.28, 0.5, 0.47, 0.36)
+
+[node name="Walls" type="Node2D" parent="Battle"]
+
+[node name="Top" type="StaticBody2D" parent="Battle/Walls"]
+position = Vector2(864, 12)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Battle/Walls/Top"]
+shape = SubResource("HorizontalWall")
+
+[node name="Visual" type="Polygon2D" parent="Battle/Walls/Top"]
+polygon = PackedVector2Array(-864, -12, 864, -12, 864, 12, -864, 12)
+color = Color(0.25, 0.39, 0.35, 1)
+
+[node name="Bottom" type="StaticBody2D" parent="Battle/Walls"]
+position = Vector2(864, 1140)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Battle/Walls/Bottom"]
+shape = SubResource("HorizontalWall")
+
+[node name="Visual" type="Polygon2D" parent="Battle/Walls/Bottom"]
+polygon = PackedVector2Array(-864, -12, 864, -12, 864, 12, -864, 12)
+color = Color(0.25, 0.39, 0.35, 1)
+
+[node name="Left" type="StaticBody2D" parent="Battle/Walls"]
+position = Vector2(12, 576)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Battle/Walls/Left"]
+shape = SubResource("VerticalWall")
+
+[node name="Visual" type="Polygon2D" parent="Battle/Walls/Left"]
+polygon = PackedVector2Array(-12, -576, 12, -576, 12, 576, -12, 576)
+color = Color(0.25, 0.39, 0.35, 1)
+
+[node name="Right" type="StaticBody2D" parent="Battle/Walls"]
+position = Vector2(1716, 576)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Battle/Walls/Right"]
+shape = SubResource("VerticalWall")
+
+[node name="Visual" type="Polygon2D" parent="Battle/Walls/Right"]
+polygon = PackedVector2Array(-12, -576, 12, -576, 12, 576, -12, 576)
+color = Color(0.25, 0.39, 0.35, 1)
+
+[node name="Rocks" type="Node2D" parent="Battle"]
+
+[node name="Rock_08_08" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(216, 216)
+
+[node name="Rock_30_06" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(744, 168)
+
+[node name="Rock_52_08" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(1272, 216)
+
+[node name="Rock_54_22" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(1320, 564)
+scale = Vector2(1, 1.5)
+
+[node name="Rock_28_40" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(696, 984)
+
+[node name="Rock_52_38" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(1272, 936)
+
+[node name="Rock_20_12" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(504, 312)
+
+[node name="Rock_12_34" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(312, 840)
+
+[node name="Rock_40_16" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(984, 396)
+scale = Vector2(1, 0.5)
+
+[node name="Rock_44_34" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(1080, 840)
+
+[node name="Rock_60_30" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(1464, 744)
+
+[node name="Rock_16_30" parent="Battle/Rocks" instance=ExtResource("6_rock")]
+position = Vector2(408, 744)
+
+[node name="SpawnPoints" type="Node2D" parent="Battle"]
+
+[node name="PlayerSpawn" type="Marker2D" parent="Battle/SpawnPoints"]
+position = Vector2(660, 588)
+
+[node name="BossSpawn" type="Marker2D" parent="Battle/SpawnPoints"]
+position = Vector2(1164, 588)
+
+[node name="SnakePlayer" parent="Battle" instance=ExtResource("2_player")]
+position = Vector2(660, 588)
+
+[node name="Boss" parent="Battle" instance=ExtResource("3_boss")]
+position = Vector2(1164, 588)
+
+[node name="StakeLayout" type="Node2D" parent="Battle"]
+position = Vector2(1164, 588)
+
+[node name="Stake_NW" parent="Battle/StakeLayout" instance=ExtResource("4_stake")]
+position = Vector2(-240, -240)
+
+[node name="Stake_NE" parent="Battle/StakeLayout" instance=ExtResource("4_stake")]
+position = Vector2(240, -240)
+
+[node name="Stake_SW" parent="Battle/StakeLayout" instance=ExtResource("4_stake")]
+position = Vector2(-240, 240)
+
+[node name="Stake_SE" parent="Battle/StakeLayout" instance=ExtResource("4_stake")]
+position = Vector2(240, 240)
+
+[node name="Supplies" type="Node2D" parent="Battle"]
+
+[node name="Bean_01" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(240, 180)
+
+[node name="Bean_02" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(480, 180)
+
+[node name="Bean_03" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(720, 180)
+
+[node name="Bean_04" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(960, 180)
+
+[node name="Bean_05" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(1320, 180)
+
+[node name="Bean_06" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(1560, 180)
+
+[node name="Bean_07" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(240, 420)
+
+[node name="Bean_08" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(480, 420)
+
+[node name="Bean_09" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(720, 420)
+
+[node name="Bean_10" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(1320, 420)
+
+[node name="Bean_11" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(1560, 420)
+
+[node name="Bean_12" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(240, 720)
+
+[node name="Bean_13" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(480, 720)
+
+[node name="Bean_14" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(720, 720)
+
+[node name="Bean_15" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(1320, 720)
+
+[node name="Bean_16" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(1560, 720)
+
+[node name="Bean_17" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(240, 960)
+
+[node name="Bean_18" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(480, 960)
+
+[node name="Bean_19" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(720, 960)
+
+[node name="Bean_20" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(960, 960)
+
+[node name="Bean_21" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(1320, 960)
+
+[node name="Bean_22" parent="Battle/Supplies" instance=ExtResource("5_bean")]
+position = Vector2(1560, 960)
+
+[node name="PrisonController" type="Node" parent="Battle"]
+script = ExtResource("7_prison")
+
+[node name="Camera2D" type="Camera2D" parent="Battle"]
+position = Vector2(864, 576)
+zoom = Vector2(0.625, 0.625)
+enabled = true
+
+[node name="UI" type="CanvasLayer" parent="."]
+layer = 20
+process_mode = 3
+
+[node name="Hud" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("8_theme")
+
+[node name="Header" type="PanelContainer" parent="UI/Hud"]
+offset_left = 330.0
+offset_top = 18.0
+offset_right = 1130.0
+offset_bottom = 126.0
+theme_override_styles/panel = SubResource("HudPanelStyle")
+
+[node name="BossName" type="Label" parent="UI/Hud"]
+offset_left = 330.0
+offset_top = 22.0
+offset_right = 1120.0
+offset_bottom = 50.0
+theme_override_font_sizes/font_size = 21
+text = "巨岩茧母 · 磐"
+horizontal_alignment = 1
+
+[node name="Health" type="ProgressBar" parent="UI/Hud"]
+offset_left = 330.0
+offset_top = 52.0
+offset_right = 1120.0
+offset_bottom = 70.0
+show_percentage = false
+max_value = 220.0
+value = 220.0
+theme_override_styles/background = SubResource("HealthBackStyle")
+theme_override_styles/fill = SubResource("HealthFillStyle")
+
+[node name="Shield" type="ProgressBar" parent="UI/Hud"]
+offset_left = 330.0
+offset_top = 73.0
+offset_right = 1120.0
+offset_bottom = 87.0
+show_percentage = false
+max_value = 100.0
+theme_override_styles/background = SubResource("HealthBackStyle")
+theme_override_styles/fill = SubResource("ShieldFillStyle")
+
+[node name="StageHint" type="Label" parent="UI/Hud"]
+offset_left = 330.0
+offset_top = 90.0
+offset_right = 1120.0
+offset_bottom = 112.0
+theme_override_font_sizes/font_size = 14
+text = "第一阶段 · 躲避种子弹，反击茧母"
+horizontal_alignment = 1
+
+[node name="PlayerCard" type="PanelContainer" parent="UI/Hud"]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 310.0
+offset_bottom = 122.0
+theme_override_styles/panel = SubResource("HudPanelStyle")
+
+[node name="PlayerInfo" type="Label" parent="UI/Hud"]
+offset_left = 42.0
+offset_top = 37.0
+offset_right = 292.0
+offset_bottom = 62.0
+text = "身长 24 · 心 ❤❤❤ · 节点 3"
+
+[node name="Controls" type="Label" parent="UI/Hud"]
+offset_left = 42.0
+offset_top = 63.0
+offset_right = 292.0
+offset_bottom = 112.0
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 3
+text = "WASD 转向 · J/Space 吐豆 · F 放节点"
+
+[node name="PauseButton" type="Button" parent="UI/Hud"]
+offset_left = 1150.0
+offset_top = 24.0
+offset_right = 1256.0
+offset_bottom = 68.0
+theme_override_font_sizes/font_size = 15
+text = "暂停"
+
+[node name="ResultPanel" type="Control" parent="UI"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("8_theme")
+
+[node name="Shade" type="ColorRect" parent="UI/ResultPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.015, 0.025, 0.03, 0.78)
+
+[node name="Center" type="CenterContainer" parent="UI/ResultPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Card" type="PanelContainer" parent="UI/ResultPanel/Center"]
+custom_minimum_size = Vector2(480, 300)
+layout_mode = 2
+theme_override_styles/panel = SubResource("PanelStyle")
+
+[node name="Margin" type="MarginContainer" parent="UI/ResultPanel/Center/Card"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="UI/ResultPanel/Center/Card/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="UI/ResultPanel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -205.0
+offset_top = -122.0
+offset_right = 205.0
+offset_bottom = -72.0
+theme_override_font_sizes/font_size = 30
+text = "BOSS 击破！"
+horizontal_alignment = 1
+
+[node name="Summary" type="Label" parent="UI/ResultPanel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -205.0
+offset_top = -58.0
+offset_right = 205.0
+offset_bottom = 38.0
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+text = "用时 0 秒 · 剩余身长 24 节 · 剩余心数 3"
+
+[node name="RetryButton" type="Button" parent="UI/ResultPanel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = 57.0
+offset_right = 180.0
+offset_bottom = 109.0
+text = "再战一次"
+
+[node name="PausePanel" type="Control" parent="UI"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("8_theme")
+
+[node name="Shade" type="ColorRect" parent="UI/PausePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.015, 0.025, 0.03, 0.78)
+
+[node name="Center" type="CenterContainer" parent="UI/PausePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Card" type="PanelContainer" parent="UI/PausePanel/Center"]
+custom_minimum_size = Vector2(360, 220)
+layout_mode = 2
+theme_override_styles/panel = SubResource("PanelStyle")
+
+[node name="Margin" type="MarginContainer" parent="UI/PausePanel/Center/Card"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="UI/PausePanel/Center/Card/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="UI/PausePanel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -145.0
+offset_top = -94.0
+offset_right = 145.0
+offset_bottom = -50.0
+theme_override_font_sizes/font_size = 28
+text = "战斗暂停"
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="UI/PausePanel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -145.0
+offset_top = -34.0
+offset_right = 145.0
+offset_bottom = 13.0
+text = "继续战斗"
+
+[node name="RetryButton" type="Button" parent="UI/PausePanel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -145.0
+offset_top = 23.0
+offset_right = 145.0
+offset_bottom = 70.0
+text = "重新开始"

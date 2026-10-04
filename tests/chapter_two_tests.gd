@@ -62,6 +62,10 @@ func _choose(choice_id: String) -> void:
 		await _tap(KEY_DOWN)
 	await _tap(KEY_ENTER)
 	for frame in range(8): await process_frame
+	for frame in range(400):
+		if not panel.input_locked: break
+		await create_timer(0.016, true).timeout
+	check(not panel.input_locked, "选项动画完成并释放输入：" + choice_id)
 
 func _run() -> void:
 	_test_state_and_history()
@@ -355,4 +359,5 @@ func _test_real_mainline(approach: String, transfer: String, wake: String) -> vo
 	await _choose("duo")
 	await _choose("leave")
 	check(session.state.chapter_two.duo and session.state.social.reputation == 3, "真实输入完成救援与结伴闭环")
+	check(session.state.player.rider == "keti" and session.current_world.get_story_actor(&"keti").is_riding(), "真实结伴结束时可蒂默认骑乘")
 	check(int(session.state.social.fear) == {"eat": 3, "threat": 2, "attack": 1, "deal": 0}[approach], "实操路线计分正确")

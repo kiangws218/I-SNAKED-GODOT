@@ -1,0 +1,56 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/boss/blue_crystal_stake.gd" id="1_stake"]
+
+[sub_resource type="StyleBoxFlat" id="ChargeStyle"]
+bg_color = Color(0.1, 0.2, 0.26, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.77, 0.91, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="BlueCrystalStake" type="Node2D"]
+script = ExtResource("1_stake")
+required_capture_seconds = 3.0
+shield_damage = 25.0
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="GroundRing" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-24, -4, -17, -17, 0, -24, 17, -17, 24, 0, 17, 17, 0, 24, -17, 17)
+color = Color(0.07, 0.2, 0.28, 0.78)
+
+[node name="CrystalShadow" type="Polygon2D" parent="Visual"]
+position = Vector2(2, 5)
+polygon = PackedVector2Array(-5, 17, -16, 1, -8, -17, 7, -23, 17, -4, 8, 16)
+color = Color(0.04, 0.1, 0.16, 0.8)
+
+[node name="Crystal" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-6, 16, -16, 0, -8, -18, 6, -25, 16, -4, 7, 15)
+color = Color(0.24, 0.72, 0.91, 1)
+
+[node name="Facet" type="Polygon2D" parent="Visual/Crystal"]
+polygon = PackedVector2Array(-6, 0, -1, -18, 3, -3, 4, 9, -2, 13)
+color = Color(0.71, 0.94, 1, 0.92)
+
+[node name="ChargeRing" type="Line2D" parent="Visual"]
+points = PackedVector2Array(0, -29, 20, -20, 29, 0, 20, 20, 0, 29, -20, 20, -29, 0, -20, -20, 0, -29)
+width = 2.0
+default_color = Color(0.37, 0.84, 1, 0.65)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="ProgressBar" type="ProgressBar" parent="."]
+offset_left = -36.0
+offset_top = 35.0
+offset_right = 36.0
+offset_bottom = 45.0
+show_percentage = false
+max_value = 3.0
+theme_override_styles/background = SubResource("ChargeStyle")

@@ -185,6 +185,12 @@ func _begin_interaction() -> void:
 	player.play_npc_contact_sfx()
 	interaction_requested.emit(self, player)
 
+func request_interaction() -> bool:
+	if not visible or not is_instance_valid(player) or player.is_dead:
+		return false
+	_begin_interaction()
+	return interaction_open
+
 
 func finish_interaction() -> void:
 	if not interaction_open:
@@ -366,10 +372,10 @@ func restore_persistent_state(state: Dictionary) -> bool:
 
 
 func attach_to_carrier(carrier: Node2D, offset: Vector2) -> bool:
-	if not is_instance_valid(carrier) or carrier == self:
+	if not can_attach_to_carrier(carrier):
 		return false
-	if is_instance_valid(_carrier):
-		detach_from_carrier(global_position)
+	if is_instance_valid(_carrier) and _carrier == carrier:
+		return true
 	_world_parent = get_parent()
 	_carrier = carrier
 	_riding_offset = offset
@@ -386,10 +392,21 @@ func attach_to_carrier(carrier: Node2D, offset: Vector2) -> bool:
 		collision.set_deferred("disabled", true)
 	return true
 
+func can_attach_to_carrier(carrier: Node2D) -> bool:
+	if not is_instance_valid(carrier) or carrier == self:
+		return false
+	if is_instance_valid(_carrier):
+		return _carrier == carrier
+	for child in carrier.get_children():
+		if child is NpcActor and child != self and child.is_riding():
+			return false
+	return true
+
 ## A short walk to the neck's side, then a separate step onto it.
 ## The story owner pauses gameplay and commits persistent riding on success.
 func walk_to_carrier(carrier: SnakePlayer) -> bool:
-	if not is_instance_valid(carrier) or carrier.is_dead or carrier.body_chain.segments.size() < 2 or _boarding: return false
+	if not can_attach_to_carrier(carrier) or carrier.is_dead or carrier.body_chain.segments.size() < 2 or _boarding: return false
+	if is_riding(): return true
 	finish_interaction()
 	_boarding = true
 	_boarding_epoch += 1
@@ -414,7 +431,7 @@ func walk_to_carrier(carrier: SnakePlayer) -> bool:
 	var step := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	step.tween_property(self, "global_position", neck, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	await get_tree().create_timer(0.3, true, false, true).timeout
-	var valid := boarding_epoch == _boarding_epoch and is_instance_valid(carrier) and not carrier.is_dead
+	var valid := boarding_epoch == _boarding_epoch and can_attach_to_carrier(carrier) and not carrier.is_dead
 	step.kill()
 	_boarding = false
 	process_mode = old_process_mode
