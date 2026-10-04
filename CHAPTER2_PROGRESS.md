@@ -25,7 +25,9 @@
 
 2026-10-04 制作人要求补做全部已实现分支与操作的闭环审计。已修复空中存档丢人、动态旧角色恢复、载运读档后互动失效、重复安置重新昏迷、担架下客失配；补齐转场互斥、旧档承载恢复和音频退出清理。120 组组合、1579 项新增检查与 157 项主线检查通过，报告见 `CHAPTER2_BRANCH_AUDIT.md`。本轮仍只修 C2A，不进入下一阶段。
 
-等待制作人试玩 `game/chapter2_preview.tscn` 并反馈。范围、启动和验证详见 `CHAPTER2_REVIEW.md`；规格见 `CHAPTER2_IMPLEMENTATION.md`。最新验收以 `CHAPTER2_BRANCH_AUDIT.md` 为准；旧章回归、合并反馈、CG、音频、全量脚本与场景检查均已覆盖。
+2026-10-04 制作人试玩反馈重复对白，已修复结果后的对白路由、首次介绍记忆与已完成任务选项。新增真实重接触对白测试 220 项通过，157/1579 项主线检查与旧章回归继续通过，全量 90 脚本校验通过。证据见 `CHAPTER2_DIALOGUE_FEEDBACK.md`。
+
+等待制作人试玩 `game/chapter2_preview.tscn` 并反馈。范围、启动和验证详见 `CHAPTER2_REVIEW.md`；规格见 `CHAPTER2_IMPLEMENTATION.md`。操作闭环见 `CHAPTER2_BRANCH_AUDIT.md`，最新对白验收见 `CHAPTER2_DIALOGUE_FEEDBACK.md`。
 
 接力分支为 `codex/chapter2-mainline-slice`。现有反馈合并与本轮 C2A 一起保存，不覆盖 `origin/main`。
 

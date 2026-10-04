@@ -57,7 +57,49 @@ func _refresh_goal() -> void:
 func show(dialogue_id: String, actor_id := StringName()) -> void:
 	actor_context = actor_id
 	director.current_id = "ch2_" + dialogue_id
-	director._show_dialogue(director.current_id, Dictionary(dialogue_source[dialogue_id]))
+	var dialogue: Dictionary = Dictionary(dialogue_source[dialogue_id]).duplicate(true)
+	# Follow-ups share the same interaction options, but never replay a
+	# completed quest offer. Prose and option labels still live in .dialogue.
+	var choices: Array = dialogue.get("choices", dialogue_source.get(dialogue.get("choices_from", ""), {}).get("choices", []))
+	var available: Array = []
+	for choice in choices:
+		var action := String(choice.get("action", ""))
+		if action in ["negotiate", "key"] and bool(state().chapter_two.get("outer_lock", false)): continue
+		if action == "lever" and bool(state().chapter_two.get("inner_latch", false)): continue
+		if action == "duo" and bool(state().chapter_two.get("duo", false)): continue
+		available.append(choice)
+	dialogue["choices"] = available
+	director._show_dialogue(director.current_id, dialogue)
+
+func _dialogue_seen(dialogue_id: String, actor_id: StringName) -> bool:
+	return bool(state().chapter_two.get("dialogues_seen", {}).get("%s:%s" % [actor_id, dialogue_id], false))
+
+func _social_event(actor_id: StringName, action: String) -> bool:
+	return bool(state().social.get("applied_events", {}).get("ch2:caravan:%s:%s" % [actor_id, action], false))
+
+func _hurt(actor_id: StringName) -> bool:
+	var actor: Dictionary = state().actors.get(String(actor_id), {})
+	return bool(actor.get("resentful", false)) or bool(actor.get("hostile", false)) or _social_event(actor_id, "swallow") or _social_event(actor_id, "assault")
+
+func _merchant_dialogue() -> String:
+	if _hurt(&"caravan_merchant"): return "merchant_hurt"
+	if _social_event(&"caravan_merchant", "threat"): return "merchant_threatened"
+	if bool(state().chapter_two.get("settled", false)) or (bool(state().chapter_two.get("inner_latch", false)) and not _keti_in_cart()): return "merchant_rescued"
+	if bool(state().chapter_two.get("inner_latch", false)): return "merchant_cart_open"
+	if bool(state().chapter_two.get("outer_lock", false)): return "merchant_open"
+	return "merchant_repeat" if _dialogue_seen("merchant", &"caravan_merchant") else "merchant"
+
+func _keti_in_cart() -> bool:
+	var keti := world().get_story_actor(&"keti")
+	return is_instance_valid(keti) and keti.visible and not keti.is_riding() and keti.global_position.distance_to(Vector2(552, 324)) < 100
+
+func _keti_dialogue(npc: NpcActor) -> String:
+	if bool(state().chapter_two.get("duo", false)):
+		return "keti_duo_hurt" if _hurt(&"keti") else "keti_duo"
+	if bool(state().chapter_two.get("settled", false)) and npc.global_position.distance_to(COT) < 100:
+		if _hurt(&"keti"): return "keti_cot_hurt"
+		return "keti_cot_repeat" if _dialogue_seen("keti_cot", &"keti") else "keti_cot"
+	return "keti_awake_repeat" if _dialogue_seen("keti_awake", &"keti") else "keti_awake"
 
 func interact_actor(actor_id: StringName) -> void:
 	var npc := world().get_story_actor(actor_id)
@@ -71,18 +113,27 @@ func interact_actor(actor_id: StringName) -> void:
 	if npc.is_downed:
 		show("keti_down" if actor_id == &"keti" else "npc_down", actor_id)
 	elif actor_id == &"caravan_merchant":
-		show("merchant", actor_id)
+		show(_merchant_dialogue(), actor_id)
 	elif actor_id == &"keti":
-		show("keti_cot" if bool(state().chapter_two.get("settled", false)) and npc.global_position.distance_to(COT) < 100 else "keti_awake", actor_id)
+		show(_keti_dialogue(npc), actor_id)
+	elif _hurt(actor_id):
+		show("npc_hurt", actor_id)
+	elif _social_event(actor_id, "threat"):
+		show("npc_threatened", actor_id)
 	else:
-		show(String(actor_id) if dialogue_source.has(String(actor_id)) else "npc", actor_id)
+		var greeting := String(actor_id) if dialogue_source.has(String(actor_id)) else "npc"
+		show(greeting + "_repeat" if _dialogue_seen(greeting, actor_id) and dialogue_source.has(greeting + "_repeat") else greeting, actor_id)
 
 func interact_item(item_id: StringName) -> void:
 	match item_id:
-		&"ch2_key": show("key")
-		&"ch2_lever": show("lever")
-		&"ch2_cart": show("cart_open" if bool(state().chapter_two.get("inner_latch", false)) else "cart")
-		&"ch2_cot": show("cot")
+		&"ch2_key": show("key_open" if bool(state().chapter_two.get("outer_lock", false)) else "key")
+		&"ch2_lever": show("lever_open" if bool(state().chapter_two.get("inner_latch", false)) else "lever")
+		&"ch2_cart":
+			if not bool(state().chapter_two.get("inner_latch", false)):
+				show("cart_unlocked" if bool(state().chapter_two.get("outer_lock", false)) else "cart")
+			else:
+				show("cart_open" if _keti_in_cart() else "cart_empty")
+		&"ch2_cot": show("cot_done" if bool(state().chapter_two.get("duo", false)) else "cot")
 
 func _sync_cart() -> void:
 	# The scene gate flag is a projection of chapter progress, never a second fact.
@@ -106,6 +157,8 @@ func _score(actor_id: StringName, action: String, fear: int) -> void:
 
 func choose(choice_id: String) -> void:
 	var epoch: int = director.flow_epoch
+	var source_dialogue := String(director.current_id).trim_prefix("ch2_")
+	var source_actor := actor_context
 	var selected: Dictionary = director.runner.choose(choice_id)
 	if not bool(selected.get("ok", false)): return
 	director.panel.set_input_locked(true)
@@ -115,6 +168,11 @@ func choose(choice_id: String) -> void:
 		director.panel.set_input_locked(false)
 		director.status_changed.emit(String(result.get("message", "请先完成前一步。")))
 		return
+	# Record a completed conversation only after a successful choice. Merely
+	# opening or cancelling its panel must not suppress an unread introduction.
+	var seen: Dictionary = state().chapter_two.get("dialogues_seen", {})
+	seen["%s:%s" % [source_actor, source_dialogue]] = true
+	state().chapter_two["dialogues_seen"] = seen
 	var presentation: Dictionary = selected.choice.get("presentation", {})
 	if not presentation.is_empty():
 		director.panel.set_presentation_expression(String(presentation.get("portrait_expression", "")), String(presentation.get("portrait_id", "")))
@@ -139,19 +197,27 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 	match action:
 		"intro": progress["intro_seen"] = true
 		"negotiate", "threat":
+			var threatened_before := _social_event(actor_id, "threat")
 			if action == "threat" and actor_id != &"caravan_merchant":
 				if not is_instance_valid(npc) or not npc.visible or npc.is_downed: return _fail("他现在没法回答。")
 				_score(actor_id, "threat", 2)
-				return {"ok": true, "next": "npc_threat_reply"}
+				return {"ok": true, "next": "npc_threat_again" if threatened_before else "npc_threat_reply"}
 			if actor_id != &"caravan_merchant" or not is_instance_valid(npc) or not npc.visible or npc.is_downed: return _fail("他现在没法回答。工具箱里有备用钥匙。")
+			if bool(progress.get("outer_lock", false)):
+				if action == "threat":
+					_score(actor_id, "threat", 2)
+					return {"ok": true, "next": "npc_threat_again" if threatened_before else "npc_threat_reply"}
+				return {"ok": true, "next": _merchant_dialogue()}
 			progress["outer_lock"] = true
 			if action == "threat": _score(actor_id, "threat", 2)
 			return {"ok": true, "next": "threat_reply" if action == "threat" else "deal_reply"}
 		"key":
+			if bool(progress.get("outer_lock", false)): return {"ok": true, "next": "key_open"}
 			progress["outer_lock"] = true
 			world().consume_story_pickup(&"ch2_key")
 		"lever":
 			if not bool(progress.get("outer_lock", false)): return _fail("外面的锁还没开：找商人，或取工具箱里的钥匙。")
+			if bool(progress.get("inner_latch", false)): return {"ok": true, "next": "lever_open"}
 			progress["inner_latch"] = true
 			_sync_cart()
 		"eat", "protect":
@@ -180,7 +246,8 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 			actor.erase("transport_down")
 			state().actors[String(actor_id)] = actor
 			if actor_id == &"keti":
-				if not progress.has("first_wake"): progress["first_wake"] = action
+				if progress.has("first_wake"): return {"ok": true, "next": "keti_rewake_reply"}
+				progress["first_wake"] = action
 				return {"ok": true, "next": "keti_foot_reply" if action == "foot" else "keti_face_reply"}
 			return {"ok": true, "next": "wake_reply"}
 		"stretcher":
@@ -215,7 +282,7 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 			if state().player.get("rider", "") == "keti": state().player["rider"] = ""
 			progress["settled"] = true
 			actor_context = &"keti"
-			return {"ok": true, "next": "keti_down" if down else "keti_cot"}
+			return {"ok": true, "next": "keti_down" if down else _keti_dialogue(keti)}
 		"dismount":
 			var passenger_id := StringName(state().player.get("rider", ""))
 			if passenger_id.is_empty(): passenger_id = StringName(progress.get("stretcher", ""))
@@ -232,6 +299,7 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 		"duo":
 			var keti := world().get_story_actor(&"keti")
 			if actor_id != &"keti" or not bool(progress.get("settled", false)) or not is_instance_valid(keti) or not keti.visible or keti.is_downed or keti.is_riding() or keti.global_position.distance_to(COT) > 100 or world().player.inventory.count_item(&"keti") > 0: return _fail("先把可蒂安置在渡口，再叫醒她。")
+			if bool(progress.get("duo", false)): return {"ok": true, "next": _keti_dialogue(keti)}
 			progress["duo"] = true
 			state().apply_social_event("ch2:quest:reunite_keti", 3, 0)
 			return {"ok": true, "next": "ending"}

@@ -11,7 +11,7 @@
 - 跨机接力：首轮代码提交 `09549dd` 于 2026-10-04 已成功推送到同名远端分支；文档及闭环修复提交位于其后，最新位置以实际 `git log` 与远端为准。最新第二章 1579 项分支检查、157 项主线检查和其他门禁通过。
 - 停止线：本轮止于 C2A，不进入支线、完整地图、其他两条营救路线或 N8。规格与证据见 `CHAPTER2_IMPLEMENTATION.md`、`CHAPTER2_REVIEW.md`。
 - 当前可玩与验证证据：序章见 `N5_N6_REVIEW.md`，N7 见 `N7_REVIEW.md`。
-- 下一工作：等待制作人试玩 `game/chapter2_preview.tscn`；2026-10-04 已按制作人要求补做分支闭环审计和修复，最新结果见 `CHAPTER2_BRANCH_AUDIT.md`。接力判定先读 `CHAPTER2_PROGRESS.md`；原 00:37 续跑检查已完成并停用，不得越过试玩停止线。
+- 下一工作：等待制作人试玩 `game/chapter2_preview.tscn`；2026-10-04 分支闭环修复 `bf9ea65` 已推送，后续按试玩反馈修复重复对白，最新证据见 `CHAPTER2_DIALOGUE_FEEDBACK.md`（220 项对白检查、90 脚本校验）。接力判定先读 `CHAPTER2_PROGRESS.md`；原 00:37 续跑检查已完成并停用，不得越过试玩停止线。
 - 2026-09-14美术增量：在公司012cada基础上合并五人透明九表情，标注327条故事台词及两条动态可蒂对白，补齐CG真实头像临时表情接口。验证与审阅见 `DIALOGUE_EMOTIONS_REVIEW.md`；保持公司CG/玩法，等待制作人审阅。
 - 本机工程：`C:\Users\86135\OneDrive\文档\ChatGPT\New project\I SNAKED-GODOT`。2026-10-03 已同步 `9347a86` 并保留前轮八项反馈合并；退役备份在上级 `_project_backups`。已有 CG、出口与搜刮反馈和本轮 C2A 一起保存。
 - 同步状态：接手核对当前审阅分支、`git status` 与 `git log -1 --oneline`，不要把新分支误当成 `main`。只有实际成功推送的提交才是跨机器接力事实。
