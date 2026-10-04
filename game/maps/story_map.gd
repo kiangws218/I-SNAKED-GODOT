@@ -54,11 +54,21 @@ func setup(id: StringName, saved_flags: Dictionary, entry := &"", saved_items: D
 		if node is NpcActor: node.configure_pair_roam()
 	_spawn_automatic_enemies()
 	if map_id == &"chapter2_slice":
-		# A previous chapter's actual passenger is carried through, never replaced.
+		# Restore actual carried/released visitors too, not just authored NPCs.
 		for actor_id in actor_states:
 			var state: Dictionary = actor_states[actor_id]
-			if state.get("status", "") == "riding" and get_story_actor(StringName(actor_id)) == null:
-				spawn_npc(StringName(actor_id), player.global_position)
+			var riding: bool = state.get("status", "") == "riding"
+			var present: bool = state.get("location", "") == String(map_id) and state.get("status", "") in ["alive", "downed", "unconscious", "critical"]
+			if not riding and not present: continue
+			var visitor := get_story_actor(StringName(actor_id))
+			if visitor == null:
+				visitor = spawn_npc(StringName(actor_id), player.global_position)
+				if present: _restore_actor_state(visitor)
+			elif riding and visitor.player == null:
+				# Authored riding placeholders were skipped by the normal binder.
+				# They still need contacts/damage signals once the passenger lands.
+				_bind_npc(visitor)
+				visitor.set_actor_active(false)
 
 func _build_layers() -> void:
 	var layout_scene: PackedScene = load(String(data.scene))
@@ -156,10 +166,12 @@ func _on_player_actor_released(payload: Dictionary, at_position: Vector2) -> voi
 	var actor_id := StringName(metadata.get("actor_id", payload.get("id", "")))
 	if actor_id.is_empty() or actor_id == &"bean":
 		return
-	var npc := spawn_npc(actor_id, at_position)
-	if map_id == &"chapter2_slice": npc.defeat_mode = "downed"
-	npc.restore_from_payload(payload)
 	var released: Dictionary = Dictionary(actor_states.get(String(actor_id), {})).duplicate(true) if map_id == &"chapter2_slice" else {}
+	var npc := spawn_npc(actor_id, at_position)
+	if map_id == &"chapter2_slice":
+		npc.defeat_mode = "downed"
+		npc.max_hp = float(released.get("max_hp", npc.max_hp))
+	npc.restore_from_payload(payload)
 	released.merge({
 		"status": "critical" if bool(metadata.get("critical", false)) else "unconscious",
 		"location": String(map_id), "hp": npc.hp, "max_hp": npc.max_hp,
@@ -427,6 +439,20 @@ func capture_actor_states() -> void:
 			if map_id == &"chapter2_slice": state["defeat_mode"] = "downed"
 			state["position"] = [node.global_position.x, node.global_position.y]
 		actor_states[key] = state
+	if map_id == &"chapter2_slice":
+		# In-flight NPCs have already left the stomach but do not yet have a
+		# world entity. Project them as downed at their current position in the
+		# save snapshot; do not stop or duplicate their live flight.
+		for child in get_children():
+			if child is not BeanProjectile or child.actor_released or child.is_queued_for_deletion(): continue
+			var metadata: Dictionary = child.payload.get("metadata", {})
+			if not bool(child.payload.get("actor", false)) and not metadata.has("actor_id"): continue
+			var actor_id := String(metadata.get("actor_id", child.payload.get("id", "")))
+			if not actor_states.has(actor_id): continue
+			var actor: Dictionary = actor_states[actor_id]
+			actor.merge({"status": "unconscious", "location": String(map_id), "hp": float(metadata.get("hp", actor.get("hp", 0.0))), "position": [child.global_position.x, child.global_position.y], "damageable": true, "defeat_mode": "downed"}, true)
+			actor.erase("transport_down")
+			actor_states[actor_id] = actor
 
 func capture_enemy_states() -> void:
 	for node in get_tree().get_nodes_in_group(&"enemy"):

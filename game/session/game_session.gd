@@ -59,6 +59,9 @@ func _ready() -> void:
 	music_director.play_cue(&"music.title")
 
 func _unhandled_input(event: InputEvent) -> void:
+	if map_transition_active:
+		get_viewport().set_input_as_handled()
+		return
 	if death_screen.is_open() or pause_reasons.has(&"cutscene"): return
 	if not event is InputEventKey or not event.pressed or event.echo: return
 	if event.is_action_pressed("pause") and not menus.main_menu.visible and not pause_reasons.has(&"dialogue"):
@@ -76,6 +79,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_F9: retry_checkpoint()
 
 func start_new_game(slot: int) -> void:
+	if map_transition_active: return
 	death_screen.hide_screen()
 	active_slot = clampi(slot, 1, SaveStore.SLOT_COUNT)
 	state = SessionState.new()
@@ -87,6 +91,7 @@ func start_new_game(slot: int) -> void:
 	story.start()
 
 func continue_game(slot: int) -> void:
+	if map_transition_active: return
 	active_slot = clampi(slot, 1, SaveStore.SLOT_COUNT)
 	var was_paused := pause_reasons.has(&"menu")
 	if was_paused:
@@ -112,6 +117,7 @@ func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_c
 		status_label.visible = false
 	var source_map := state.current_map
 	map_transition_active = true
+	set_pause_reason(&"transition", true)
 	await screen_transition.fade_out()
 	sfx_director.stop_all()
 	if capture_current: _capture_player()
@@ -119,6 +125,7 @@ func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_c
 	if map_id == &"chapter2_slice" and not state.prepare_chapter_two():
 		await screen_transition.fade_in()
 		map_transition_active = false
+		set_pause_reason(&"transition", false)
 		status_label.visible = true
 		status_label.text = "这份旧存档中的可蒂已经死亡，不能进入本营救试玩。"
 		return false
@@ -151,6 +158,7 @@ func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_c
 	_refresh_hud()
 	await screen_transition.fade_in()
 	map_transition_active = false
+	set_pause_reason(&"transition", false)
 	return true
 
 func remember_checkpoint(map_id: StringName, entry := &"") -> void:
@@ -160,7 +168,7 @@ func remember_checkpoint(map_id: StringName, entry := &"") -> void:
 	state.remember_checkpoint()
 
 func retry_checkpoint() -> void:
-	if not is_instance_valid(current_world): return
+	if map_transition_active or not is_instance_valid(current_world): return
 	story.cancel_pending_flow()
 	status_label.text = "从检查点重建地图…"
 	state.restore_checkpoint()
@@ -171,6 +179,7 @@ func retry_checkpoint() -> void:
 	status_label.text = "已回到检查点（满生命）"
 
 func save_active_slot() -> Dictionary:
+	if map_transition_active: return {"ok": false, "error": {"code": "TRANSITION_BUSY"}}
 	_capture_player()
 	var metadata := {"current_map": String(state.current_map), "chapter": state.story.get("chapter", "序章"), "player_name": state.story.get("player_name", "未命名")}
 	var result := store.save_slot(active_slot, state.to_dictionary(), metadata)
@@ -178,12 +187,18 @@ func save_active_slot() -> Dictionary:
 	return result
 
 func load_active_slot() -> Dictionary:
+	if map_transition_active: return {"ok": false, "error": {"code": "TRANSITION_BUSY"}}
 	var loaded := store.load_slot(active_slot)
 	if not loaded.ok or loaded.get("empty", false):
 		status_label.text = "槽位 %d 无法读取" % active_slot
 		return loaded
-	var applied := state.load_dictionary(loaded.data)
+	var candidate := SessionState.new()
+	var applied := candidate.load_dictionary(loaded.data)
 	if not applied.ok: return applied
+	if candidate.current_map == &"chapter2_slice" and not candidate.prepare_chapter_two():
+		status_label.text = "存档中的可蒂已无法营救，请选择其他槽位。"
+		return {"ok": false, "error": {"code": "KETI_UNAVAILABLE"}}
+	state.load_dictionary(candidate.to_dictionary())
 	story.cancel_pending_flow()
 	await load_map(state.current_map, &"", false, false)
 	status_label.text = "槽位 %d 已载入" % active_slot
@@ -216,6 +231,7 @@ func toggle_pause() -> void:
 	else: menus.hide_pause()
 
 func return_to_title() -> void:
+	if map_transition_active: return
 	story.cancel_pending_flow()
 	sfx_director.stop_all()
 	music_director.play_cue(&"music.title")
@@ -267,12 +283,15 @@ func _reload_after_death() -> void:
 	death_screen.home_button.disabled = true
 	var saved := store.load_slot(active_slot)
 	if saved.ok and not saved.get("empty", false):
-		var applied := state.load_dictionary(saved.data)
+		var candidate := SessionState.new()
+		var applied := candidate.load_dictionary(saved.data)
+		if applied.ok and candidate.current_map == &"chapter2_slice" and not candidate.prepare_chapter_two(): applied = {"ok": false}
 		if not applied.ok:
 			death_screen.message.text = "存档无效，请返回主菜单选择其他槽位"
 			death_screen.reload_button.disabled = false
 			death_screen.home_button.disabled = false
 			return
+		state.load_dictionary(candidate.to_dictionary())
 		pause_reasons.clear()
 		get_tree().paused = false
 		await load_map(state.current_map, &"", false, false)
@@ -305,7 +324,8 @@ func _restore_player() -> void:
 		var rider := current_world.get_story_actor(rider_id)
 		if is_instance_valid(rider):
 			var rider_state: Dictionary = state.actors.get(String(rider_id), {})
-			rider.restore_persistent_state({"hp": float(rider_state.get("hp", rider.hp)), "max_hp": float(rider_state.get("max_hp", rider.max_hp)), "damageable": false, "active": false, "is_dead": false, "is_downed": false})
+			var down: bool = state.current_map == &"chapter2_slice" and (bool(rider_state.get("transport_down", false)) or float(rider_state.get("hp", rider.hp)) <= 0.0)
+			rider.restore_persistent_state({"hp": float(rider_state.get("hp", rider.hp)), "max_hp": float(rider_state.get("max_hp", rider.max_hp)), "damageable": false, "active": false, "is_dead": false, "is_downed": down, "hostile": bool(rider_state.get("wake_hostile", rider_state.get("hostile", false)))})
 			rider.attach_to_carrier(v, Vector2.ZERO)
 	v.resources_changed.emit()
 	v.health_changed.emit(v.hearts, v.max_hearts)

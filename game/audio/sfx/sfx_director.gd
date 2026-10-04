@@ -19,6 +19,15 @@ func _ready() -> void:
 	_ensure_pool_parent()
 
 
+func _exit_tree() -> void:
+	# Release active decoders before a session is removed or the window closes.
+	stop_all()
+	for player in _players:
+		if is_instance_valid(player): player.stream = null
+	for player in _spatial_players:
+		if is_instance_valid(player): player.stream = null
+
+
 func play_sfx(sfx_id: StringName, options: Dictionary = {}) -> Dictionary:
 	var result := _base_result(sfx_id)
 	if sfx_id.is_empty():

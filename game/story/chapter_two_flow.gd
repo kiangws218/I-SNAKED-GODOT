@@ -29,7 +29,7 @@ func bind_world(active_world: StoryMap) -> void:
 		var carrier_actor := active_world.get_story_actor(carrier_id)
 		if is_instance_valid(carrier_actor):
 			var actor: Dictionary = state().actors[String(carrier_id)]
-			carrier_actor.restore_persistent_state({"hp": float(actor.get("hp", 0.0)), "active": true, "damageable": true, "is_dead": false, "is_downed": bool(actor.get("transport_down", false)), "defeat_mode": "downed", "hostile": bool(actor.get("wake_hostile", actor.get("hostile", false)))})
+			carrier_actor.restore_persistent_state({"hp": float(actor.get("hp", 0.0)), "active": true, "damageable": true, "is_dead": false, "is_downed": bool(actor.get("transport_down", false)) or float(actor.get("hp", 0.0)) <= 0.0, "defeat_mode": "downed", "hostile": bool(actor.get("wake_hostile", actor.get("hostile", false)))})
 			carrier_actor.attach_to_carrier(active_world.player, Vector2(0, -8))
 	_sync_cart()
 	resume()
@@ -177,6 +177,7 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 			actor["hp"] = npc.hp
 			actor["hostile"] = previous_hostile
 			actor["damageable"] = true
+			actor.erase("transport_down")
 			state().actors[String(actor_id)] = actor
 			if actor_id == &"keti":
 				if not progress.has("first_wake"): progress["first_wake"] = action
@@ -184,8 +185,10 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 			return {"ok": true, "next": "wake_reply"}
 		"stretcher":
 			if actor_id != &"keti" or not is_instance_valid(npc) or not npc.visible or not bool(progress.get("inner_latch", false)): return _fail("先打开车门，找到可蒂。")
+			if not String(state().player.get("rider", "")).is_empty(): return _fail("蛇背上已经有乘客，请先到休息台让他下来。")
 			if not npc.attach_to_carrier(world().player, Vector2(0, -8)): return _fail("现在无法安置担架。")
 			progress["stretcher"] = "keti"
+			state().player["rider"] = "keti"
 			var actor: Dictionary = state().actors["keti"]
 			actor["status"] = "riding"
 			actor["location"] = "rider"
@@ -196,15 +199,17 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 			var keti := world().get_story_actor(&"keti")
 			var actor: Dictionary = state().actors["keti"]
 			var swallowed := world().player.inventory.count_item(&"keti") > 0
-			var carried: bool = progress.get("stretcher", "") == "keti" or state().player.get("rider", "") == "keti"
+			var carried := is_instance_valid(keti) and keti.is_riding()
 			if not swallowed and not carried and (not is_instance_valid(keti) or not keti.visible or keti.global_position.distance_to(COT) > 120): return _fail("需要把可蒂带到这里，不能隔空搬人。")
-			var down := swallowed or bool(actor.get("transport_down", false)) or (is_instance_valid(keti) and keti.is_downed)
+			var down := swallowed or (is_instance_valid(keti) and keti.is_downed)
+			var current_hp := float(actor.get("hp", 0.0)) if swallowed or not is_instance_valid(keti) else keti.hp
 			if swallowed: world().player.consume_inventory_item(&"keti")
-			if not is_instance_valid(keti): keti = world().spawn_npc(&"keti", COT)
+			if not is_instance_valid(keti) or keti.player == null: keti = world().spawn_npc(&"keti", COT)
 			if keti.is_riding(): keti.detach_from_carrier(COT)
 			keti.global_position = COT
-			keti.restore_persistent_state({"hp": float(actor.get("hp", 0.0)), "active": true, "damageable": true, "is_dead": false, "is_downed": down, "defeat_mode": "downed", "hostile": bool(actor.get("wake_hostile", actor.get("hostile", false)))})
-			actor.merge({"status": "unconscious" if down else "alive", "location": String(MAP), "position": [COT.x, COT.y]}, true)
+			keti.restore_persistent_state({"hp": current_hp, "active": true, "damageable": true, "is_dead": false, "is_downed": down, "defeat_mode": "downed", "hostile": bool(actor.get("wake_hostile", actor.get("hostile", false)))})
+			actor.merge({"status": "unconscious" if down else "alive", "location": String(MAP), "position": [COT.x, COT.y], "hp": keti.hp}, true)
+			actor.erase("transport_down")
 			state().actors["keti"] = actor
 			progress["stretcher"] = ""
 			if state().player.get("rider", "") == "keti": state().player["rider"] = ""
@@ -213,14 +218,17 @@ func execute(action: String, actor_id: StringName) -> Dictionary:
 			return {"ok": true, "next": "keti_down" if down else "keti_cot"}
 		"dismount":
 			var passenger_id := StringName(state().player.get("rider", ""))
+			if passenger_id.is_empty(): passenger_id = StringName(progress.get("stretcher", ""))
 			var passenger := world().get_story_actor(passenger_id)
 			if passenger_id.is_empty() or not is_instance_valid(passenger) or not passenger.is_riding(): return _fail("蛇背上现在没有乘客。")
 			if world().player.global_position.distance_to(Vector2(1008, 420)) > 80: return _fail("先到渡口的休息台旁边。")
 			if not passenger.detach_from_carrier(COT + Vector2(0, 96)): return _fail("现在无法放下乘客。")
 			var actor: Dictionary = state().actors[String(passenger_id)]
-			actor.merge({"status": "unconscious" if passenger.is_downed else "alive", "location": String(MAP), "position": [passenger.global_position.x, passenger.global_position.y], "damageable": true, "defeat_mode": "downed"}, true)
+			actor.merge({"status": "unconscious" if passenger.is_downed else "alive", "location": String(MAP), "position": [passenger.global_position.x, passenger.global_position.y], "hp": passenger.hp, "damageable": true, "defeat_mode": "downed"}, true)
+			actor.erase("transport_down")
 			state().actors[String(passenger_id)] = actor
 			state().player["rider"] = ""
+			if progress.get("stretcher", "") == String(passenger_id): progress["stretcher"] = ""
 		"duo":
 			var keti := world().get_story_actor(&"keti")
 			if actor_id != &"keti" or not bool(progress.get("settled", false)) or not is_instance_valid(keti) or not keti.visible or keti.is_downed or keti.is_riding() or keti.global_position.distance_to(COT) > 100 or world().player.inventory.count_item(&"keti") > 0: return _fail("先把可蒂安置在渡口，再叫醒她。")

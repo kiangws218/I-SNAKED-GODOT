@@ -45,10 +45,28 @@ func apply_social_event(event_id: String, reputation_delta: int, fear_delta: int
 	return true
 
 func prepare_chapter_two() -> bool:
-	if bool(chapter_two.get("initialized", false)): return true
 	var keti: Dictionary = Dictionary(actors.get("keti", {})).duplicate(true)
-	if String(keti.get("status", "dead")) in ["dead", "left"]: return false
-	var carried := String(keti.get("status", "")) in ["swallowed", "riding"] or _player_inventory_has(&"keti")
+	if String(keti.get("status", "dead")) in ["dead", "eaten", "bones", "left"]: return false
+	var in_stomach := _player_inventory_has(&"keti")
+	var on_back: bool = player.get("rider", "") == "keti" or (keti.get("status", "") == "riding" and chapter_two.get("stretcher", "") == "keti")
+	var carried := in_stomach or on_back
+	if carried:
+		keti["status"] = "swallowed" if in_stomach else "riding"
+		keti["location"] = "stomach" if in_stomach else "rider"
+		if in_stomach:
+			if player.get("rider", "") == "keti": player["rider"] = ""
+			chapter_two["stretcher"] = ""
+		elif on_back and String(player.get("rider", "")).is_empty(): player["rider"] = "keti"
+	elif keti.get("status", "") in ["swallowed", "riding"]:
+		# Older builds could save after a spit removed the stomach payload but
+		# before landing. Recover that living actor, never a dead/eaten actor.
+		var recovery := Vector2(1080, 420) if bool(chapter_two.get("settled", false)) else Vector2(552, 324)
+		keti.merge({"status": "unconscious", "location": "chapter2_slice", "hp": 0.0, "position": [recovery.x, recovery.y]}, true)
+		keti.erase("transport_down")
+		chapter_two["stretcher"] = ""
+	if bool(chapter_two.get("initialized", false)):
+		actors["keti"] = keti
+		return true
 	if not carried:
 		keti.merge({"status": "unconscious", "location": "chapter2_slice", "hp": 0.0, "position": [552.0, 324.0]}, true)
 	keti["damageable"] = true

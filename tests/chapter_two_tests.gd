@@ -30,6 +30,7 @@ func _cleanup() -> void:
 	paused = false
 	session.queue_free()
 	await process_frame
+	session = null
 
 func _tap(key: Key) -> void:
 	var event := InputEventKey.new()
@@ -81,8 +82,13 @@ func _run() -> void:
 	await _new_session()
 	await _test_real_mainline("threat", "stretcher", "face")
 	await _cleanup()
+	await _new_session()
+	await _test_real_mainline("attack", "stretcher", "foot")
+	await _cleanup()
+	# AudioServer tears down stopped decoder playbacks on its next mix tick.
+	await create_timer(0.08, true).timeout
 	if failures.is_empty():
-		print("CHAPTER TWO TESTS PASSED: %d checks; keyboard mainline deal/stretcher/face, eat/key/protect/foot, threat/stretcher/face" % checks)
+		print("CHAPTER TWO TESTS PASSED: %d checks; keyboard mainline deal/stretcher/face, eat/key/protect/foot, threat/stretcher/face, attack/key/stretcher/foot" % checks)
 		quit(0)
 	else:
 		for failure in failures: push_error(failure)
@@ -116,6 +122,9 @@ func _test_state_and_history() -> void:
 	var carried := SessionState.new()
 	carried.actors["keti"]["status"] = "swallowed"
 	carried.actors["keti"]["location"] = "stomach"
+	var carried_inventory := StomachInventory.new()
+	carried_inventory.add_item(&"keti", {"actor_id": &"keti", "hp": 14.0})
+	carried.player["inventory"] = carried_inventory.entries.duplicate(true)
 	check(carried.prepare_chapter_two() and carried.actors["keti"].location == "stomach", "不复制历史胃袋可蒂")
 	var legacy := SessionState.new()
 	legacy.flags["banditResolved"] = true
@@ -302,8 +311,12 @@ func _test_real_mainline(approach: String, transfer: String, wake: String) -> vo
 	await _move_to(Vector2(348, 324), KEY_RIGHT)
 	check(session.story.current_id == "ch2_merchant", "方向键碰触商人触发真实对白")
 	await _choose(approach)
-	if approach == "eat":
-		check(world.player.inventory.count_item(&"caravan_merchant") == 1 and session.state.social.fear == 3, "实际选项吞掉商人计分")
+	if approach in ["eat", "attack"]:
+		if approach == "eat":
+			check(world.player.inventory.count_item(&"caravan_merchant") == 1 and session.state.social.fear == 3, "实际选项吞掉商人计分")
+		else:
+			check(world.get_story_actor(&"caravan_merchant").is_downed and session.state.social.fear == 1, "实际选项击晕商人计分")
+			await _choose("leave")
 		await _move_to(Vector2(324, 228), KEY_UP)
 		await _move_to(Vector2(300, 228), KEY_LEFT)
 		check(session.story.current_id == "ch2_key", "商人消失仍可真实碰触备用钥匙")
@@ -342,4 +355,4 @@ func _test_real_mainline(approach: String, transfer: String, wake: String) -> vo
 	await _choose("duo")
 	await _choose("leave")
 	check(session.state.chapter_two.duo and session.state.social.reputation == 3, "真实输入完成救援与结伴闭环")
-	check(int(session.state.social.fear) == (3 if approach == "eat" else (2 if approach == "threat" else 0)), "实操路线计分正确")
+	check(int(session.state.social.fear) == {"eat": 3, "threat": 2, "attack": 1, "deal": 0}[approach], "实操路线计分正确")
