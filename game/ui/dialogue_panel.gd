@@ -137,7 +137,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if input_locked:
 		get_viewport().set_input_as_handled()
 		return
-	if event.is_action_pressed("interact"):
+	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
 		if state == &"entering":
 			_finish_enter()
@@ -146,10 +146,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_submit_name()
 			return
 		_advance_page_or_choice()
-	elif state == &"active" and not name_edit.visible and not choices.is_empty() and event.is_action_pressed("move_up"):
+	elif state == &"active" and not name_edit.visible and not choices.is_empty() and event.is_action_pressed("ui_up"):
 		get_viewport().set_input_as_handled()
 		_set_choice_index(selected_choice_index - 1)
-	elif state == &"active" and not name_edit.visible and not choices.is_empty() and event.is_action_pressed("move_down"):
+	elif state == &"active" and not name_edit.visible and not choices.is_empty() and event.is_action_pressed("ui_down"):
 		get_viewport().set_input_as_handled()
 		_set_choice_index(selected_choice_index + 1)
 	elif event is InputEventKey and event.physical_keycode >= KEY_1 and event.physical_keycode <= KEY_9:

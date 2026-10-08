@@ -19,6 +19,7 @@
   "npc_down": {"speaker":"旁白","pages":["人只是昏过去了。","可以舔脸或舔脚叫醒；之前的事，他不会忘。"],"choices":[{"id":"face","label":"舔脸叫醒","action":"face"},{"id":"foot","label":"舔脚叫醒","action":"foot"},{"id":"eat","label":"吃掉","action":"eat"},{"id":"leave","label":"暂时离开","action":"leave"}]},
   "wake_reply": {"speaker":"旁白","pages":["他猛地醒来，抹了把脸，又低头检查鞋子。","人醒了，不代表刚才的事就当没发生。"],"choices":[{"id":"leave","label":"暂时离开","action":"leave"}]},
   "ferryman": {"speaker":"船夫","pages":["王国要过河的钱，商人要卖人的钱。","我就想收个撑船的钱。这河都快被他们收干了。","木台借你休息，不要钱。"],"choices":[{"id":"eat","label":"吃掉船夫","action":"eat"},{"id":"attack","label":"攻击船夫（击晕）","action":"attack"},{"id":"threat","label":"威胁船夫","action":"threat"},{"id":"leave","label":"暂时离开","action":"leave"}]},
+  "passenger_talk": {"speaker":"乘客","pages":["..."],"choices":[{"id":"passenger_talk_exit","label":"继续赶路","action":"passenger_talk_exit"}]},
   "buck": {"speaker":"巴克","pages":["又是你。我沿着路找吃的，碰上这车。","抢我？我比这马车还穷。"],"choices":[{"id":"eat","label":"吃掉巴克","action":"eat"},{"id":"attack","label":"攻击巴克（击晕）","action":"attack"},{"id":"threat","label":"威胁巴克","action":"threat"},{"id":"leave","label":"暂时离开","action":"leave"}]},
   "miro": {"speaker":"米罗","pages":["本来想跟着商队混口饭吃。","目前只吃到了一嘴灰。你那边有没沾口水的吃的吗？"],"choices":[{"id":"eat","label":"吃掉米罗","action":"eat"},{"id":"attack","label":"攻击米罗（击晕）","action":"attack"},{"id":"threat","label":"威胁米罗","action":"threat"},{"id":"leave","label":"暂时离开","action":"leave"}]},
   "npc_threat_reply": {"speaker":"旁白","pages":["他盯着你的嘴，默默退开一步。","以后有人找你帮忙，也有人只想躲远点。"],"choices":[{"id":"leave","label":"暂时离开","action":"leave"}]},

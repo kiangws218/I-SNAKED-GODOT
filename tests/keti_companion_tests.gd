@@ -124,7 +124,7 @@ func _test_default_mount_and_input_signal() -> void:
 	check(not keti.is_downed and keti.hp == 14.0, "默认骑乘保留可蒂清醒状态与生命")
 	check(session.state.social.reputation == 3, "默认上蛇不重复或漏发结伴声望")
 	await _tap_interact()
-	check(keti.interaction_open, "T 真实输入选中蛇背上的可蒂")
+	check(paused and keti.is_riding() and session.story.chapter_two.actor_context == &"keti" and not keti.interaction_open, "T 真实输入选中蛇背上的可蒂，且不打开地面交互")
 	check(session.story.current_id == "ch2_keti_companion" and session.dialogue.page_index == 0, "骑乘交互进入同伴菜单且打开的按键不推进首句")
 	await _advance_to_choices()
 	var has_dismount := false
@@ -171,7 +171,7 @@ func _test_cross_map_companion() -> void:
 	player.invulnerability_left = 0.0
 	player.danger_kind = ""
 	await _tap_interact()
-	check(keti.interaction_open and session.story.current_id == "ch2_keti_companion", "森林中的 T 仍打开可蒂同伴菜单: id=%s, pause=%s, combat=%s, down=%s, open=%s" % [session.story.current_id, session.pause_reasons, session._companion_combat_blocked(), keti.is_downed, keti.interaction_open])
+	check(paused and keti.is_riding() and session.story.current_id == "ch2_keti_companion", "森林中的 T 仍打开可蒂同伴菜单: id=%s, pause=%s, combat=%s, down=%s" % [session.story.current_id, session.pause_reasons, session._companion_combat_blocked(), keti.is_downed])
 	await _advance_to_choices()
 	var can_dismount := false
 	for choice in session.dialogue.choices:
@@ -285,7 +285,7 @@ func _test_talk_menu_and_priority() -> void:
 	check(world.active_npc == merchant and session.story.current_id.begins_with("ch2_merchant"), "骑乘时 Enter 优先与身旁地面 NPC 交谈")
 	await _dismiss_dialogue()
 	await _tap_interact()
-	check(world.active_npc == keti and session.story.current_id == "ch2_keti_companion", "同位置 T 只选择可蒂")
+	check(world.active_npc == null and session.story.chapter_two.actor_context == &"keti" and session.story.current_id == "ch2_keti_companion", "同位置 T 只联系可蒂，不占用地面交互")
 	await _choose_talk("leave")
 	merchant.global_position = merchant_position
 	merchant.set_physics_process(true)
@@ -319,7 +319,9 @@ func _test_talk_menu_and_priority() -> void:
 	await process_frame
 	keti.is_downed = true
 	await _tap_interact()
-	check(not paused and not keti.interaction_open and not session.hud.companion.visible, "昏迷的骑乘可蒂不能回答闲聊")
+	check(paused and session.story.current_id == "ch2_passenger_talk" and session.dialogue.pages[0].text == "...", "昏迷的骑乘可蒂有通用停顿反馈")
+	await _choose_talk("passenger_talk_exit")
+	check(not paused, "昏迷乘客的停顿反馈可以退出")
 	keti.is_downed = false
 	session.story.combat_kind = &"fixture"
 	session.story.enemies_left = 1

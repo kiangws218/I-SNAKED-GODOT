@@ -25,6 +25,8 @@ var _stake_offsets: Dictionary = {}
 var _previous_canvas := Vector2i.ZERO
 
 func _ready() -> void:
+	var bindings := InputBindingsStore.new()
+	bindings.load_settings()
 	_previous_canvas = get_window().content_scale_size
 	get_window().content_scale_size = preview_resolution
 	if DisplayServer.get_name() != "headless": get_window().size = preview_resolution
@@ -48,7 +50,7 @@ func _ready() -> void:
 	$UI/PausePanel/ResumeButton.pressed.connect(toggle_pause)
 	$UI/PausePanel/RetryButton.pressed.connect(retry)
 	$UI/ResultPanel/RetryButton.pressed.connect(retry)
-	$UI/Hud/Controls.text = "WASD 转向 · J/空格 吐豆\nF 放节点 · K 断尾 · P 暂停"
+	$UI/Hud/Controls.text = "↑%s ←%s ↓%s →%s · 转向\n%s 吐豆 · %s 放节点 · %s 断尾 · %s 暂停" % [bindings.key_text(&"move_up"), bindings.key_text(&"move_left"), bindings.key_text(&"move_down"), bindings.key_text(&"move_right"), bindings.key_text(&"spit"), bindings.key_text(&"place_node"), bindings.key_text(&"cut_tail"), bindings.key_text(&"pause")]
 	# The editable collision nodes are the sole source of the enclosure grid.
 	_cache_world_cells.call_deferred()
 	_refresh_hud()
@@ -71,7 +73,7 @@ func _physics_process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event is not InputEventKey or not event.pressed or event.echo: return
 	var code: Key = event.physical_keycode if event.physical_keycode != 0 else event.keycode
-	if code in [KEY_ESCAPE, KEY_P] and outcome.is_empty():
+	if (event.is_action_pressed("pause") or code == KEY_ESCAPE) and outcome.is_empty():
 		toggle_pause()
 		get_viewport().set_input_as_handled()
 	elif not outcome.is_empty() and code in [KEY_R, KEY_ENTER, KEY_SPACE]:

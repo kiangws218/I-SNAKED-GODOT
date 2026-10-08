@@ -64,7 +64,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if death_screen.is_open() or pause_reasons.has(&"cutscene"): return
 	if not event is InputEventKey or not event.pressed or event.echo: return
-	if event.is_action_pressed("pause") and not menus.main_menu.visible and not pause_reasons.has(&"dialogue"):
+	if (event.is_action_pressed("pause") or event.physical_keycode == KEY_ESCAPE) and not menus.main_menu.visible and not pause_reasons.has(&"dialogue"):
 		toggle_pause()
 		get_viewport().set_input_as_handled()
 		return
@@ -219,11 +219,13 @@ func _process(_delta: float) -> void:
 	_refresh_companion_hud()
 
 func _riding_companion() -> NpcActor:
-	if not is_instance_valid(current_world) or not bool(state.chapter_two.get("duo", false)): return null
-	var keti := current_world.get_story_actor(&"keti")
-	if not is_instance_valid(keti) or not keti.visible or keti.is_dead or keti.is_downed or not keti.is_riding(): return null
-	if keti.get_parent() != current_world.player or current_world.player.is_dead: return null
-	return keti
+	if not is_instance_valid(current_world): return null
+	var passenger_id := StringName(state.player.get("rider", ""))
+	if passenger_id.is_empty(): return null
+	var passenger := current_world.get_story_actor(passenger_id)
+	if not is_instance_valid(passenger) or not passenger is NpcActor or not passenger.visible: return null
+	if not is_instance_valid(current_world.player) or passenger.get_parent() != current_world.player or not passenger.is_riding() or current_world.player.is_dead: return null
+	return passenger
 
 func _companion_combat_blocked() -> bool:
 	if not story.combat_kind.is_empty() and story.enemies_left > 0: return true
@@ -240,13 +242,13 @@ func _companion_combat_blocked() -> bool:
 
 func _talk_to_companion() -> void:
 	if map_transition_active or not pause_reasons.is_empty() or menus.is_blocking(): return
-	var keti := _riding_companion()
-	if not is_instance_valid(keti) or _companion_combat_blocked(): return
-	keti.request_interaction()
+	var passenger := _riding_companion()
+	if not is_instance_valid(passenger) or _companion_combat_blocked(): return
+	story.talk_to_rider(StringName(state.player.get("rider", "")))
 
 func _refresh_companion_hud() -> void:
 	var available := is_instance_valid(_riding_companion()) and not map_transition_active and pause_reasons.is_empty() and not menus.is_blocking()
-	hud.set_companion_available(available, _companion_combat_blocked() if available else false)
+	hud.set_companion_available(available, _companion_combat_blocked() if available else false, StringName(state.player.get("rider", "")))
 
 ## Presentation bridge: story requests a data-defined CG while the player owns
 ## only its playback lifetime. Gameplay/save state never lives in the CG scene.

@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://game/ui/settings_panel.gd" id="1_script"]
 [ext_resource type="Theme" path="res://game/ui/fantasy_ui_theme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://game/ui/key_binding_row.tscn" id="3_binding"]
 
 [node name="SettingsPanel" type="Control"]
 process_mode = 3
@@ -112,7 +113,7 @@ size_flags_vertical = 3
 [node name="ViewControls" type="Button" parent="Center/Panel/Margin/VBox/AudioContent"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-text = "查看键位"
+text = "更改键位"
 
 [node name="ControlsContent" type="VBoxContainer" parent="Center/Panel/Margin/VBox"]
 visible = false
@@ -124,77 +125,99 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_colors/font_color = Color(0.67, 0.82, 0.67, 1)
 theme_override_font_sizes/font_size = 14
-text = "当前版本仅供查看，暂不支持修改"
+text = "点击主键或备用键修改 · 菜单仍用 Enter / 方向键 / Esc"
+autowrap_mode = 2
 horizontal_alignment = 1
 
-[node name="ControlsGrid" type="GridContainer" parent="Center/Panel/Margin/VBox/ControlsContent"]
+[node name="Columns" type="HBoxContainer" parent="Center/Panel/Margin/VBox/ControlsContent"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Action" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/Columns"]
+custom_minimum_size = Vector2(168, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+text = "操作"
+[node name="Primary" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/Columns"]
+custom_minimum_size = Vector2(94, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "主键"
+horizontal_alignment = 1
+[node name="Secondary" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/Columns"]
+custom_minimum_size = Vector2(94, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "备用键"
+horizontal_alignment = 1
+[node name="Reset" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/Columns"]
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "恢复"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Center/Panel/Margin/VBox/ControlsContent"]
+custom_minimum_size = Vector2(0, 168)
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/h_separation = 40
-theme_override_constants/v_separation = 3
-columns = 2
+horizontal_scroll_mode = 0
+follow_focus = true
 
-[node name="MoveLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+[node name="Rows" type="VBoxContainer" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll"]
 layout_mode = 2
-text = "移动"
-[node name="MoveKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "—"
-[node name="SpitLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "吐出 / 使用"
-[node name="SpitKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "—"
-[node name="PlaceLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "放置环形节点"
-[node name="PlaceKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "—"
-[node name="TailLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "断尾 / 回收节点"
-[node name="TailKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "—"
-[node name="PreviousLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "上一件物品"
-[node name="PreviousKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "—"
-[node name="NextLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "下一件物品"
-[node name="NextKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "—"
-[node name="InteractLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "互动 / 继续对话"
-[node name="InteractKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "—"
-[node name="CompanionLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "与骑乘可蒂交谈"
-[node name="CompanionKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
-layout_mode = 2
-text = "—"
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
 
-[node name="ChoiceLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+[node name="MoveUp" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
 layout_mode = 2
-text = "选择对话选项"
-[node name="ChoiceKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+action = &"move_up"
+[node name="MoveDown" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
 layout_mode = 2
-text = "数字键 1–9"
-[node name="PauseLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+action = &"move_down"
+[node name="MoveLeft" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
 layout_mode = 2
-text = "暂停 / 返回"
-[node name="PauseKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+action = &"move_left"
+[node name="MoveRight" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
 layout_mode = 2
-text = "—"
+action = &"move_right"
+[node name="Spit" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
+layout_mode = 2
+action = &"spit"
+[node name="Place" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
+layout_mode = 2
+action = &"place_node"
+[node name="Tail" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
+layout_mode = 2
+action = &"cut_tail"
+[node name="Previous" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
+layout_mode = 2
+action = &"inventory_previous"
+[node name="Next" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
+layout_mode = 2
+action = &"inventory_next"
+[node name="Interact" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
+layout_mode = 2
+action = &"interact"
+[node name="Passenger" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
+layout_mode = 2
+action = &"companion_talk"
+[node name="Pause" parent="Center/Panel/Margin/VBox/ControlsContent/Scroll/Rows" instance=ExtResource("3_binding")]
+layout_mode = 2
+action = &"pause"
+
+[node name="ResetAll" type="Button" parent="Center/Panel/Margin/VBox/ControlsContent"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "恢复全部默认键位"
+
+[node name="FixedKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "对话：Enter / 方向键 / 数字 1–9　·　Esc 返回"
+horizontal_alignment = 1
 
 [node name="Back" type="Button" parent="Center/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 44)

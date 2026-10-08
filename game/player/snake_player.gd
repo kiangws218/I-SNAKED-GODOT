@@ -79,7 +79,7 @@ func _physics_process(delta: float) -> void:
 	shot_cooldown_left = maxf(0.0, shot_cooldown_left - delta)
 	cut_cooldown_left = maxf(0.0, cut_cooldown_left - delta)
 	if is_dead:
-		if Input.is_action_just_pressed("interact"):
+		if Input.is_action_just_pressed("ui_accept"):
 			get_tree().reload_current_scene()
 		return
 	var bean_selected_before_spit := inventory.selected_id() == StomachInventory.BEAN_ID
@@ -499,10 +499,6 @@ func _interact_with_nearest_actor() -> bool:
 				nearest_distance = distance
 	if nearest is BeanProjectile: return nearest.interact()
 	if nearest: return nearest.request_interaction()
-	# Keep the existing non-Keti passenger interaction used by chapter one.
-	for child in get_children():
-		if child is NpcActor and child.npc_id != &"keti" and child.is_riding() and child.visible:
-			return child.request_interaction()
 	return false
 
 

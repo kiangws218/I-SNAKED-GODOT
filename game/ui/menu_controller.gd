@@ -17,6 +17,7 @@ signal exit_requested
 @onready var slots_box: VBoxContainer = $SaveSlotPanel/Center/Panel/Margin/VBox/Slots
 
 var settings_store := AudioSettingsStore.new()
+var bindings_store := InputBindingsStore.new()
 var sfx_director: SfxDirector
 var _slots: Array[Dictionary] = []
 var _overlay_origin: StringName = &"main"
@@ -26,6 +27,8 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 30
 	settings_store.load_settings()
+	bindings_store.load_settings()
+	settings_panel.configure_bindings(bindings_store)
 	settings_panel.configure(settings_store.music_percent, settings_store.sfx_percent)
 	_connect_buttons()
 	pause_menu.visible = false
@@ -99,7 +102,8 @@ func is_blocking() -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not event.is_action_pressed("pause") or event.is_echo():
+	var fixed_back: bool = event is InputEventKey and event.pressed and event.physical_keycode == KEY_ESCAPE
+	if (not event.is_action_pressed("pause") and not fixed_back) or event.is_echo():
 		return
 	if settings_panel.visible:
 		if not settings_panel.handle_back():

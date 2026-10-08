@@ -128,6 +128,23 @@ func bind_world(world: StoryMap) -> void:
 		pending_map_node = ""
 		enter_node(next)
 
+func talk_to_rider(actor_id: StringName) -> void:
+	if not is_instance_valid(session.current_world): return
+	var rider := session.current_world.get_story_actor(actor_id)
+	if not is_instance_valid(rider) or not rider.visible or not rider.is_riding() or rider.get_parent() != session.current_world.player: return
+	if rider.is_downed:
+		chapter_two.show("passenger_talk", actor_id)
+		return
+	if actor_id == &"keti" and bool(session.state.chapter_two.get("duo", false)):
+		chapter_two.show(chapter_two._keti_dialogue(rider), actor_id)
+		return
+	# Reuse the completed first-chapter camp follow-up only in its authored
+	# context. Never route a rider back through rescue, payment, or wake-up flows.
+	if actor_id == &"ajian" and session.state.current_map == &"forest" and bool(session.state.flags.get("campSettlementSeen", false)):
+		enter_node("camp_ajian_resting")
+		return
+	chapter_two.show("passenger_talk", actor_id)
+
 func notify(event: StringName) -> void:
 	match event:
 		&"PLAYER_BEAN_EATEN":
@@ -764,6 +781,14 @@ func _show_dialogue(id: String, dialogue: Dictionary) -> void:
 	pause_requested.emit(&"dialogue", true)
 
 func _on_choice(choice_id: String) -> void:
+	if current_id == "ch2_passenger_talk":
+		if choice_id != "passenger_talk_exit": return
+		panel.close()
+		pause_requested.emit(&"dialogue", false)
+		current_id = chapter_two.passenger_talk_return_id
+		chapter_two.passenger_talk_return_id = ""
+		chapter_two.actor_context = &""
+		return
 	if session.state.current_map == &"chapter2_slice" or (current_id.begins_with("ch2_") and bool(session.state.chapter_two.get("duo", false))):
 		await chapter_two.choose(choice_id)
 		return

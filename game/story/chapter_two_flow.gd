@@ -6,6 +6,7 @@ const COT := Vector2(1080, 420)
 var director: Node
 var actor_context := StringName()
 var dialogue_source: Dictionary = {}
+var passenger_talk_return_id := ""
 
 func setup(owner_director: Node) -> void:
 	director = owner_director
@@ -56,6 +57,7 @@ func _refresh_goal() -> void:
 	director.session.status_label.visible = true
 
 func show(dialogue_id: String, actor_id := StringName()) -> void:
+	if dialogue_id == "passenger_talk": passenger_talk_return_id = director.current_id
 	actor_context = actor_id
 	director.current_id = "ch2_" + dialogue_id
 	var dialogue: Dictionary = Dictionary(dialogue_source[dialogue_id]).duplicate(true)

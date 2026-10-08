@@ -134,7 +134,7 @@ func _set_path(path: String, value: Variant) -> void:
 	target[parts[-1]] = value
 
 func _substitute(text: String) -> String:
-	return text.replace("{fire}", "J / 空格").replace("{interact}", "回车").replace("{node}", "F")
+	return text.replace("{fire}", InputBindingsStore.current_key_text(&"spit")).replace("{interact}", "Enter").replace("{node}", InputBindingsStore.current_key_text(&"place_node"))
 
 
 func _parse_speaker_prefix(text: String) -> Dictionary:

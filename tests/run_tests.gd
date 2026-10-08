@@ -1648,11 +1648,10 @@ func _test_ui_hud_contract() -> void:
 	check(viewport_bounds.encloses(menu.settings_panel.get_node("Center/Panel").get_global_rect()), "UI 设置界面适配 768×480 原生视口")
 	check(menu.settings_panel.view_controls_button is Button, "UI 设置页提供查看键位入口")
 	menu.settings_panel.show_controls()
-	check(menu.settings_panel.controls_content.visible and not menu.settings_panel.audio_content.visible, "UI 键位说明为独立只读子页")
-	var controls_text := ""
-	for label in menu.settings_panel.get_node("Center/Panel/Margin/VBox/ControlsContent/ControlsGrid").get_children():
-		controls_text += label.text if label is Label else ""
-	check("W / ↑" in controls_text and "A / ←" in controls_text and "J / 空格" in controls_text and "P / Esc" in controls_text, "UI 键位页覆盖移动、吐出和暂停等核心操作")
+	check(menu.settings_panel.controls_content.visible and not menu.settings_panel.audio_content.visible, "UI 改键为独立子页")
+	check(menu.settings_panel.binding_rows.get_child_count() == 12, "UI 改键覆盖十二个玩法动作")
+	var rows := menu.settings_panel.binding_rows
+	check(rows.get_node("MoveUp/Primary").text == "W" and rows.get_node("MoveUp/Secondary").text == "↑" and rows.get_node("Spit/Primary").text == "J" and rows.get_node("Spit/Secondary").text == "空格" and rows.get_node("Pause/Secondary").text == "Esc" and rows.get_node("Pause/Secondary").disabled, "UI 原生主备用键按钮展示真实绑定且固定 Esc 可见")
 	check(menu.settings_panel.handle_back() and menu.settings_panel.audio_content.visible, "UI 键位页返回设置页而非直接关闭设置")
 	menu.main_menu.visible = false
 	menu.show_pause()
