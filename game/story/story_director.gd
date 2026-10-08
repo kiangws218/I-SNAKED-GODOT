@@ -110,7 +110,7 @@ func bind_world(world: StoryMap) -> void:
 	world.story_actor_defeated.connect(func(id: StringName): _on_actor_event(id, &"died"))
 	world.story_actor_released.connect(_on_story_actor_released)
 	world.story_actor_harmed.connect(func(actor_id: StringName, was_hostile: bool, source: StringName):
-		if session.state.current_map == &"chapter2_slice": chapter_two.on_harmed(actor_id, was_hostile, source))
+		if session.state.current_map == &"chapter2_slice" or (actor_id == &"keti" and bool(session.state.chapter_two.get("duo", false))): chapter_two.on_harmed(actor_id, was_hostile, source))
 	world.story_enemy_defeated.connect(func(_kind: StringName):
 		enemies_left = maxi(0, enemies_left - 1)
 		if combat_kind == &"goblin": session.state.encounters["cave_goblins_remaining"] = enemies_left

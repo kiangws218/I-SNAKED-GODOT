@@ -86,6 +86,13 @@ func close() -> void:
 	_play_sfx(&"sfx.ui.cancel")
 	_kill_tween()
 	state = &"exiting"
+	# The fade-out continues after gameplay resumes; its old buttons must not
+	# accept Enter or clicks and reopen a conversation during that interval.
+	for button in choices_box.get_children():
+		if button is Button: button.disabled = true
+	continue_button.disabled = true
+	var focused := get_viewport().gui_get_focus_owner()
+	if is_instance_valid(focused) and panel.is_ancestor_of(focused): focused.release_focus()
 	_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	_tween.set_parallel(true)
 	_tween.tween_property(panel, "position", _shown_position + Vector2(64, 0), EXIT_SECONDS).set_trans(Tween.TRANS_CUBIC)
@@ -215,6 +222,7 @@ func _render_page() -> void:
 	sub_label.visible = false
 	body_label.text = String(page.get("text", ""))
 	continue_button.visible = page_index + 1 < pages.size() and not name_edit.visible
+	continue_button.disabled = input_locked
 	if DisplayServer.get_name() != "headless": _play_sfx(&"sfx.ui.dialogue_open")
 	choices.assign(page.get("choices", []))
 	selected_choice_index = 0
@@ -242,13 +250,14 @@ func _render_page() -> void:
 		button.add_child(choice_label)
 		button.focus_entered.connect(func(i = index): _set_choice_index(i, false))
 		button.mouse_entered.connect(func(i = index): _set_choice_index(i, true))
-		button.pressed.connect(func(i = index): choice_selected.emit(String(choices[i].id)))
+		button.pressed.connect(func(i = index): _select_choice(i))
 		choices_box.add_child(button)
 	if not choices.is_empty() and state == &"active":
 		_set_choice_index(0)
 	call_deferred("_refresh_choice_layout")
 
 func _advance_page_or_choice() -> void:
+	if input_locked: return
 	if state == &"entering":
 		_finish_enter()
 		return
@@ -264,6 +273,10 @@ func _advance_page_or_choice() -> void:
 	if not choices.is_empty():
 		_play_sfx(&"sfx.ui.confirm")
 		choice_selected.emit(String(choices[selected_choice_index].id))
+
+func _select_choice(index: int) -> void:
+	if state != &"active" or input_locked or index < 0 or index >= choices.size(): return
+	choice_selected.emit(String(choices[index].id))
 
 func _center_portrait() -> void:
 	if portrait.texture == null:

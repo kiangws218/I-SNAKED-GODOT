@@ -29,13 +29,45 @@ func _capture() -> void:
 	session.current_world.camera.restore()
 	session.story.chapter_two._refresh_goal()
 	session._refresh_hud()
+	session._refresh_companion_hud()
 	paused = true
 	for frame in range(12): await process_frame
 	await RenderingServer.frame_post_draw
-	var error := root.get_texture().get_image().save_png("res://review/keti_companion_riding.png")
+	var error := root.get_texture().get_image().save_png("res://review/companion_talk_hint.png")
+	paused = false
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_T
+	key.pressed = true
+	Input.parse_input_event(key)
+	Input.flush_buffered_events()
+	key = InputEventKey.new()
+	key.physical_keycode = KEY_T
+	key.pressed = false
+	Input.parse_input_event(key)
+	Input.flush_buffered_events()
+	await create_timer(0.3, true).timeout
+	for pressed in [true, false]:
+		key = InputEventKey.new()
+		key.physical_keycode = KEY_ENTER
+		key.pressed = pressed
+		Input.parse_input_event(key)
+		Input.flush_buffered_events()
+		await process_frame
+	for frame in range(8): await process_frame
+	await RenderingServer.frame_post_draw
+	var menu_error := root.get_texture().get_image().save_png("res://review/companion_talk_menu.png")
+	session.dialogue.close()
+	session.story._finish_world_interaction()
+	session.set_pause_reason(&"dialogue", false)
+	session.toggle_pause()
+	session.menus._open_settings(&"pause")
+	session.menus.settings_panel.show_controls()
+	for frame in range(15): await process_frame
+	await RenderingServer.frame_post_draw
+	var controls_error := root.get_texture().get_image().save_png("res://review/companion_talk_controls.png")
 	paused = false
 	session.queue_free()
 	await process_frame
 	await create_timer(0.08, true).timeout
-	print("COMPANION CAPTURE: ", error_string(error))
-	quit(0 if error == OK else 1)
+	print("COMPANION CAPTURE: ", [error_string(error), error_string(menu_error), error_string(controls_error)])
+	quit(0 if error == OK and menu_error == OK and controls_error == OK else 1)

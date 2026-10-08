@@ -98,6 +98,7 @@ func _keti_in_cart() -> bool:
 
 func _keti_dialogue(npc: NpcActor) -> String:
 	if bool(state().chapter_two.get("duo", false)):
+		if npc.is_riding(): return "keti_companion_hurt" if _hurt(&"keti") else "keti_companion"
 		return "keti_duo_hurt" if _hurt(&"keti") else "keti_duo"
 	if bool(state().chapter_two.get("settled", false)) and npc.global_position.distance_to(COT) < 100:
 		if _hurt(&"keti"): return "keti_cot_hurt"
@@ -147,7 +148,7 @@ func _sync_cart() -> void:
 	gate.setup(state().flags)
 
 func on_harmed(actor_id: StringName, was_hostile: bool, _source: StringName) -> void:
-	if state().current_map != MAP: return
+	if state().current_map != MAP and not (actor_id == &"keti" and bool(state().chapter_two.get("duo", false))): return
 	var actor: Dictionary = state().actors.get(String(actor_id), {})
 	actor["resentful"] = true
 	actor["wake_hostile"] = was_hostile
@@ -225,11 +226,16 @@ func _board_keti(keti: NpcActor) -> bool:
 
 func execute(action: String, actor_id: StringName) -> Dictionary:
 	var progress := state().chapter_two
-	var companion_action := actor_id == &"keti" and bool(progress.get("duo", false)) and action in ["ride", "dismount", "eat", "attack", "face", "foot", "leave", ""]
+	var companion_action := actor_id == &"keti" and bool(progress.get("duo", false)) and action in ["ride", "dismount", "eat", "attack", "face", "foot", "leave", "", "chat_now", "chat_health", "chat_back"]
 	if not is_instance_valid(world()): return _fail("已经离开这张地图。")
 	if state().current_map != MAP and not companion_action: return _fail("已经离开这张地图。")
 	var npc := world().get_story_actor(actor_id) if not actor_id.is_empty() else null
 	match action:
+		"chat_now", "chat_health", "chat_back":
+			if not companion_action or not is_instance_valid(npc) or not npc.is_riding() or npc.is_downed: return _fail("先让可蒂醒来并上蛇，再和她聊天。")
+			if action == "chat_back": return {"ok": true, "next": _keti_dialogue(npc)}
+			if action == "chat_health": return {"ok": true, "next": "keti_health_hurt" if _hurt(&"keti") else "keti_health"}
+			return {"ok": true, "next": "keti_now_" + String(state().current_map) if state().current_map in [&"forest", &"cave"] else "keti_now"}
 		"intro": progress["intro_seen"] = true
 		"negotiate", "threat":
 			var threatened_before := _social_event(actor_id, "threat")

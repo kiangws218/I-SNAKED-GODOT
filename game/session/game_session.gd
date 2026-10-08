@@ -84,6 +84,7 @@ func start_new_game(slot: int) -> void:
 	active_slot = clampi(slot, 1, SaveStore.SLOT_COUNT)
 	state = SessionState.new()
 	state.slot = active_slot
+	hud.reset_companion_hint()
 	menus.hide_all()
 	hud.visible = true
 	pause_reasons.clear()
@@ -151,6 +152,7 @@ func load_map(map_id: StringName, entry := &"", debug_bypass := false, capture_c
 	current_world.player.died.connect(_on_player_died)
 	current_world.player.resources_changed.connect(_refresh_hud)
 	current_world.player.health_changed.connect(func(_current: int, _maximum: int): _refresh_hud())
+	current_world.player.companion_talk_requested.connect(_talk_to_companion)
 	story.bind_world(current_world)
 	remember_checkpoint(map_id, entry)
 	hud.set_map_debug("%s  [%s]" % [current_world.data.title, map_id])
@@ -211,6 +213,40 @@ func set_pause_reason(reason: StringName, active: bool) -> void:
 	if active: pause_reasons[reason] = true
 	else: pause_reasons.erase(reason)
 	get_tree().paused = not pause_reasons.is_empty()
+	_refresh_companion_hud()
+
+func _process(_delta: float) -> void:
+	_refresh_companion_hud()
+
+func _riding_companion() -> NpcActor:
+	if not is_instance_valid(current_world) or not bool(state.chapter_two.get("duo", false)): return null
+	var keti := current_world.get_story_actor(&"keti")
+	if not is_instance_valid(keti) or not keti.visible or keti.is_dead or keti.is_downed or not keti.is_riding(): return null
+	if keti.get_parent() != current_world.player or current_world.player.is_dead: return null
+	return keti
+
+func _companion_combat_blocked() -> bool:
+	if not story.combat_kind.is_empty() and story.enemies_left > 0: return true
+	var player := current_world.player
+	if not player.danger_kind.is_empty() or player.invulnerability_left > 0.0: return true
+	var threat_radius := 12.0 * SnakePlayer.TILE_SIZE
+	for node in get_tree().get_nodes_in_group(&"enemy"):
+		if current_world.is_ancestor_of(node) and node.visible and not node.is_dead and node.is_physics_processing() and node.global_position.distance_to(player.global_position) < threat_radius: return true
+	for node in get_tree().get_nodes_in_group(&"npc"):
+		if current_world.is_ancestor_of(node) and node.visible and node.hostile and not node.is_downed and not node.is_dead and not node.is_riding() and node.global_position.distance_to(player.global_position) < threat_radius: return true
+	for node in current_world.get_children():
+		if node is EnemyProjectile and not node.is_queued_for_deletion() and node.global_position.distance_to(player.global_position) < threat_radius: return true
+	return false
+
+func _talk_to_companion() -> void:
+	if map_transition_active or not pause_reasons.is_empty() or menus.is_blocking(): return
+	var keti := _riding_companion()
+	if not is_instance_valid(keti) or _companion_combat_blocked(): return
+	keti.request_interaction()
+
+func _refresh_companion_hud() -> void:
+	var available := is_instance_valid(_riding_companion()) and not map_transition_active and pause_reasons.is_empty() and not menus.is_blocking()
+	hud.set_companion_available(available, _companion_combat_blocked() if available else false)
 
 ## Presentation bridge: story requests a data-defined CG while the player owns
 ## only its playback lifetime. Gameplay/save state never lives in the CG scene.

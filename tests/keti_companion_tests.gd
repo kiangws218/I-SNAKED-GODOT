@@ -14,37 +14,28 @@ func check(condition: bool, message: String) -> void:
 	if not condition: failures.append("CHECK_%d: %s" % [checks, message])
 
 func _tap_enter() -> void:
-	var event := InputEventKey.new()
-	event.physical_keycode = KEY_ENTER
-	event.keycode = KEY_ENTER
-	event.pressed = true
-	Input.parse_input_event(event)
-	await physics_frame
-	event = InputEventKey.new()
-	event.physical_keycode = KEY_ENTER
-	event.keycode = KEY_ENTER
-	event.pressed = false
-	Input.parse_input_event(event)
-	await process_frame
+	await _tap_key(KEY_ENTER)
 
 func _tap_interact() -> void:
-	var event := InputEventKey.new()
-	event.physical_keycode = KEY_ENTER
-	event.keycode = KEY_ENTER
-	event.pressed = true
-	Input.parse_input_event(event)
-	await physics_frame
-	event = InputEventKey.new()
-	event.physical_keycode = KEY_ENTER
-	event.keycode = KEY_ENTER
-	event.pressed = false
-	Input.parse_input_event(event)
-	await process_frame
+	await _tap_key(KEY_T)
+
+func _tap_key(key: Key) -> void:
+	for pressed in [true, false]:
+		var event := InputEventKey.new()
+		event.physical_keycode = key
+		event.keycode = key
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		Input.flush_buffered_events()
+		await physics_frame
+		await process_frame
 
 func _advance_to_choices() -> void:
+	for frame in range(90):
+		if session.dialogue.state != &"entering": break
+		await process_frame
 	for step in range(60):
-		if session.dialogue.state == &"active" and session.dialogue.page_index == session.dialogue.pages.size() - 1:
-			return
+		if session.dialogue.state != &"active" or session.dialogue.page_index >= session.dialogue.pages.size() - 1: return
 		await _tap_enter()
 
 func _start_session() -> void:
@@ -81,7 +72,10 @@ func _end_session() -> void:
 
 func _run() -> void:
 	await _start_session()
+	await _tap_interact()
+	check(not session.pause_reasons.has(&"dialogue") and not session.hud.companion.visible, "尚未结伴时 T 不打开同伴菜单或头像")
 	await _test_default_mount_and_input_signal()
+	await _test_talk_menu_and_priority()
 	await _test_cross_map_companion()
 	await _test_occupied_seat_is_preserved()
 	await _test_dismount_save_wake_and_reboard()
@@ -130,8 +124,8 @@ func _test_default_mount_and_input_signal() -> void:
 	check(not keti.is_downed and keti.hp == 14.0, "默认骑乘保留可蒂清醒状态与生命")
 	check(session.state.social.reputation == 3, "默认上蛇不重复或漏发结伴声望")
 	await _tap_interact()
-	check(keti.interaction_open, "Enter 真实输入选中蛇背上的可蒂")
-	check(session.story.current_id == "ch2_keti_duo", "骑乘交互进入结伴后重复对白")
+	check(keti.interaction_open, "T 真实输入选中蛇背上的可蒂")
+	check(session.story.current_id == "ch2_keti_companion" and session.dialogue.page_index == 0, "骑乘交互进入同伴菜单且打开的按键不推进首句")
 	await _advance_to_choices()
 	var has_dismount := false
 	for choice in session.dialogue.choices:
@@ -169,13 +163,24 @@ func _test_cross_map_companion() -> void:
 		await session.load_map(&"chapter2_slice", &"", false, false)
 		return
 	check(loaded.ok and session.state.current_map == &"forest" and keti.is_riding(), "跨图读档仍恢复 rider")
+	# Forest normally contains live threats; test exploration dialogue only after
+	# those threats are inactive. Combat rejection is exercised separately.
+	for enemy in get_nodes_in_group(&"enemy"):
+		if session.current_world.is_ancestor_of(enemy): enemy.set_enemy_active(false)
+	player.set_physics_process(false)
+	player.invulnerability_left = 0.0
+	player.danger_kind = ""
 	await _tap_interact()
-	check(keti.interaction_open and session.story.current_id == "ch2_keti_duo", "森林中的 Enter 仍打开可蒂结伴对白")
+	check(keti.interaction_open and session.story.current_id == "ch2_keti_companion", "森林中的 T 仍打开可蒂同伴菜单: id=%s, pause=%s, combat=%s, down=%s, open=%s" % [session.story.current_id, session.pause_reasons, session._companion_combat_blocked(), keti.is_downed, keti.interaction_open])
 	await _advance_to_choices()
 	var can_dismount := false
 	for choice in session.dialogue.choices:
 		if String(choice.get("action", "")) == "dismount": can_dismount = true
 	check(can_dismount and keti.is_riding(), "森林骑乘对白有下蛇选项且浏览不下蛇")
+	await _choose_talk("now")
+	check(session.story.current_id == "ch2_keti_now_forest", "森林闲聊使用当前地图台词")
+	await _choose_talk("back")
+	await _choose_talk("leave")
 	session.dialogue.close()
 	session.pause_reasons.clear()
 	paused = false
@@ -189,6 +194,11 @@ func _test_cross_map_companion() -> void:
 	keti.global_position = player.body_chain.segments[1] + Vector2(24, 0)
 	var boarded: Dictionary = await flow.execute("ride", &"keti")
 	check(boarded.ok and keti.is_riding() and session.state.player.rider == "keti", "森林里唤醒的可蒂可以重新上蛇")
+	await _tap_interact()
+	check(session.story.current_id == "ch2_keti_companion_hurt", "受过欺负的可蒂使用同伴结果对白")
+	await _choose_talk("health")
+	check(session.story.current_id == "ch2_keti_health_hurt", "问候身体情况保留被欺负的后果")
+	await _choose_talk("leave")
 	check(session.save_active_slot().ok, "森林里重新上蛇可保存")
 	loaded = await session.load_active_slot()
 	keti = session.current_world.get_story_actor(&"keti")
@@ -219,6 +229,122 @@ func _test_cross_map_companion() -> void:
 	keti = session.current_world.get_story_actor(&"keti")
 	check(session.state.current_map == "chapter2_slice" and keti.is_riding() and session.state.player.rider == "keti", "返回第二章后维持唯一骑乘可蒂")
 
+func _dismiss_dialogue() -> void:
+	session.dialogue.close()
+	session.story._finish_world_interaction()
+	session.set_pause_reason(&"dialogue", false)
+	await process_frame
+
+func _choose_talk(id: String) -> void:
+	await _advance_to_choices()
+	var found := -1
+	for i in range(session.dialogue.choices.size()):
+		if session.dialogue.choices[i].id == id: found = i
+	check(found >= 0, "闲聊选项可到达：" + id)
+	if found < 0: return
+	for step in range(session.dialogue.choices.size() + 1):
+		if session.dialogue.selected_choice_index == found: break
+		await _tap_key(KEY_DOWN)
+	await _tap_enter()
+	for frame in range(15): await process_frame
+
+func _test_talk_menu_and_priority() -> void:
+	await _dismiss_dialogue()
+	var world := session.current_world
+	var keti := world.get_story_actor(&"keti")
+	var player := world.player
+	var npc_processing: Dictionary = {}
+	for npc in get_nodes_in_group(&"npc"):
+		if world.is_ancestor_of(npc):
+			npc_processing[npc] = npc.is_physics_processing()
+			npc.set_physics_process(false)
+	player.reset_at(Vector2(840, 650), Vector2.RIGHT)
+	for npc in npc_processing: npc._previous_head_position = player.global_position
+	check(session.hud.companion.visible and session.hud.companion_key.text.contains("T"), "可蒂骑乘显示头像与 InputMap 按键提示")
+	await _tap_enter()
+	check(not session.pause_reasons.has(&"dialogue"), "无地面对象时 Enter 不会被可蒂抢占")
+	await _tap_interact()
+	var position_before := player.global_position
+	player.set_physics_process(true)
+	await create_timer(0.1, true).timeout
+	check(paused and player.global_position == position_before and not session.hud.companion.visible, "闲聊暂停运动并隐藏 HUD 提示")
+	player.set_physics_process(false)
+	await _choose_talk("now")
+	check(session.story.current_id == "ch2_keti_now", "当前事件闲聊不用旧营救对白")
+	await _choose_talk("back")
+	check(session.story.current_id == "ch2_keti_companion", "闲聊返回同伴菜单形成闭环")
+	await _choose_talk("health")
+	check(session.story.current_id == "ch2_keti_health", "可蒂情况闲聊可到达")
+	await _choose_talk("leave")
+	check(not session.pause_reasons.has(&"dialogue") and keti.is_riding() and session.state.social.reputation == 3, "赶路退出恢复游戏且闲聊不重复奖励")
+	var merchant := world.get_story_actor(&"caravan_merchant")
+	var merchant_position := merchant.global_position
+	merchant.set_physics_process(false)
+	merchant.global_position = player.global_position + Vector2(0, 18)
+	await _tap_enter()
+	check(world.active_npc == merchant and session.story.current_id.begins_with("ch2_merchant"), "骑乘时 Enter 优先与身旁地面 NPC 交谈")
+	await _dismiss_dialogue()
+	await _tap_interact()
+	check(world.active_npc == keti and session.story.current_id == "ch2_keti_companion", "同位置 T 只选择可蒂")
+	await _choose_talk("leave")
+	merchant.global_position = merchant_position
+	merchant.set_physics_process(true)
+	var lever: StoryPickup
+	for node in get_nodes_in_group(&"story_pickup"):
+		if world.is_ancestor_of(node) and node.item_id == &"ch2_lever": lever = node
+	check(is_instance_valid(lever), "场景含可交互的开门杆")
+	if is_instance_valid(lever):
+		var lever_position := lever.global_position
+		lever.global_position = player.global_position + Vector2(0, 18)
+		await _tap_enter()
+		check(session.story.current_id == "ch2_lever_open", "Enter 可以主动再次查看附近场景物件")
+		await _dismiss_dialogue()
+		lever.global_position = lever_position
+	var enemy := load("res://game/actors/enemy_actor.tscn").instantiate() as EnemyActor
+	enemy.global_position = player.global_position + Vector2(120, 0)
+	world.add_child(enemy)
+	enemy.setup(player)
+	enemy.speed_override = 0.0
+	await _tap_interact()
+	check(not keti.interaction_open and not paused and session.hud.companion_key.text == "先脱离战斗", "附近活跃敌人时 T 不打开对白并提示脱离战斗")
+	enemy.queue_free()
+	await process_frame
+	var projectile := load("res://game/projectiles/enemy_projectile.tscn").instantiate() as EnemyProjectile
+	world.add_child(projectile)
+	projectile.launch(player.global_position + Vector2(96, 0), Vector2.RIGHT, 0.0, player, null)
+	projectile.set_physics_process(false)
+	await _tap_interact()
+	check(not paused and not keti.interaction_open, "附近仍有敌弹时不打开闲聊")
+	projectile.queue_free()
+	await process_frame
+	keti.is_downed = true
+	await _tap_interact()
+	check(not paused and not keti.interaction_open and not session.hud.companion.visible, "昏迷的骑乘可蒂不能回答闲聊")
+	keti.is_downed = false
+	session.story.combat_kind = &"fixture"
+	session.story.enemies_left = 1
+	await _tap_interact()
+	check(not paused and not keti.interaction_open, "剧情战斗仍有敌人时禁止闲聊")
+	session.story.combat_kind = &""
+	session.story.enemies_left = 0
+	session.set_pause_reason(&"menu", true)
+	await _tap_interact()
+	check(not keti.interaction_open and not session.hud.companion.visible, "暂停中 T 不穿透打开同伴对白")
+	session.set_pause_reason(&"menu", false)
+	await _tap_interact()
+	await _choose_talk("dismount")
+	check(not keti.is_riding() and not session.hud.companion.visible, "真实同伴菜单下蛇移除骑乘提示")
+	await _tap_interact()
+	check(not paused and not keti.interaction_open, "下蛇后 T 不会隔空交谈")
+	keti.global_position = player.body_chain.segments[1] + Vector2(24, 0)
+	check((await session.story.chapter_two.execute("ride", &"keti")).ok, "测试后可蒂正常重新上蛇")
+	await create_timer(3.1, true).timeout
+	check(session.hud.companion.visible and not session.hud.companion_hint.visible, "上蛇教程只短暂展示且再次上蛇不重复弹出")
+	for npc in npc_processing:
+		if is_instance_valid(npc):
+			npc._previous_head_position = player.global_position
+			npc.set_physics_process(npc_processing[npc] and not npc.is_riding())
+
 func _test_occupied_seat_is_preserved() -> void:
 	var flow := session.story.chapter_two
 	var world := session.current_world
@@ -244,7 +370,7 @@ func _test_occupied_seat_is_preserved() -> void:
 	check(completed_full.ok and completed_full.get("next", "") == "ending_occupied" and session.state.chapter_two.duo and session.state.player.rider == "buck" and buck.is_riding() and not keti.is_riding(), "满座仍完成结伴且保留原乘客，可蒂留在地面")
 	check(session.state.social.reputation == 3, "满座结伴仍只发放一次声望")
 	var repeated_full: Dictionary = await flow.execute("duo", &"keti")
-	check(repeated_full.ok and repeated_full.get("next", "") == "keti_duo" and session.state.social.reputation == 3 and session.state.player.rider == "buck", "满座结伴后的重复交互不重播结尾、不重复奖励或替换乘客")
+	check(repeated_full.ok and repeated_full.get("next", "") in ["keti_duo", "keti_duo_hurt"] and session.state.social.reputation == 3 and session.state.player.rider == "buck", "满座结伴后的重复交互不重播结尾、不重复奖励或替换乘客")
 	flow.show("ending_occupied")
 	var ending_text := ""
 	for page in session.dialogue.pages: ending_text += String(page.get("text", ""))

@@ -10,6 +10,7 @@ signal actor_released(payload: Dictionary, at_position: Vector2)
 signal actor_interacted(payload: Dictionary)
 signal bean_spit
 signal bean_collected
+signal companion_talk_requested
 
 const TILE_SIZE := 24.0
 const MAX_DIRECTION_QUEUE := 3
@@ -131,6 +132,9 @@ func _input(event: InputEvent) -> void:
 		place_node()
 	elif event.is_action_pressed("interact"):
 		if _interact_with_nearest_actor(): get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("companion_talk"):
+		companion_talk_requested.emit()
+		get_viewport().set_input_as_handled()
 
 
 func reset_at(spawn_position: Vector2, spawn_direction := Vector2.RIGHT) -> void:
@@ -471,19 +475,35 @@ func play_pickup_sfx() -> void:
 
 
 func _interact_with_nearest_actor() -> bool:
-	# A passenger has no contact collision; Enter is its explicit interaction.
-	for child in get_children():
-		if child is NpcActor and child.is_riding() and child.visible:
-			return child.request_interaction()
-	var nearest: BeanProjectile
+	var nearest: Node2D
 	var nearest_distance := INF
+	var world := get_parent()
+	for node in get_tree().get_nodes_in_group(&"npc"):
+		if not world.is_ancestor_of(node) or not node is NpcActor: continue
+		if not node.visible or node.is_dead or node.is_riding() or (node.hostile and not node.is_downed and not node.allow_hostile_interaction): continue
+		var distance := global_position.distance_to(node.global_position)
+		if distance < NpcActor.ENTER_RADIUS and distance < nearest_distance:
+			nearest = node
+			nearest_distance = distance
+	for node in get_tree().get_nodes_in_group(&"story_pickup"):
+		if not world.is_ancestor_of(node) or not node.visible or node.consumed or node.auto_collect: continue
+		var distance := global_position.distance_to(node.global_position)
+		if distance < NpcActor.ENTER_RADIUS and distance < nearest_distance:
+			nearest = node
+			nearest_distance = distance
 	for child in get_parent().get_children():
 		if child is BeanProjectile and child.actor_released and not child.actor_interaction_emitted:
 			var distance := global_position.distance_to(child.global_position)
 			if distance < BeanProjectile.PICKUP_RADIUS and distance < nearest_distance:
 				nearest = child
 				nearest_distance = distance
-	return nearest.interact() if nearest else false
+	if nearest is BeanProjectile: return nearest.interact()
+	if nearest: return nearest.request_interaction()
+	# Keep the existing non-Keti passenger interaction used by chapter one.
+	for child in get_children():
+		if child is NpcActor and child.npc_id != &"keti" and child.is_riding() and child.visible:
+			return child.request_interaction()
+	return false
 
 
 func _on_node_reclaimed(ring: RingNode) -> void:

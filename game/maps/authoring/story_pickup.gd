@@ -23,6 +23,7 @@ func persistent_id() -> StringName:
 	return pickup_id if not pickup_id.is_empty() else item_id
 
 func _ready() -> void:
+	add_to_group(&"story_pickup")
 	collision_layer = 128
 	collision_mask = 4
 	body_entered.connect(_on_body_entered)
@@ -53,6 +54,12 @@ func _on_body_entered(body: Node2D) -> void:
 func _on_body_exited(body: Node2D) -> void:
 	if body is SnakePlayer:
 		_interaction_armed = true
+
+func request_interaction() -> bool:
+	if consumed or not visible or auto_collect: return false
+	_interaction_armed = false
+	interaction_requested.emit(self)
+	return true
 
 func _draw() -> void:
 	if item_id == &"healing_potion":

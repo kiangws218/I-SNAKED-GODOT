@@ -45,5 +45,12 @@
   "lever_open": {"speaker":"旁白","pages":["卡扣已经拉开，车门敞着。杆子不用再拉。"],"choices":[{"id":"leave","label":"离开开门杆","action":"leave"}]},
   "cart_unlocked": {"speaker":"旁白","pages":["外锁已经松开，里面还卡着。","拉车侧的杆子，就能打开车门。"],"choices":[{"id":"leave","label":"去拉开门杆","action":"leave"}]},
   "cart_empty": {"speaker":"旁白","pages":["可蒂已经离开车厢。旧毯子上只剩下她躺过的痕迹。"],"choices":[{"id":"leave","label":"离开马车","action":"leave"}]},
-  "cot_done": {"speaker":"旁白","pages":["这里是你们刚才休息的地方。可蒂已经答应同行。"],"choices_from":"cot"}
+  "cot_done": {"speaker":"旁白","pages":["这里是你们刚才休息的地方。可蒂已经答应同行。"],"choices_from":"cot"},
+  "keti_companion": {"speaker":"可蒂","portrait":"keti","expression":"shy","pages":["干嘛突然回头？看路啦！","……你想聊天的话，我又没说不听。"],"choices":[{"id":"now","label":"聊聊现在的事","action":"chat_now"},{"id":"health","label":"问问她的情况","action":"chat_health"},{"id":"dismount","label":"让可蒂下蛇","action":"dismount"},{"id":"leave","label":"继续赶路","action":"leave"}]},
+  "keti_companion_hurt": {"speaker":"可蒂","portrait":"keti","expression":"angry","pages":["肯好好说话了？刚才欺负我的事，我还记着呢！","……路还是要一起走的。别以为我已经原谅你了。"],"choices_from":"keti_companion"},
+  "keti_now": {"speaker":"可蒂","portrait":"keti","expression":"smile","pages":["那辆马车……我可不想再看见了。","听说城里很热闹。要是找到好吃的，先给我看看。","才不是馋！我是怕你又把奇怪的东西吞了。"],"choices":[{"id":"back","label":"再聊点别的","action":"chat_back"},{"id":"leave","label":"继续赶路","action":"leave"}]},
+  "keti_now_forest": {"speaker":"可蒂","portrait":"keti","expression":"shy","pages":["这林子里会不会有能吃的果子？","你别看见圆的就吞啊！先让我看看……我也想尝一口。"],"choices_from":"keti_now"},
+  "keti_now_cave": {"speaker":"可蒂","portrait":"keti","expression":"shy","pages":["洞里有点冷。你走稳一点，我才没在发抖。","……要是听见奇怪的声音，咱们就一起跑。"],"choices_from":"keti_now"},
+  "keti_health": {"speaker":"可蒂","portrait":"keti","expression":"shy","pages":["已经不晕了！肚子叫也只是……这里太安静了。","不过你背上还挺稳的。再坐一会儿也不是不行。"],"choices_from":"keti_now"},
+  "keti_health_hurt": {"speaker":"可蒂","portrait":"keti","expression":"angry","pages":["被你折腾过的地方还疼呢。现在才知道问！","先好好带路，找到吃的也分我一点。……这回不许拿我试嘴。"],"choices_from":"keti_now"}
 }

@@ -69,8 +69,8 @@ func _contact(actor_id: StringName) -> void:
 	var npc := world.get_story_actor(actor_id)
 	if npc.is_riding():
 		npc.finish_interaction()
-		await _tap(KEY_ENTER)
-		check(session.pause_reasons.has(&"dialogue"), "确认键与骑乘角色交互：%s" % actor_id)
+		await _tap(KEY_T)
+		check(session.pause_reasons.has(&"dialogue"), "同伴键与骑乘角色交互：%s" % actor_id)
 		return
 	world.player.reset_at(npc.global_position - Vector2(48, 0), Vector2.RIGHT)
 	# Set up a local approach, rather than a swept contact across a fixture teleport.
@@ -169,12 +169,12 @@ func _test_keti() -> void:
 	await _choose("duo")
 	await _choose("leave")
 	await _contact(&"keti")
-	_expect("keti_duo", ["duo", "stretcher"])
+	_expect("keti_companion", ["duo", "stretcher"])
 	await _choose("leave")
 	check(session.save_active_slot().ok and (await session.load_active_slot()).ok, "结伴结果存读档")
 	session.current_world.player.set_physics_process(false)
 	await _contact(&"keti")
-	_expect("keti_duo", ["duo"])
+	_expect("keti_companion", ["duo"])
 	await _choose("leave")
 	check((await flow.execute("dismount", &"keti")).ok, "结伴后先下蛇再测试击晕")
 	await flow.execute("attack", &"keti")

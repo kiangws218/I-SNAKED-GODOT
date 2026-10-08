@@ -69,3 +69,5 @@ N7 与正式 UI/HUD 实现、自动门禁均已完成。六名NPC移动已验收
 2026-10-03 制作人批准 C2A 第二章最小主线灰盒。当前实际工程为 `I SNAKED-GODOT`，审阅分支 `codex/chapter2-mainline-slice`，范围与停止线见 `CHAPTER2_IMPLEMENTATION.md`、`CHAPTER2_REVIEW.md`。只推进已批准主线切片，完成门禁后等待试玩，不自动进入支线、完整地图或 N8。
 
 2026-10-04 制作人明确批准实现可蒂结伴后的常态骑乘，并把网页版唯一 Boss「巨岩茧母·磐」原生重做为独立、可编辑的 Godot Boss 战地图。此授权覆盖本文件原先不做独立 Boss 的限制；只做此次指定 Boss 切片。进度见 `COMPANION_BOSS_PROGRESS.md`，完成骑乘与独立地图验收后等待试玩。
+
+2026-10-08 制作人批准同伴交谈反馈修订并同步现有 Git 仓库：T 联系骑乘可蒂，Enter 留给地面互动，加入头像提示与简单闲聊菜单；验收见 `COMPANION_TALK_REVIEW.md`。设置页改键只评估，方案见 `KEYBINDING_EVALUATION.md`；不自动实现该功能或开始下一阶段。

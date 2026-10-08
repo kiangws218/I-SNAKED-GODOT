@@ -176,6 +176,13 @@ text = "互动 / 继续对话"
 [node name="InteractKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
 layout_mode = 2
 text = "—"
+[node name="CompanionLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "与骑乘可蒂交谈"
+[node name="CompanionKeys" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
+layout_mode = 2
+text = "—"
+
 [node name="ChoiceLabel" type="Label" parent="Center/Panel/Margin/VBox/ControlsContent/ControlsGrid"]
 layout_mode = 2
 text = "选择对话选项"

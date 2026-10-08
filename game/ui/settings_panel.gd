@@ -24,6 +24,7 @@ const CONTROL_ACTIONS := {
 	"PreviousKeys": &"inventory_previous",
 	"NextKeys": &"inventory_next",
 	"InteractKeys": &"interact",
+	"CompanionKeys": &"companion_talk",
 	"PauseKeys": &"pause",
 }
 
